@@ -1,0 +1,334 @@
+@extends('layouts.admin')
+
+@section('title', 'Customers')
+@section('page-title', 'Customer Management')
+@section('page-description', 'Manage your customer database')
+
+
+@section('content')
+<div class="space-y-6" x-data="{ customerModal: false, editModal: false, editingCustomer: null }">
+    <!-- Header Actions -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div class="flex items-center space-x-4">
+            <button @click="customerModal = true" class="bg-maroon hover:bg-maroon-dark text-white px-4 py-2 rounded-lg font-medium transition-colors inline-flex items-center">
+                <i class="fas fa-plus mr-2"></i>
+                Add New Customer
+            </button>
+        </div>
+        
+        <!-- Search and Filters -->
+        <div class="flex items-center space-x-4">
+            <form method="GET" class="flex items-center space-x-2">
+                <div class="relative">
+                    <input type="text" name="search" value="{{ request('search') }}" placeholder="Search customers..." 
+                           class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-maroon focus:border-maroon">
+                    <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                </div>
+                <button type="submit" class="bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-lg transition-colors">
+                    <i class="fas fa-search"></i>
+                </button>
+                @if(request('search'))
+                    <a href="{{ route('admin.customers.index') }}" class="bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-lg transition-colors">
+                        <i class="fas fa-times"></i>
+                    </a>
+                @endif
+            </form>
+        </div>
+    </div>
+
+    <!-- Customers Table -->
+    <div class="bg-white rounded-lg shadow overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact Info</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Business/TIN</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payment Terms</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Orders</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    @forelse($customers as $customer)
+                        <tr class="hover:bg-gray-50 transition-colors">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center">
+                                    <div class="w-10 h-10 bg-maroon text-white rounded-full flex items-center justify-center font-bold">
+                                        {{ substr($customer->customer_firstname, 0, 1) }}{{ substr($customer->customer_lastname, 0, 1) }}
+                                    </div>
+                                    <div class="ml-4">
+                                        <div class="text-sm font-medium text-gray-900">{{ $customer->full_name }}</div>
+                                        <div class="text-sm text-gray-500">#{{ str_pad($customer->customer_id, 4, '0', STR_PAD_LEFT) }}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm text-gray-900">{{ $customer->contact_person1 }}</div>
+                                <div class="text-sm text-gray-500">{{ $customer->contact_number1 }}</div>
+                                @if($customer->customer_email)
+                                    <div class="text-sm text-gray-500">{{ $customer->customer_email }}</div>
+                                @endif
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                @if($customer->business_name)
+                                    <div class="text-sm font-medium text-gray-900">{{ $customer->business_name }}</div>
+                                    @if($customer->tin)
+                                        <div class="text-sm text-gray-500">TIN: {{ $customer->tin }}</div>
+                                    @endif
+                                @else
+                                    <span class="text-sm text-gray-500">Individual Customer</span>
+                                @endif
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm text-gray-900">{{ $customer->payment_terms ?: 'Standard Terms' }}</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm text-gray-900">{{ $customer->orders_count ?? 0 }} orders</div>
+                                <div class="text-sm text-gray-500">{{ $customer->quotations_count ?? 0 }} quotes</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+                                <a href="{{ route('admin.customers.show', $customer) }}" class="text-blue-600 hover:text-blue-900 transition-colors" title="View Details">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <a href="{{ route('admin.customers.edit', $customer) }}" class="text-maroon hover:text-maroon-dark transition-colors" title="Edit Customer">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <form method="POST" action="{{ route('admin.customers.destroy', $customer) }}" class="inline" onsubmit="return confirm('Are you sure you want to delete this customer?')">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="text-red-600 hover:text-red-900 transition-colors" title="Delete Customer">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="6" class="px-6 py-12 text-center">
+                                <div class="text-gray-400">
+                                    <i class="fas fa-users text-6xl mb-4"></i>
+                                    <p class="text-xl font-medium mb-2">No customers found</p>
+                                    <p class="text-gray-500 mb-4">Start by adding your first customer</p>
+                                    <button @click="customerModal = true" class="inline-flex items-center px-4 py-2 bg-maroon text-white rounded-lg hover:bg-maroon-dark transition-colors">
+                                        <i class="fas fa-plus mr-2"></i>Add Customer
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Pagination -->
+        @if($customers->hasPages())
+            <div class="bg-white px-6 py-3 border-t border-gray-200">
+                {{ $customers->links() }}
+            </div>
+        @endif
+    </div>
+
+    <!-- Add Customer Modal -->
+    <div x-show="customerModal" x-cloak class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50" @click.self="customerModal = false">
+        <div class="relative top-20 mx-auto p-5 border w-full max-w-4xl shadow-lg rounded-md bg-white">
+            <div class="flex items-center justify-between border-b border-gray-200 pb-4 mb-4">
+                <h3 class="text-xl font-semibold text-gray-900">Add New Customer</h3>
+                <button @click="customerModal = false" class="text-gray-400 hover:text-gray-600 transition-colors">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <form method="POST" action="{{ route('admin.customers.store') }}" class="space-y-6">
+                @csrf
+                
+                <!-- Personal Information -->
+                <div>
+                    <h4 class="text-lg font-medium text-gray-900 mb-3">Personal Information</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label for="customer_firstname" class="block text-sm font-medium text-gray-700 mb-1">First Name *</label>
+                            <input type="text" name="customer_firstname" id="customer_firstname" required
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon">
+                        </div>
+                        <div>
+                            <label for="customer_middlename" class="block text-sm font-medium text-gray-700 mb-1">Middle Name</label>
+                            <input type="text" name="customer_middlename" id="customer_middlename"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon">
+                        </div>
+                        <div>
+                            <label for="customer_lastname" class="block text-sm font-medium text-gray-700 mb-1">Last Name *</label>
+                            <input type="text" name="customer_lastname" id="customer_lastname" required
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Business Information -->
+                <div>
+                    <h4 class="text-lg font-medium text-gray-900 mb-3">Business Information</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="business_name" class="block text-sm font-medium text-gray-700 mb-1">Business Name</label>
+                            <input type="text" name="business_name" id="business_name"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon"
+                                   placeholder="Leave blank for individual customer">
+                        </div>
+                        <div>
+                            <label for="tin" class="block text-sm font-medium text-gray-700 mb-1">TIN (Optional)</label>
+                            <input type="text" name="tin" id="tin"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon"
+                                   placeholder="000-000-000-000">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Contact Information -->
+                <div>
+                    <h4 class="text-lg font-medium text-gray-900 mb-3">Contact Information</h4>
+                    <div class="space-y-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label for="customer_email" class="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+                                <input type="email" name="customer_email" id="customer_email"
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon">
+                            </div>
+                            <div>
+                                <label for="customer_address" class="block text-sm font-medium text-gray-700 mb-1">Address *</label>
+                                <textarea name="customer_address" id="customer_address" rows="2" required
+                                          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon"></textarea>
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label for="contact_person1" class="block text-sm font-medium text-gray-700 mb-1">Primary Contact Person *</label>
+                                <input type="text" name="contact_person1" id="contact_person1" required
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon">
+                            </div>
+                            <div>
+                                <label for="contact_number1" class="block text-sm font-medium text-gray-700 mb-1">Primary Contact Number *</label>
+                                <input type="text" name="contact_number1" id="contact_number1" required
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon"
+                                       placeholder="09XX-XXX-XXXX">
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label for="contact_person2" class="block text-sm font-medium text-gray-700 mb-1">Secondary Contact Person</label>
+                                <input type="text" name="contact_person2" id="contact_person2"
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon">
+                            </div>
+                            <div>
+                                <label for="contact_number2" class="block text-sm font-medium text-gray-700 mb-1">Secondary Contact Number</label>
+                                <input type="text" name="contact_number2" id="contact_number2"
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon"
+                                       placeholder="09XX-XXX-XXXX">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Payment Terms -->
+                <div>
+                    <h4 class="text-lg font-medium text-gray-900 mb-3">Payment Information</h4>
+                    <div>
+                        <label for="payment_terms" class="block text-sm font-medium text-gray-700 mb-1">Payment Terms</label>
+                        <select name="payment_terms" id="payment_terms" 
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon">
+                            <option value="">Select payment terms</option>
+                            <option value="50% down payment, balance upon completion">50% down payment, balance upon completion</option>
+                            <option value="Cash on delivery">Cash on delivery</option>
+                            <option value="Net 15 days">Net 15 days</option>
+                            <option value="Net 30 days">Net 30 days</option>
+                            <option value="Full payment upfront">Full payment upfront</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Modal Actions -->
+                <div class="flex items-center justify-end space-x-4 pt-6 border-t border-gray-200">
+                    <button type="button" @click="customerModal = false" class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors">
+                        Cancel
+                    </button>
+                    <button type="submit" class="bg-maroon hover:bg-maroon-dark text-white px-6 py-2 rounded-md transition-colors">
+                        <i class="fas fa-save mr-2"></i>
+                        Save Customer
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Customer Modal -->
+    <div x-show="editModal" x-cloak class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50" @click.self="editModal = false">
+        <div class="relative top-20 mx-auto p-5 border w-full max-w-4xl shadow-lg rounded-md bg-white">
+            <div class="flex items-center justify-between border-b border-gray-200 pb-4 mb-4">
+                <h3 class="text-xl font-semibold text-gray-900">Edit Customer</h3>
+                <button @click="editModal = false" class="text-gray-400 hover:text-gray-600 transition-colors">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <form x-bind:action="editingCustomer ? `/admin/customers/${editingCustomer.customer_id}` : '#'" method="POST" class="space-y-6">
+                @csrf
+                @method('PUT')
+                
+                <!-- Similar form structure as add modal but with x-model bindings for editing -->
+                <div>
+                    <h4 class="text-lg font-medium text-gray-900 mb-3">Personal Information</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">First Name *</label>
+                            <input type="text" name="customer_firstname" x-model="editingCustomer ? editingCustomer.customer_firstname : ''" required
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Middle Name</label>
+                            <input type="text" name="customer_middlename" x-model="editingCustomer ? editingCustomer.customer_middlename : ''"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Last Name *</label>
+                            <input type="text" name="customer_lastname" x-model="editingCustomer ? editingCustomer.customer_lastname : ''" required
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Modal Actions -->
+                <div class="flex items-center justify-end space-x-4 pt-6 border-t border-gray-200">
+                    <button type="button" @click="editModal = false" class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors">
+                        Cancel
+                    </button>
+                    <button type="submit" class="bg-maroon hover:bg-maroon-dark text-white px-6 py-2 rounded-md transition-colors">
+                        <i class="fas fa-save mr-2"></i>
+                        Update Customer
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function editCustomer(customer) {
+    this.editingCustomer = customer;
+    this.editModal = true;
+}
+
+// Delete confirmation functionality (unchanged)
+let customerToDelete = null;
+
+function confirmDelete(customerId) {
+    customerToDelete = customerId;
+    document.getElementById('deleteModal').classList.remove('hidden');
+}
+</script>
+
+<style>
+[x-cloak] { display: none !important; }
+</style>
+@endsection

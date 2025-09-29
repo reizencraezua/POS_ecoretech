@@ -1,0 +1,713 @@
+@extends('layouts.admin')
+
+@section('title', 'Order Details')
+@section('page-title', 'Order #' . $order->order_id)
+@section('page-description', 'View detailed information about this job order')
+
+@section('content')
+<div class="max-w-7xl mx-auto">
+    <!-- Header -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <a href="{{ route('admin.orders.index') }}" class="text-gray-500 hover:text-gray-700 transition-colors">
+                        <i class="fas fa-arrow-left text-lg"></i>
+                    </a>
+                    <div>
+                        <h2 class="text-2xl font-semibold text-gray-900">Order #{{ $order->order_id }}</h2>
+                        <div class="flex items-center space-x-6 text-sm text-gray-600 mt-1">
+                            <span><i class="fas fa-calendar mr-1"></i>{{ $order->order_date->format('M d, Y') }}</span>
+                            <span><i class="fas fa-flag-checkered mr-1"></i>{{ $order->deadline_date->format('M d, Y') }}</span>
+                            <span><i class="fas fa-user mr-1"></i>{{ $order->customer->display_name }}</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-8">
+                    <div class="text-right">
+                        <div class="text-2xl font-bold text-gray-900">₱{{ number_format($order->total_amount, 2) }}</div>
+                        <div class="text-sm text-gray-600">Total Amount</div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-xl font-semibold text-gray-700">₱{{ number_format($order->total_paid, 2) }}</div>
+                        <div class="text-sm text-gray-600">Total Paid</div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-lg font-semibold {{ $order->remaining_balance > 0 ? 'text-red-600' : 'text-green-600' }}">
+                            ₱{{ number_format($order->remaining_balance, 2) }}
+                        </div>
+                        <div class="text-sm text-gray-600">Balance</div>
+                    </div>
+                    <span class="px-3 py-1 rounded-md text-sm font-medium bg-gray-100 text-gray-800">
+                        {{ $order->order_status }}
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 xl:grid-cols-4 gap-6">
+        <!-- Main Content -->
+        <div class="xl:col-span-3 space-y-4">
+            <!-- Order Information -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h3 class="text-lg font-semibold text-gray-900">Order Information</h3>
+                </div>
+                <div class="p-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                        <div class="space-y-6">
+                            <div>
+                                <h4 class="text-sm font-medium text-gray-500 uppercase tracking-wide mb-3">Customer Details</h4>
+                                <div class="space-y-2">
+                                    <p class="text-gray-900 font-medium">{{ $order->customer->display_name }}</p>
+                                    @if($order->customer->business_name)
+                                        <p class="text-sm text-gray-600">{{ $order->customer->business_name }}</p>
+                                    @endif
+                                </div>
+                            </div>
+                            <div>
+                                <h4 class="text-sm font-medium text-gray-500 uppercase tracking-wide mb-3">Production Team</h4>
+                                <div class="space-y-2">
+                                    <p class="text-gray-900 font-medium">{{ $order->employee->full_name }}</p>
+                                    @if($order->employee->job)
+                                        <p class="text-sm text-gray-600">{{ $order->employee->job->job_title }}</p>
+                                    @endif
+                                    @if($order->layout_employee_id)
+                                        <div class="pt-2 border-t border-gray-100">
+                                            <p class="text-sm text-gray-500">Layout Designer</p>
+                                            <p class="text-gray-900 font-medium">{{ $order->layoutEmployee->full_name }}</p>
+                                            @if($order->layoutEmployee->job)
+                                                <p class="text-sm text-gray-600">{{ $order->layoutEmployee->job->job_title }}</p>
+                                            @endif
+                                        </div>
+                                    @endif
+                                </div>
+                            </div>
+                        </div>
+                        <div class="space-y-6">
+                            <div>
+                                <h4 class="text-sm font-medium text-gray-500 uppercase tracking-wide mb-3">Timeline</h4>
+                                <div class="space-y-3">
+                                    <div class="flex justify-between">
+                                        <span class="text-sm text-gray-600">Order Date</span>
+                                        <span class="text-sm font-medium text-gray-900">{{ $order->order_date->format('M d, Y') }}</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-sm text-gray-600">Deadline</span>
+                                        <span class="text-sm font-medium text-gray-900">{{ $order->deadline_date->format('M d, Y') }}</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-sm text-gray-600">Days Remaining</span>
+                                        <span class="text-sm font-medium {{ $order->deadline_date->diffInDays(now()) < 0 ? 'text-red-600' : 
+                                           ($order->deadline_date->diffInDays(now()) <= 3 ? 'text-yellow-600' : 'text-gray-900') }}">
+                                            {{ max(0, $order->deadline_date->diffInDays(now())) }} days
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="space-y-6">
+                            <div>
+                                <h4 class="text-sm font-medium text-gray-500 uppercase tracking-wide mb-3">Order Summary</h4>
+                                <div class="space-y-3">
+                                    <div class="flex justify-between">
+                                        <span class="text-sm text-gray-600">Items</span>
+                                        <span class="text-sm font-medium text-gray-900">{{ $order->details->count() }} items</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-sm text-gray-600">Payment Progress</span>
+                                        <span class="text-sm font-medium text-gray-900">
+                                            {{ $order->total_amount > 0 ? round(($order->total_paid / $order->total_amount) * 100) : 0 }}%
+                                        </span>
+                                    </div>
+                                    <div class="pt-2 border-t border-gray-100">
+                                        <div class="w-full bg-gray-200 rounded-full h-2">
+                                            <div class="bg-gray-600 h-2 rounded-full" style="width: {{ $order->total_amount > 0 ? round(($order->total_paid / $order->total_amount) * 100) : 0 }}%"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
+            <!-- Order Items -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-lg font-semibold text-gray-900">Order Items</h3>
+                        <div class="flex items-center space-x-6 text-sm text-gray-600">
+                            <span>{{ $order->details->count() }} items</span>
+                            <span>₱{{ number_format($order->details->sum('subtotal'), 2) }} subtotal</span>
+                            @if($order->layout_design_fee > 0)
+                            <span>₱{{ number_format($order->layout_design_fee, 2) }} layout fee</span>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Item</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unit</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Size</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unit Price</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Subtotal</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            @forelse($order->details as $detail)
+                            <tr>
+                                <td class="px-4 py-3 whitespace-nowrap">
+                                    <span class="px-2 py-1 text-xs font-medium rounded-full
+                                        {{ $detail->item_type === 'Product' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800' }}">
+                                        {{ $detail->item_type }}
+                                    </span>
+                                </td>
+                                <td class="px-4 py-3 whitespace-nowrap">
+                                    <div class="text-sm font-medium text-gray-900">
+                                        {{ $detail->item_type === 'Product' ? $detail->product->product_name : $detail->service->service_name }}
+                                    </div>
+                                </td>
+                                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ $detail->quantity }}</td>
+                                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ $detail->unit }}</td>
+                                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ $detail->size }}</td>
+                                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">₱{{ number_format($detail->price, 2) }}</td>
+                                <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">₱{{ number_format($detail->subtotal, 2) }}</td>
+                            </tr>
+                            @empty
+                            <tr>
+                                <td colspan="7" class="px-4 py-8 text-center text-gray-500">
+                                    <i class="fas fa-box text-4xl mb-2"></i>
+                                    <p>No items found for this order.</p>
+                                </td>
+                            </tr>
+                            @endforelse
+                        </tbody>
+                        <tfoot class="bg-gray-50">
+                            <tr class="border-t border-gray-200">
+                                <td colspan="7" class="px-4 py-2 text-sm text-gray-600 text-right">Items Total:</td>
+                                <td class="px-4 py-2 text-sm font-medium text-gray-900">₱{{ number_format($order->details->sum('subtotal'), 2) }}</td>
+                            </tr>
+                            @if($order->layout_design_fee > 0)
+                            <tr class="border-t border-gray-200">
+                                <td colspan="7" class="px-4 py-2 text-sm text-gray-600 text-right">Layout Design Fee:</td>
+                                <td class="px-4 py-2 text-sm font-medium text-gray-900">₱{{ number_format($order->layout_design_fee, 2) }}</td>
+                            </tr>
+                            @endif
+                            <tr class="bg-maroon text-white">
+                                <td colspan="7" class="px-4 py-4 text-right font-semibold text-lg">TOTAL AMOUNT:</td>
+                                <td class="px-4 py-4 font-bold text-xl">₱{{ number_format($order->total_amount, 2) }}</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="space-y-6">
+
+            <!-- Actions -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+                <div class="px-4 py-3 border-b border-gray-200">
+                    <h3 class="text-sm font-semibold text-gray-900">Actions</h3>
+                </div>
+                <div class="p-4 space-y-3">
+                    <a href="{{ route('admin.orders.edit', $order) }}" class="w-full bg-gray-100 hover:bg-gray-200 text-gray-900 px-3 py-2 rounded text-sm transition-colors inline-flex items-center justify-center">
+                        Edit Order
+                    </a>
+                    <button type="button" onclick="openPaymentModal()" class="w-full bg-gray-100 hover:bg-gray-200 text-gray-900 px-3 py-2 rounded text-sm transition-colors inline-flex items-center justify-center">
+                        Add Payment
+                    </button>
+                    <a href="{{ route('admin.deliveries.create', ['order_id' => $order->order_id]) }}" class="w-full bg-gray-100 hover:bg-gray-200 text-gray-900 px-3 py-2 rounded text-sm transition-colors inline-flex items-center justify-center">
+                        Add Delivery
+                    </a>
+                    @if($order->order_status !== 'Completed' && $order->order_status !== 'Cancelled')
+                    <form method="POST" action="{{ route('admin.orders.status', $order) }}" class="w-full">
+                        @csrf
+                        @method('PATCH')
+                        <select name="order_status" onchange="this.form.submit()" class="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-gray-500 focus:border-gray-500">
+                            <option value="">Update Status</option>
+                            <option value="On-Process">On-Process</option>
+                            <option value="Designing">Designing</option>
+                            <option value="Production">Production</option>
+                            <option value="For Releasing">For Releasing</option>
+                            <option value="Completed">Completed</option>
+                            <option value="Cancelled">Cancelled</option>
+                        </select>
+                    </form>
+                    @endif
+                </div>
+            </div>
+
+            <!-- Payment History -->
+            @if($order->payments->count() > 0)
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+                <div class="px-4 py-3 border-b border-gray-200">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-sm font-semibold text-gray-900 flex items-center">
+                            <i class="fas fa-credit-card mr-2 text-maroon"></i>
+                            Payment History
+                        </h3>
+                        <span class="text-xs text-gray-500">{{ $order->payments->count() }} payment(s)</span>
+                    </div>
+                </div>
+                <div class="p-4">
+                    <div class="space-y-4 max-h-80 overflow-y-auto">
+                        @foreach($order->payments as $payment)
+                        <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                            <div class="flex justify-between items-start mb-2">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                                        <i class="fas fa-check text-green-600 text-sm"></i>
+                                    </div>
+                                    <div>
+                                        <p class="text-sm font-medium text-gray-900">₱{{ number_format($payment->amount_paid, 2) }}</p>
+                                        <p class="text-xs text-gray-500">{{ $payment->payment_date->format('M d, Y g:i A') }}</p>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                        {{ $payment->payment_term }}
+                                    </span>
+                                    <p class="text-xs text-gray-500 mt-1">{{ $payment->payment_method }}</p>
+                                </div>
+                            </div>
+                            
+                            @if($payment->reference_number)
+                            <div class="flex items-center space-x-2 text-xs text-gray-600 mb-2">
+                                <i class="fas fa-hashtag"></i>
+                                <span>Reference: {{ $payment->reference_number }}</span>
+                            </div>
+                            @endif
+                            
+                            @if($payment->remarks)
+                            <div class="text-xs text-gray-600 bg-white rounded p-2 border">
+                                <i class="fas fa-comment mr-1"></i>
+                                {{ $payment->remarks }}
+                            </div>
+                            @endif
+                            
+                            <div class="flex justify-between items-center mt-2 pt-2 border-t border-gray-200">
+                                <span class="text-xs text-gray-500">Receipt: {{ $payment->receipt_number }}</span>
+                                <span class="text-xs text-gray-500">
+                                    @if($payment->change > 0)
+                                        Change: ₱{{ number_format($payment->change, 2) }}
+                                    @else
+                                        Balance: ₱{{ number_format($payment->balance, 2) }}
+                                    @endif
+                                </span>
+                            </div>
+                        </div>
+                        @endforeach
+                    </div>
+                </div>
+            </div>
+            @endif
+
+            <!-- Delivery History -->
+            @if($order->deliveries->count() > 0)
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+                <div class="px-4 py-3 border-b border-gray-200">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-sm font-semibold text-gray-900 flex items-center">
+                            <i class="fas fa-truck mr-2 text-maroon"></i>
+                            Delivery History
+                        </h3>
+                        <span class="text-xs text-gray-500">{{ $order->deliveries->count() }} delivery(s)</span>
+                    </div>
+                </div>
+                <div class="p-4">
+                    <div class="space-y-4 max-h-80 overflow-y-auto">
+                        @foreach($order->deliveries as $delivery)
+                        <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                            <div class="flex justify-between items-start mb-2">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                                        <i class="fas fa-truck text-blue-600 text-sm"></i>
+                                    </div>
+                                    <div>
+                                        <p class="text-sm font-medium text-gray-900">{{ $delivery->delivery_status }}</p>
+                                        <p class="text-xs text-gray-500">{{ $delivery->delivery_date->format('M d, Y g:i A') }}</p>
+                                    </div>
+                                </div>
+                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium 
+                                    @if($delivery->delivery_status === 'Delivered') bg-green-100 text-green-800
+                                    @elseif($delivery->delivery_status === 'In Transit') bg-yellow-100 text-yellow-800
+                                    @elseif($delivery->delivery_status === 'Pending') bg-gray-100 text-gray-800
+                                    @else bg-red-100 text-red-800 @endif">
+                                    {{ $delivery->delivery_status }}
+                                </span>
+                            </div>
+                            
+                            <div class="text-xs text-gray-600 mb-2">
+                                <i class="fas fa-map-marker-alt mr-1"></i>
+                                {{ $delivery->delivery_address }}
+                            </div>
+                            
+                            @if($delivery->delivery_notes)
+                            <div class="text-xs text-gray-600 bg-white rounded p-2 border">
+                                <i class="fas fa-comment mr-1"></i>
+                                {{ $delivery->delivery_notes }}
+                            </div>
+                            @endif
+                        </div>
+                        @endforeach
+                    </div>
+                </div>
+            </div>
+            @endif
+
+        </div>
+    </div>
+</div>
+
+<!-- Payment Modal -->
+<div id="paymentModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+        <div class="mt-3">
+            <!-- Modal Header -->
+            <div class="flex items-center justify-between pb-4 border-b border-gray-200">
+                <h3 class="text-lg font-semibold text-gray-900">Add Payment</h3>
+                <button onclick="closePaymentModal()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <!-- Modal Body -->
+            <form id="paymentForm" method="POST" action="{{ route('admin.payments.store') }}" class="mt-4">
+                @csrf
+                <input type="hidden" name="order_id" value="{{ $order->order_id }}">
+                
+                <div class="space-y-4">
+                    <!-- Payment Date -->
+                    <div>
+                        <label for="payment_date" class="block text-sm font-medium text-gray-700 mb-1">Payment Date *</label>
+                        <input type="date" name="payment_date" id="payment_date" value="{{ now()->format('Y-m-d') }}" required
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon @error('payment_date') border-red-500 @enderror">
+                        @error('payment_date')
+                            <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                        @enderror
+                    </div>
+                    
+                    <!-- Payment Method -->
+                    <div>
+                        <label for="payment_method" class="block text-sm font-medium text-gray-700 mb-1">Payment Method *</label>
+                        <select name="payment_method" id="payment_method" required
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon @error('payment_method') border-red-500 @enderror">
+                            <option value="">Select Method</option>
+                            <option value="Cash" {{ old('payment_method') == 'Cash' ? 'selected' : '' }}>Cash</option>
+                            <option value="GCash" {{ old('payment_method') == 'GCash' ? 'selected' : '' }}>GCash</option>
+                            <option value="Bank Transfer" {{ old('payment_method') == 'Bank Transfer' ? 'selected' : '' }}>Bank Transfer</option>
+                            <option value="Check" {{ old('payment_method') == 'Check' ? 'selected' : '' }}>Check</option>
+                            <option value="Credit Card" {{ old('payment_method') == 'Credit Card' ? 'selected' : '' }}>Credit Card</option>
+                        </select>
+                        @error('payment_method')
+                            <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                        @enderror
+                    </div>
+                    
+                    
+                    <!-- Payment Term -->
+                    <div>
+                        <label for="payment_term" class="block text-sm font-medium text-gray-700 mb-1">Payment Term *</label>
+                        <select name="payment_term" id="payment_term" required
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon @error('payment_term') border-red-500 @enderror">
+                            <option value="">Select Term</option>
+                            <option value="Downpayment" {{ old('payment_term') == 'Downpayment' ? 'selected' : '' }}>Downpayment</option>
+                            <option value="Initial" {{ old('payment_term') == 'Initial' ? 'selected' : '' }}>Initial</option>
+                            <option value="Partial" {{ old('payment_term') == 'Partial' ? 'selected' : '' }}>Partial</option>
+                            <option value="Full" {{ old('payment_term') == 'Full' ? 'selected' : '' }}>Full</option>
+                        </select>
+                        @error('payment_term')
+                            <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                        @enderror
+                    </div>
+                    
+                    <!-- Amount -->
+                    <div>
+                        <label for="amount_paid" class="block text-sm font-medium text-gray-700 mb-1">Amount *</label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <span class="text-gray-500 sm:text-sm">₱</span>
+                            </div>
+                            <input type="number" name="amount_paid" id="amount_paid" step="0.01" min="0" max="{{ $order->remaining_balance }}" required
+                                   class="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon @error('amount_paid') border-red-500 @enderror"
+                                   placeholder="0.00" value="{{ old('amount_paid') }}">
+                        </div>
+                        <p class="text-xs text-gray-500 mt-1">Maximum: ₱{{ number_format($order->remaining_balance, 2) }}</p>
+                        @error('amount_paid')
+                            <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                        @enderror
+                    </div>
+                    
+                    <!-- Remarks -->
+                    <div>
+                        <label for="remarks" class="block text-sm font-medium text-gray-700 mb-1">Remarks</label>
+                        <textarea name="remarks" id="remarks" rows="3"
+                                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon @error('remarks') border-red-500 @enderror"
+                                  placeholder="Optional notes for this payment...">{{ old('remarks') }}</textarea>
+                        @error('remarks')
+                            <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                        @enderror
+                    </div>
+                </div>
+                
+                <!-- Modal Footer -->
+                <div class="flex items-center justify-end space-x-3 pt-6 mt-6 border-t border-gray-200">
+                    <button type="button" onclick="closePaymentModal()" 
+                            class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 transition-colors">
+                        Cancel
+                    </button>
+                    <button type="submit" 
+                            class="px-4 py-2 bg-maroon text-white rounded-md hover:bg-maroon-dark transition-colors">
+                        Add Payment
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function openPaymentModal() {
+    document.getElementById('paymentModal').classList.remove('hidden');
+    // Set max amount to remaining balance
+    document.getElementById('amount_paid').max = {{ $order->remaining_balance }};
+}
+
+function closePaymentModal() {
+    document.getElementById('paymentModal').classList.add('hidden');
+    // Reset form
+    document.querySelector('#paymentModal form').reset();
+    document.getElementById('payment_date').value = '{{ now()->format('Y-m-d') }}';
+}
+
+// Close modal when clicking outside
+document.getElementById('paymentModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closePaymentModal();
+    }
+});
+
+// Handle form submission with AJAX and receipt printing
+document.getElementById('paymentForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const amount = parseFloat(document.getElementById('amount_paid').value);
+    const remainingBalance = {{ $order->remaining_balance }};
+    
+    if (amount > remainingBalance) {
+        alert('Payment amount cannot exceed remaining balance of ₱' + remainingBalance.toFixed(2));
+        return false;
+    }
+    
+    // Show loading state
+    const submitBtn = this.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Processing...';
+    submitBtn.disabled = true;
+    
+    // Store form data for receipt
+    window.paymentData = {
+        orderId: '{{ $order->order_id }}',
+        customerName: '{{ $order->customer->display_name }}',
+        paymentDate: document.getElementById('payment_date').value,
+        paymentMethod: document.getElementById('payment_method').value,
+        paymentTerm: document.getElementById('payment_term').value,
+        amount: amount,
+        remarks: document.getElementById('remarks').value,
+        totalAmount: {{ $order->total_amount }},
+        totalPaid: {{ $order->total_paid }},
+        remainingBalance: remainingBalance - amount
+    };
+    
+    // Submit form via AJAX
+    const formData = new FormData(this);
+    
+    fetch(this.action, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Payment successful - print receipt and close modal
+            printReceipt();
+            closePaymentModal();
+            
+            // Show success message
+            showNotification('Payment added successfully!', 'success');
+            
+            // Reload page to update payment information
+            setTimeout(() => {
+                window.location.reload();
+            }, 2000);
+        } else {
+            // Show error message
+            showNotification(data.message || 'Error adding payment. Please try again.', 'error');
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('Error adding payment. Please try again.', 'error');
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+    });
+});
+
+// Function to print receipt
+function printReceipt() {
+    const data = window.paymentData;
+    if (!data) return;
+    
+    // Get order items from the page
+    const orderItems = [];
+    const itemRows = document.querySelectorAll('tbody tr');
+    itemRows.forEach(row => {
+        const cells = row.querySelectorAll('td');
+        if (cells.length >= 7) {
+            const type = cells[0].querySelector('span')?.textContent || '';
+            const item = cells[1].querySelector('div')?.textContent || '';
+            const quantity = cells[2].textContent || '';
+            const unit = cells[3].textContent || '';
+            const size = cells[4].textContent || '';
+            const unitPrice = cells[5].textContent || '';
+            const subtotal = cells[6].textContent || '';
+            
+            if (type && item) {
+                orderItems.push({
+                    type: type,
+                    item: item,
+                    quantity: quantity,
+                    unit: unit,
+                    size: size,
+                    unitPrice: unitPrice,
+                    subtotal: subtotal
+                });
+            }
+        }
+    });
+    
+    const receiptContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Payment Receipt</title>
+            <style>
+                body { font-family: Arial, sans-serif; margin: 0; padding: 20px; }
+                .receipt { max-width: 400px; margin: 0 auto; }
+                .header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 20px; }
+                .company-name { font-size: 20px; font-weight: bold; margin-bottom: 5px; }
+                .company-address { font-size: 12px; color: #666; }
+                .receipt-title { font-size: 18px; font-weight: bold; text-align: center; margin-bottom: 20px; }
+                .receipt-details { margin-bottom: 20px; }
+                .receipt-details div { margin-bottom: 8px; display: flex; justify-content: space-between; }
+                .receipt-details .label { font-weight: bold; }
+                .receipt-details .value { text-align: right; }
+                .items-section { margin-bottom: 20px; }
+                .items-header { font-weight: bold; text-align: center; margin-bottom: 10px; border-bottom: 1px solid #000; padding-bottom: 5px; }
+                .item-row { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 12px; }
+                .item-name { flex: 1; }
+                .item-qty { width: 40px; text-align: center; }
+                .item-price { width: 60px; text-align: right; }
+                .amount-section { border-top: 1px solid #000; padding-top: 10px; margin-top: 20px; }
+                .amount-section div { margin-bottom: 5px; display: flex; justify-content: space-between; }
+                .total { font-size: 16px; border-top: 2px solid #000; padding-top: 5px; font-weight: bold; }
+                .footer { text-align: center; margin-top: 30px; font-size: 12px; color: #666; }
+                @media print { body { margin: 0; } }
+            </style>
+        </head>
+        <body>
+            <div class="receipt">
+                <div class="header">
+                    <div class="company-name">ECORETECH PRINTING</div>
+                    <div class="company-address">Your Business Address<br>City, Province, Philippines</div>
+                </div>
+                
+                <div class="receipt-title">PAYMENT RECEIPT</div>
+                
+                <div class="receipt-details">
+                    <div><span class="label">Receipt #:</span><span class="value">RCPT-${Date.now()}</span></div>
+                    <div><span class="label">Date:</span><span class="value">${new Date(data.paymentDate).toLocaleDateString()}</span></div>
+                    <div><span class="label">Customer:</span><span class="value">${data.customerName}</span></div>
+                    <div><span class="label">Order #:</span><span class="value">${data.orderId}</span></div>
+                    <div><span class="label">Payment Method:</span><span class="value">${data.paymentMethod}</span></div>
+                    <div><span class="label">Payment Term:</span><span class="value">${data.paymentTerm}</span></div>
+                </div>
+                
+                <div class="items-section">
+                    <div class="items-header">ORDER ITEMS</div>
+                    ${orderItems.map(item => `
+                        <div class="item-row">
+                            <div class="item-name">${item.item} (${item.type})</div>
+                            <div class="item-qty">${item.quantity} ${item.unit}</div>
+                            <div class="item-price">${item.subtotal}</div>
+                        </div>
+                    `).join('')}
+                </div>
+                
+                <div class="amount-section">
+                    <div><span>Total Amount:</span><span>₱${data.totalAmount.toFixed(2)}</span></div>
+                    <div><span>Total Paid (Before):</span><span>₱${data.totalPaid.toFixed(2)}</span></div>
+                    <div><span>Amount Paid (This Payment):</span><span>₱${data.amount.toFixed(2)}</span></div>
+                    <div class="total"><span>Remaining Balance:</span><span>₱${data.remainingBalance.toFixed(2)}</span></div>
+                </div>
+                
+                ${data.remarks ? `<div style="margin-top: 15px; font-size: 12px;"><strong>Remarks:</strong> ${data.remarks}</div>` : ''}
+                
+                <div class="footer">
+                    <div>Thank you for your payment!</div>
+                    <div>Generated on ${new Date().toLocaleString()}</div>
+                </div>
+            </div>
+        </body>
+        </html>
+    `;
+    
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(receiptContent);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+    printWindow.close();
+}
+
+// Function to show notifications
+function showNotification(message, type = 'info') {
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.className = `fixed top-4 right-4 z-50 px-6 py-3 rounded-md shadow-lg text-white ${
+        type === 'success' ? 'bg-green-500' : 
+        type === 'error' ? 'bg-red-500' : 
+        'bg-blue-500'
+    }`;
+    notification.innerHTML = `
+        <div class="flex items-center">
+            <i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle'} mr-2"></i>
+            <span>${message}</span>
+        </div>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Remove notification after 3 seconds
+    setTimeout(() => {
+        notification.remove();
+    }, 3000);
+}
+</script>
+@endsection
