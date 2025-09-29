@@ -12,7 +12,10 @@ class EmployeeController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Employee::with(['job', 'orders']);
+        $showArchived = $request->boolean('archived');
+        $query = $showArchived
+            ? Employee::onlyTrashed()->with(['job', 'orders'])
+            : Employee::with(['job', 'orders']);
 
         // Handle search functionality
         if ($request->has('search')) {
@@ -28,10 +31,10 @@ class EmployeeController extends Controller
             });
         }
 
-        $employees = $query->latest()->paginate(15);
+        $employees = $query->latest()->paginate(15)->appends($request->query());
         $jobs = Job::orderBy('job_title', 'asc')->get();
 
-        return view('admin.employees.index', compact('employees', 'jobs'));
+        return view('admin.employees.index', compact('employees', 'jobs', 'showArchived'));
     }
 
     /**
@@ -189,16 +192,53 @@ class EmployeeController extends Controller
 
             if ($activeOrdersCount > 0) {
                 return redirect()->back()
-                    ->with('error', 'Cannot delete employee with active orders. Please reassign or complete their orders first.');
+                    ->with('error', 'Cannot archive employee with active orders. Please reassign or complete their orders first.');
             }
 
             $employee->delete();
 
             return redirect()->route('admin.employees.index')
-                ->with('success', 'Employee removed successfully!');
+                ->with('success', 'Employee archived successfully!');
         } catch (\Exception $e) {
             return redirect()->back()
-                ->with('error', 'Failed to remove employee. They may have associated records.');
+                ->with('error', 'Failed to archive employee. They may have associated records.');
+        }
+    }
+
+    public function archive(Employee $employee)
+    {
+        try {
+            // Check if employee has active orders
+            $activeOrdersCount = $employee->orders()
+                ->whereIn('order_status', ['On-Process', 'Designing', 'Production', 'For Releasing'])
+                ->count();
+
+            if ($activeOrdersCount > 0) {
+                return redirect()->back()
+                    ->with('error', 'Cannot archive employee with active orders. Please reassign or complete their orders first.');
+            }
+
+            $employee->delete();
+
+            return redirect()->route('admin.employees.index')
+                ->with('success', 'Employee archived successfully!');
+        } catch (\Exception $e) {
+            return redirect()->back()
+                ->with('error', 'Failed to archive employee. They may have associated records.');
+        }
+    }
+
+    public function restore($employeeId)
+    {
+        try {
+            $employee = Employee::withTrashed()->findOrFail($employeeId);
+            $employee->restore();
+
+            return redirect()->route('admin.employees.index')
+                ->with('success', 'Employee restored successfully!');
+        } catch (\Exception $e) {
+            return redirect()->back()
+                ->with('error', 'Failed to restore employee.');
         }
     }
 

@@ -15,7 +15,10 @@ class QuotationController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Quotation::with(['customer', 'details']);
+        $showArchived = $request->boolean('archived');
+        $query = $showArchived
+            ? Quotation::onlyTrashed()->with(['customer', 'details'])
+            : Quotation::with(['customer', 'details']);
 
         if ($request->has('status')) {
             $query->where('status', $request->status);
@@ -30,16 +33,16 @@ class QuotationController extends Controller
             });
         }
 
-        $quotations = $query->latest('quotation_date')->paginate(15);
+        $quotations = $query->latest('quotation_date')->paginate(15)->appends($request->query());
 
-        return view('admin.quotations.index', compact('quotations'));
+        return view('admin.quotations.index', compact('quotations', 'showArchived'));
     }
 
     public function create()
     {
         $customers = Customer::orderBy('customer_firstname')->get();
-        $products = Product::with(['category', 'size', 'unit'])->orderBy('product_name')->get();
-        $services = Service::with(['category', 'size', 'unit'])->orderBy('service_name')->get();
+        $products = Product::with(['category.sizes'])->orderBy('product_name')->get();
+        $services = Service::orderBy('service_name')->get();
         $discountRules = DiscountRule::active()->validAt()->orderBy('min_quantity')->get();
 
         return view('admin.quotations.create', compact('customers', 'products', 'services', 'discountRules'));
@@ -50,6 +53,7 @@ class QuotationController extends Controller
         try {
             // Debug: Log the incoming request data
             \Log::info('Quotation creation request data:', $request->all());
+            \Log::info('Quotation creation attempt started');
 
             $validated = $request->validate([
                 'customer_id' => 'required|exists:customers,customer_id',
@@ -60,10 +64,10 @@ class QuotationController extends Controller
                 'items.*.type' => 'required|in:product,service',
                 'items.*.id' => 'required|integer',
                 'items.*.quantity' => 'required|integer|min:1',
-                'items.*.size' => 'nullable|string',
                 'items.*.unit' => 'nullable|string',
+                'items.*.size' => 'nullable|string',
                 'items.*.price' => 'required|numeric|min:0',
-                'items.*.layout' => 'nullable|boolean',
+                'items.*.layout' => 'nullable|in:on,1,true,false,0',
                 'items.*.layoutPrice' => 'nullable|numeric|min:0',
                 'items.*.discountAmount' => 'nullable|numeric|min:0',
                 'items.*.discountRule' => 'nullable|string',
@@ -77,27 +81,31 @@ class QuotationController extends Controller
                 'notes' => $validated['notes'],
                 'terms_and_conditions' => $validated['terms_and_conditions'],
                 'status' => 'Pending',
+                'total_amount' => 0, // Will be calculated after details
             ]);
 
+            // Process quotation details
             foreach ($validated['items'] as $item) {
-                $subtotal = $item['quantity'] * $item['price'];
+                // Calculate base amount (Quantity × Price)
+                $baseAmount = $item['quantity'] * $item['price'];
 
-                // Add layout price if checked
-                if ($item['layout'] ?? false) {
+                // Apply discount to base amount
+                $discountAmount = $item['discountAmount'] ?? 0;
+                $subtotal = $baseAmount - $discountAmount;
+
+                // Add layout price if checked (after discount)
+                $layoutChecked = in_array($item['layout'] ?? false, ['on', '1', 'true', 1, true]);
+                if ($layoutChecked) {
                     $subtotal += $item['layoutPrice'] ?? 0;
                 }
 
-                // Apply discount
-                $discountAmount = $item['discountAmount'] ?? 0;
-                $subtotal -= $discountAmount;
                 $subtotal = max(0, $subtotal); // Ensure subtotal is not negative
-
-                $totalAmount += $subtotal;
+                $totalAmount += $subtotal; // No VAT for quotations
 
                 $quotation->details()->create([
                     'quantity' => $item['quantity'],
-                    'size' => $item['size'] ?? null,
-                    'unit' => $item['unit'] ?? null,
+                    'unit' => $item['unit'],
+                    'size' => $item['size'],
                     'price' => $item['price'],
                     'subtotal' => $subtotal,
                     'product_id' => $item['type'] === 'product' ? $item['id'] : null,
@@ -105,7 +113,7 @@ class QuotationController extends Controller
                 ]);
             }
 
-            // Update quotation with total amount
+            // Update quotation with final total amount
             $quotation->update(['total_amount' => $totalAmount]);
 
             return redirect()->route('admin.quotations.index')
@@ -135,11 +143,12 @@ class QuotationController extends Controller
     public function edit(Quotation $quotation)
     {
         $customers = Customer::orderBy('customer_firstname')->get();
-        $products = Product::with(['category', 'size', 'unit'])->orderBy('product_name')->get();
-        $services = Service::with(['category', 'size', 'unit'])->orderBy('service_name')->get();
+        $products = Product::with(['category.sizes'])->orderBy('product_name')->get();
+        $services = Service::orderBy('service_name')->get();
+        $discountRules = DiscountRule::active()->validAt()->orderBy('min_quantity')->get();
         $quotation->load(['details']);
 
-        return view('admin.quotations.edit', compact('quotation', 'customers', 'products', 'services'));
+        return view('admin.quotations.edit', compact('quotation', 'customers', 'products', 'services', 'discountRules'));
     }
 
     public function update(Request $request, Quotation $quotation)
@@ -153,10 +162,16 @@ class QuotationController extends Controller
             'items.*.type' => 'required|in:product,service',
             'items.*.id' => 'required|integer',
             'items.*.quantity' => 'required|integer|min:1',
-            'items.*.size' => 'nullable|string',
             'items.*.unit' => 'nullable|string',
+            'items.*.size' => 'nullable|string',
             'items.*.price' => 'required|numeric|min:0',
+            'items.*.layout' => 'nullable|in:on,1,true,false,0',
+            'items.*.layoutPrice' => 'nullable|numeric|min:0',
+            'items.*.discountAmount' => 'nullable|numeric|min:0',
+            'items.*.discountRule' => 'nullable|string',
         ]);
+
+        $totalAmount = 0;
 
         $quotation->update([
             'customer_id' => $validated['customer_id'],
@@ -165,21 +180,40 @@ class QuotationController extends Controller
             'terms_and_conditions' => $validated['terms_and_conditions'],
         ]);
 
+        // Delete existing quotation details
         $quotation->details()->delete();
 
+        // Create new quotation details
         foreach ($validated['items'] as $item) {
-            $subtotal = $item['quantity'] * $item['price'];
+            // Calculate base amount (Quantity × Price)
+            $baseAmount = $item['quantity'] * $item['price'];
+
+            // Apply discount to base amount
+            $discountAmount = $item['discountAmount'] ?? 0;
+            $subtotal = $baseAmount - $discountAmount;
+
+            // Add layout price if checked (after discount)
+            $layoutChecked = in_array($item['layout'] ?? false, ['on', '1', 'true', 1, true]);
+            if ($layoutChecked) {
+                $subtotal += $item['layoutPrice'] ?? 0;
+            }
+
+            $subtotal = max(0, $subtotal); // Ensure subtotal is not negative
+            $totalAmount += $subtotal; // No VAT for quotations
 
             $quotation->details()->create([
                 'quantity' => $item['quantity'],
-                'size' => $item['size'] ?? null,
-                'unit' => $item['unit'] ?? null,
+                'unit' => $item['unit'],
+                'size' => $item['size'],
                 'price' => $item['price'],
                 'subtotal' => $subtotal,
                 'product_id' => $item['type'] === 'product' ? $item['id'] : null,
                 'service_id' => $item['type'] === 'service' ? $item['id'] : null,
             ]);
         }
+
+        // Update quotation with final total amount
+        $quotation->update(['total_amount' => $totalAmount]);
 
         return redirect()->route('admin.quotations.index')
             ->with('success', 'Quotation updated successfully.');
@@ -201,6 +235,23 @@ class QuotationController extends Controller
         $quotation->delete();
 
         return redirect()->route('admin.quotations.index')
-            ->with('success', 'Quotation deleted successfully.');
+            ->with('success', 'Quotation archived successfully.');
+    }
+
+    public function archive(Quotation $quotation)
+    {
+        $quotation->delete();
+
+        return redirect()->route('admin.quotations.index')
+            ->with('success', 'Quotation archived successfully.');
+    }
+
+    public function restore($quotationId)
+    {
+        $quotation = Quotation::withTrashed()->findOrFail($quotationId);
+        $quotation->restore();
+
+        return redirect()->route('admin.quotations.index')
+            ->with('success', 'Quotation restored successfully.');
     }
 }

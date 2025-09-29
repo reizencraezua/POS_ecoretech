@@ -52,23 +52,52 @@
                 <!-- Payment Information -->
                 <div class="bg-white rounded-lg shadow-md p-6">
                     <h3 class="text-lg font-medium text-gray-900 mb-4">Payment Information</h3>
+                    
+                    <!-- Amount Paid - Prominent Display -->
+                    <div class="bg-maroon text-white rounded-lg p-6 mb-6">
+                        <div class="text-center">
+                            <p class="text-sm opacity-90 mb-2">Amount Paid</p>
+                            <p class="text-4xl font-bold">₱{{ number_format($payment->amount_paid, 2) }}</p>
+                            @if($payment->change > 0)
+                                <p class="text-sm mt-2 opacity-90">Change: ₱{{ number_format($payment->change, 2) }}</p>
+                            @endif
+                            @if($payment->balance > 0)
+                                <p class="text-sm mt-2 opacity-90">Remaining Balance: ₱{{ number_format($payment->balance, 2) }}</p>
+                            @else
+                                <p class="text-sm mt-2 opacity-90">Payment Complete</p>
+                            @endif
+                        </div>
+                    </div>
+                    
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <p class="text-sm text-gray-500">Payment Date</p>
                             <p class="font-medium">{{ $payment->payment_date->format('M d, Y') }}</p>
                         </div>
                         <div>
-                            <p class="text-sm text-gray-500">Amount</p>
-                            <p class="font-medium text-lg">₱{{ number_format($payment->amount, 2) }}</p>
+                            <p class="text-sm text-gray-500">Payment Method</p>
+                            <p class="font-medium">{{ $payment->payment_method }}</p>
                         </div>
                         <div>
-                            <p class="text-sm text-gray-500">Payment Method</p>
-                            <p class="font-medium">{{ ucfirst(str_replace('_', ' ', $payment->payment_method)) }}</p>
+                            <p class="text-sm text-gray-500">Payment Term</p>
+                            <p class="font-medium">{{ $payment->payment_term ?? 'N/A' }}</p>
                         </div>
+                        <div>
+                            <p class="text-sm text-gray-500">Receipt Number</p>
+                            <p class="font-medium">{{ $payment->receipt_number }}</p>
+                        </div>
+                        @if($payment->reference_number && in_array(strtolower($payment->payment_method), ['gcash', 'bank transfer']))
                         <div>
                             <p class="text-sm text-gray-500">Reference Number</p>
-                            <p class="font-medium">{{ $payment->reference_number ?? 'N/A' }}</p>
+                            <p class="font-medium text-blue-600">{{ $payment->reference_number }}</p>
                         </div>
+                        @endif
+                        @if($payment->remarks)
+                        <div class="md:col-span-2">
+                            <p class="text-sm text-gray-500">Remarks</p>
+                            <p class="font-medium">{{ $payment->remarks }}</p>
+                        </div>
+                        @endif
                     </div>
                 </div>
 
@@ -91,13 +120,12 @@
                            class="w-full block px-4 py-2 bg-blue-600 text-white text-center rounded-md hover:bg-blue-700">
                             Edit Payment
                         </a>
-                        <form action="{{ route('admin.payments.destroy', $payment) }}" method="POST" class="w-full">
+                        <form action="{{ route('admin.payments.archive', $payment) }}" method="POST" class="w-full">
                             @csrf
-                            @method('DELETE')
                             <button type="submit" 
-                                    class="w-full px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
-                                    onclick="return confirm('Are you sure you want to delete this payment?')">
-                                Delete Payment
+                                    class="w-full px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700"
+                                    onclick="return confirm('Are you sure you want to archive this payment?')">
+                                Archive Payment
                             </button>
                         </form>
                     </div>

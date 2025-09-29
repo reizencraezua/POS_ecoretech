@@ -7,13 +7,18 @@
 
 @section('content')
 <div class="space-y-6" x-data="{ customerModal: false, editModal: false, editingCustomer: null }">
+    <!-- Archive Toggle -->
+    <x-archive-toggle :showArchived="$showArchived" :route="route('admin.customers.index')" />
+    
     <!-- Header Actions -->
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div class="flex items-center space-x-4">
-            <button @click="customerModal = true" class="bg-maroon hover:bg-maroon-dark text-white px-4 py-2 rounded-lg font-medium transition-colors inline-flex items-center">
-                <i class="fas fa-plus mr-2"></i>
-                Add New Customer
-            </button>
+            @if(!$showArchived)
+                <button @click="customerModal = true" class="bg-maroon hover:bg-maroon-dark text-white px-4 py-2 rounded-lg font-medium transition-colors inline-flex items-center">
+                    <i class="fas fa-plus mr-2"></i>
+                    Add New Customer
+                </button>
+            @endif
         </div>
         
         <!-- Search and Filters -->
@@ -89,19 +94,19 @@
                                 <div class="text-sm text-gray-500">{{ $customer->quotations_count ?? 0 }} quotes</div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                                <a href="{{ route('admin.customers.show', $customer) }}" class="text-blue-600 hover:text-blue-900 transition-colors" title="View Details">
-                                    <i class="fas fa-eye"></i>
-                                </a>
-                                <a href="{{ route('admin.customers.edit', $customer) }}" class="text-maroon hover:text-maroon-dark transition-colors" title="Edit Customer">
-                                    <i class="fas fa-edit"></i>
-                                </a>
-                                <form method="POST" action="{{ route('admin.customers.destroy', $customer) }}" class="inline" onsubmit="return confirm('Are you sure you want to delete this customer?')">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="text-red-600 hover:text-red-900 transition-colors" title="Delete Customer">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
-                                </form>
+                                @if($showArchived)
+                                    <x-archive-actions 
+                                        :item="$customer" 
+                                        :archiveRoute="'admin.customers.archive'" 
+                                        :restoreRoute="'admin.customers.restore'" 
+                                        :showRestore="true" />
+                                @else
+                                    <x-archive-actions 
+                                        :item="$customer" 
+                                        :archiveRoute="'admin.customers.archive'" 
+                                        :restoreRoute="'admin.customers.restore'" 
+                                        :showRestore="false" />
+                                @endif
                             </td>
                         </tr>
                     @empty

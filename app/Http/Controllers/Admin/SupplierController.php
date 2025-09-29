@@ -10,7 +10,10 @@ class SupplierController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Supplier::query();
+        $showArchived = $request->boolean('archived');
+        $query = $showArchived
+            ? Supplier::onlyTrashed()
+            : Supplier::query();
 
         if ($request->has('search')) {
             $search = $request->search;
@@ -21,9 +24,9 @@ class SupplierController extends Controller
             });
         }
 
-        $suppliers = $query->latest()->paginate(15);
+        $suppliers = $query->latest()->paginate(15)->appends($request->query());
 
-        return view('admin.suppliers.index', compact('suppliers'));
+        return view('admin.suppliers.index', compact('suppliers', 'showArchived'));
     }
 
     public function create()
@@ -76,6 +79,23 @@ class SupplierController extends Controller
         $supplier->delete();
 
         return redirect()->route('admin.suppliers.index')
-                        ->with('success', 'Supplier deleted successfully.');
+                        ->with('success', 'Supplier archived successfully.');
+    }
+
+    public function archive(Supplier $supplier)
+    {
+        $supplier->delete();
+
+        return redirect()->route('admin.suppliers.index')
+                        ->with('success', 'Supplier archived successfully.');
+    }
+
+    public function restore($supplierId)
+    {
+        $supplier = Supplier::withTrashed()->findOrFail($supplierId);
+        $supplier->restore();
+
+        return redirect()->route('admin.suppliers.index')
+                        ->with('success', 'Supplier restored successfully.');
     }
 }

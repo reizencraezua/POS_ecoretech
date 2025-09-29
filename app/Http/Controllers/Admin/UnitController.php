@@ -10,21 +10,20 @@ class UnitController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Unit::query();
+        $showArchived = $request->boolean('archived');
+        $query = $showArchived
+            ? Unit::onlyTrashed()
+            : Unit::query();
 
         if ($request->has('search')) {
             $search = $request->search;
             $query->where('unit_name', 'like', "%{$search}%")
-                ->orWhere('unit_description', 'like', "%{$search}%");
+                ->orWhere('description', 'like', "%{$search}%");
         }
 
-        if ($request->has('type')) {
-            $query->where('unit_type', $request->type);
-        }
+        $units = $query->orderBy('unit_name')->paginate(15)->appends($request->query());
 
-        $units = $query->orderBy('unit_name')->paginate(15);
-
-        return view('admin.units.index', compact('units'));
+        return view('admin.units.index', compact('units', 'showArchived'));
     }
 
     public function create()
@@ -36,9 +35,8 @@ class UnitController extends Controller
     {
         $validated = $request->validate([
             'unit_name' => 'required|string|max:255',
-            'unit_symbol' => 'nullable|string|max:10',
-            'unit_type' => 'required|in:quantity,area,length,weight',
-            'unit_description' => 'nullable|string',
+            'unit_code' => 'nullable|string|max:10',
+            'description' => 'nullable|string',
             'is_active' => 'boolean',
         ]);
 
@@ -63,9 +61,8 @@ class UnitController extends Controller
     {
         $validated = $request->validate([
             'unit_name' => 'required|string|max:255',
-            'unit_symbol' => 'nullable|string|max:10',
-            'unit_type' => 'required|in:quantity,area,length,weight',
-            'unit_description' => 'nullable|string',
+            'unit_code' => 'nullable|string|max:10',
+            'description' => 'nullable|string',
             'is_active' => 'boolean',
         ]);
 
@@ -80,6 +77,23 @@ class UnitController extends Controller
         $unit->delete();
 
         return redirect()->route('admin.units.index')
-            ->with('success', 'Unit deleted successfully.');
+            ->with('success', 'Unit archived successfully.');
+    }
+
+    public function archive(Unit $unit)
+    {
+        $unit->delete();
+
+        return redirect()->route('admin.units.index')
+            ->with('success', 'Unit archived successfully.');
+    }
+
+    public function restore($unitId)
+    {
+        $unit = Unit::withTrashed()->findOrFail($unitId);
+        $unit->restore();
+
+        return redirect()->route('admin.units.index')
+            ->with('success', 'Unit restored successfully.');
     }
 }

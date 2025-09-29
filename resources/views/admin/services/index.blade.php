@@ -36,14 +36,18 @@
     <!-- Header Actions -->
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div class="flex items-center space-x-4">
-            <button @click="serviceModal = true" class="bg-maroon hover:bg-maroon-dark text-white px-4 py-2 rounded-lg font-medium transition-colors inline-flex items-center">
-                <i class="fas fa-plus mr-2"></i>
-                Add Service
-            </button>
+            @if(!$showArchived)
+                <button @click="serviceModal = true" class="bg-maroon hover:bg-maroon-dark text-white px-4 py-2 rounded-lg font-medium transition-colors inline-flex items-center">
+                    <i class="fas fa-plus mr-2"></i>
+                    Add Service
+                </button>
+            @endif
         </div>
         
-        <!-- Search -->
+        <!-- Search and Archive Toggle -->
         <div class="flex items-center space-x-4">
+            <x-archive-toggle :showArchived="$showArchived" :route="route('admin.services.index')" />
+            
             <form method="GET" class="flex items-center space-x-2">
                 <div class="relative">
                     <input type="text" name="search" value="{{ request('search') }}" placeholder="Search services..." 
@@ -95,19 +99,19 @@
                     <!-- Actions -->
                     <div class="flex items-center justify-between border-t border-gray-200 pt-4">
                         <div class="flex items-center space-x-2">
-                            <a href="{{ route('admin.services.show', $service) }}" class="text-blue-600 hover:text-blue-800 transition-colors" title="View Details">
-                                <i class="fas fa-eye"></i>
-                            </a>
-                            <a href="{{ route('admin.services.edit', $service) }}" class="text-maroon hover:text-maroon-dark transition-colors" title="Edit Service">
-                                <i class="fas fa-edit"></i>
-                            </a>
-                            <form method="POST" action="{{ route('admin.services.destroy', $service) }}" class="inline" onsubmit="return confirm('Are you sure you want to archive this service?')">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" class="text-red-600 hover:text-red-800 transition-colors" title="Archive Service">
-                                    <i class="fas fa-archive"></i>
-                                </button>
-                            </form>
+                            @if($showArchived)
+                                <x-archive-actions 
+                                    :item="$service" 
+                                    :archiveRoute="'admin.services.archive'" 
+                                    :restoreRoute="'admin.services.restore'" 
+                                    :showRestore="true" />
+                            @else
+                                <x-archive-actions 
+                                    :item="$service" 
+                                    :archiveRoute="'admin.services.archive'" 
+                                    :restoreRoute="'admin.services.restore'" 
+                                    :showRestore="false" />
+                            @endif
                         </div>
                         <span class="text-xs text-gray-500">
                             Updated {{ $service->updated_at->diffForHumans() }}

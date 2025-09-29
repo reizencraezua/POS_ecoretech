@@ -11,7 +11,10 @@ class CategoryController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Category::query();
+        $showArchived = $request->boolean('archived');
+        $query = $showArchived
+            ? Category::onlyTrashed()
+            : Category::query();
 
         if ($request->has('search')) {
             $search = $request->search;
@@ -19,9 +22,9 @@ class CategoryController extends Controller
                 ->orWhere('category_description', 'like', "%{$search}%");
         }
 
-        $categories = $query->orderBy('category_name')->paginate(15);
+        $categories = $query->orderBy('category_name')->paginate(15)->appends($request->query());
 
-        return view('admin.categories.index', compact('categories'));
+        return view('admin.categories.index', compact('categories', 'showArchived'));
     }
 
     public function create()
@@ -94,6 +97,23 @@ class CategoryController extends Controller
         $category->delete();
 
         return redirect()->route('admin.categories.index')
-            ->with('success', 'Category deleted successfully.');
+            ->with('success', 'Category archived successfully.');
+    }
+
+    public function archive(Category $category)
+    {
+        $category->delete();
+
+        return redirect()->route('admin.categories.index')
+            ->with('success', 'Category archived successfully.');
+    }
+
+    public function restore($categoryId)
+    {
+        $category = Category::withTrashed()->findOrFail($categoryId);
+        $category->restore();
+
+        return redirect()->route('admin.categories.index')
+            ->with('success', 'Category restored successfully.');
     }
 }

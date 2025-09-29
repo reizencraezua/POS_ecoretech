@@ -46,13 +46,19 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
 		// Customers
 		Route::resource('customers', CustomerController::class);
+		Route::post('customers/{customer}/archive', [CustomerController::class, 'archive'])->name('customers.archive');
+		Route::post('customers/{customer}/restore', [CustomerController::class, 'restore'])->name('customers.restore');
 
 		// Suppliers
 		Route::resource('suppliers', SupplierController::class);
+		Route::post('suppliers/{supplier}/archive', [SupplierController::class, 'archive'])->name('suppliers.archive');
+		Route::post('suppliers/{supplier}/restore', [SupplierController::class, 'restore'])->name('suppliers.restore');
 
 		// Quotations
 		Route::resource('quotations', QuotationController::class);
 		Route::patch('quotations/{quotation}/status', [QuotationController::class, 'updateStatus'])->name('quotations.status');
+		Route::post('quotations/{quotation}/archive', [QuotationController::class, 'archive'])->name('quotations.archive');
+		Route::post('quotations/{quotation}/restore', [QuotationController::class, 'restore'])->name('quotations.restore');
 
 		// Orders (Job Orders)
 		Route::resource('orders', OrderController::class);
@@ -71,8 +77,14 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
 		// Categories, Sizes, Units, Layout Fees
 		Route::resource('categories', CategoryController::class);
+		Route::post('categories/{category}/archive', [CategoryController::class, 'archive'])->name('categories.archive');
+		Route::post('categories/{category}/restore', [CategoryController::class, 'restore'])->name('categories.restore');
 		Route::resource('sizes', SizeController::class);
+		Route::post('sizes/{size}/archive', [SizeController::class, 'archive'])->name('sizes.archive');
+		Route::post('sizes/{size}/restore', [SizeController::class, 'restore'])->name('sizes.restore');
 		Route::resource('units', UnitController::class);
+		Route::post('units/{unit}/archive', [UnitController::class, 'archive'])->name('units.archive');
+		Route::post('units/{unit}/restore', [UnitController::class, 'restore'])->name('units.restore');
 		Route::resource('layout-fees', LayoutFeeController::class);
 		Route::patch('layout-fees/{layoutFee}/activate', [LayoutFeeController::class, 'activate'])->name('layout-fees.activate');
 
@@ -84,12 +96,16 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
 		// Employees
 		Route::resource('employees', EmployeeController::class);
+		Route::post('employees/{employee}/archive', [EmployeeController::class, 'archive'])->name('employees.archive');
+		Route::post('employees/{employee}/restore', [EmployeeController::class, 'restore'])->name('employees.restore');
 		
 		// Jobs
 		Route::resource('jobs', AdminJobController::class);
 
 		// Payments
 		Route::resource('payments', PaymentController::class);
+		Route::post('payments/{payment}/archive', [PaymentController::class, 'archive'])->name('payments.archive');
+		Route::post('payments/{payment}/restore', [PaymentController::class, 'restore'])->name('payments.restore');
 		Route::get('orders/{order}/payments', [PaymentController::class, 'orderPayments'])->name('orders.payments');
 
 		// Delivery

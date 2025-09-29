@@ -22,7 +22,7 @@
             </div>
         </div>
         
-        <form method="POST" action="{{ route('admin.quotations.store') }}" class="p-6" x-data="quotationForm()" x-init="init()">
+        <form method="POST" action="{{ route('admin.quotations.store') }}" class="p-6" x-data="quotationForm()" x-init="init()" @submit="console.log('Form submitted', $data)">
             @csrf
             
             <!-- Quotation Information Section -->
@@ -283,6 +283,7 @@ function quotationForm() {
         totalAmount: 0,
         products: @json($products),
         services: @json($services),
+        customers: @json($customers),
         discountRules: @json($discountRules),
         
         addItem() {
@@ -406,6 +407,11 @@ function quotationForm() {
         },
         
         init() {
+            console.log('Initializing quotation form...');
+            console.log('Products available:', this.products.length);
+            console.log('Services available:', this.services.length);
+            console.log('Customers available:', this.customers.length);
+            
             this.addItem(); // Add first item by default
         }
     }

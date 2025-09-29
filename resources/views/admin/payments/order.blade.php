@@ -60,7 +60,9 @@
                             <td class="px-4 py-3">{{ $payment->payment_date->format('M d, Y') }}</td>
                             <td class="px-4 py-3">{{ $payment->payment_method }}</td>
                             <td class="px-4 py-3">{{ $payment->payment_term }}</td>
-                            <td class="px-4 py-3">₱{{ number_format($payment->amount_paid, 2) }}</td>
+                            <td class="px-4 py-3">
+                                <div class="font-bold text-maroon">₱{{ number_format($payment->amount_paid, 2) }}</div>
+                            </td>
                             <td class="px-4 py-3">₱{{ number_format($payment->change, 2) }}</td>
                             <td class="px-4 py-3">₱{{ number_format($payment->balance, 2) }}</td>
                         </tr>

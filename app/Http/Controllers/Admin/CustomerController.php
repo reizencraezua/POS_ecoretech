@@ -10,7 +10,10 @@ class CustomerController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Customer::query();
+        $showArchived = $request->boolean('archived');
+        $query = $showArchived
+            ? Customer::onlyTrashed()
+            : Customer::query();
 
         if ($request->has('search')) {
             $search = $request->search;
@@ -22,9 +25,9 @@ class CustomerController extends Controller
             });
         }
 
-        $customers = $query->orderBy('customer_id', 'desc')->paginate(15);
+        $customers = $query->orderBy('customer_id', 'desc')->paginate(15)->appends($request->query());
 
-        return view('admin.customers.index', compact('customers'));
+        return view('admin.customers.index', compact('customers', 'showArchived'));
     }
 
     public function create()
@@ -94,6 +97,23 @@ class CustomerController extends Controller
         $customer->delete();
 
         return redirect()->route('admin.customers.index')
-            ->with('success', 'Customer deleted successfully.');
+            ->with('success', 'Customer archived successfully.');
+    }
+
+    public function archive(Customer $customer)
+    {
+        $customer->delete();
+
+        return redirect()->route('admin.customers.index')
+            ->with('success', 'Customer archived successfully.');
+    }
+
+    public function restore($customerId)
+    {
+        $customer = Customer::withTrashed()->findOrFail($customerId);
+        $customer->restore();
+
+        return redirect()->route('admin.customers.index')
+            ->with('success', 'Customer restored successfully.');
     }
 }

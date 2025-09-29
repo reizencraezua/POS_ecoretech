@@ -6,14 +6,19 @@
 
 @section('content')
 <div class="max-w-7xl mx-auto">
+    <!-- Archive Toggle -->
+    <x-archive-toggle :showArchived="$showArchived" :route="route('admin.units.index')" />
+    
     <div class="bg-white rounded-lg shadow-md">
         <div class="px-6 py-4 border-b border-gray-200">
             <div class="flex justify-between items-center">
                 <h2 class="text-xl font-semibold text-gray-900">Units</h2>
-                <a href="{{ route('admin.units.create') }}" 
-                   class="bg-maroon text-white px-4 py-2 rounded-md hover:bg-maroon-dark transition-colors">
-                    <i class="fas fa-plus mr-2"></i>Add Unit
-                </a>
+                @if(!$showArchived)
+                    <a href="{{ route('admin.units.create') }}" 
+                       class="bg-maroon text-white px-4 py-2 rounded-md hover:bg-maroon-dark transition-colors">
+                        <i class="fas fa-plus mr-2"></i>Add Unit
+                    </a>
+                @endif
             </div>
         </div>
 
@@ -82,18 +87,19 @@
                                     @endif
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                    <div class="flex space-x-2">
-                                        <a href="{{ route('admin.units.show', $unit) }}" 
-                                           class="text-blue-600 hover:text-blue-900">View</a>
-                                        <a href="{{ route('admin.units.edit', $unit) }}" 
-                                           class="text-yellow-600 hover:text-yellow-900">Edit</a>
-                                        <form method="POST" action="{{ route('admin.units.destroy', $unit) }}" 
-                                              class="inline" onsubmit="return confirm('Are you sure you want to delete this unit?')">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="text-red-600 hover:text-red-900">Delete</button>
-                                        </form>
-                                    </div>
+                                    @if($showArchived)
+                                        <x-archive-actions 
+                                            :item="$unit" 
+                                            :archiveRoute="'admin.units.archive'" 
+                                            :restoreRoute="'admin.units.restore'" 
+                                            :showRestore="true" />
+                                    @else
+                                        <x-archive-actions 
+                                            :item="$unit" 
+                                            :archiveRoute="'admin.units.archive'" 
+                                            :restoreRoute="'admin.units.restore'" 
+                                            :showRestore="false" />
+                                    @endif
                                 </td>
                             </tr>
                         @endforeach

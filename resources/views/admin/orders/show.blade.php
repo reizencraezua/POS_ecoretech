@@ -269,7 +269,7 @@
                                         <i class="fas fa-check text-green-600 text-sm"></i>
                                     </div>
                                     <div>
-                                        <p class="text-sm font-medium text-gray-900">₱{{ number_format($payment->amount_paid, 2) }}</p>
+                                        <p class="text-lg font-bold text-maroon">₱{{ number_format($payment->amount_paid, 2) }}</p>
                                         <p class="text-xs text-gray-500">{{ $payment->payment_date->format('M d, Y g:i A') }}</p>
                                     </div>
                                 </div>
@@ -414,6 +414,17 @@
                         @enderror
                     </div>
                     
+                    <!-- Reference Number (for GCash and Bank Transfer) -->
+                    <div id="reference_number_field" style="display: none;">
+                        <label for="reference_number" class="block text-sm font-medium text-gray-700 mb-1">Reference Number</label>
+                        <input type="text" name="reference_number" id="reference_number" value="{{ old('reference_number') }}"
+                               placeholder="Transaction ID, reference number, etc."
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon @error('reference_number') border-red-500 @enderror">
+                        @error('reference_number')
+                            <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                        @enderror
+                    </div>
+                    
                     
                     <!-- Payment Term -->
                     <div>
@@ -441,6 +452,22 @@
                             <input type="number" name="amount_paid" id="amount_paid" step="0.01" min="0" max="{{ $order->remaining_balance }}" required
                                    class="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon @error('amount_paid') border-red-500 @enderror"
                                    placeholder="0.00" value="{{ old('amount_paid') }}">
+                        </div>
+                        <div id="downpayment_info" class="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-md text-sm" style="display: none;">
+                            <div class="flex items-center text-blue-700 mb-2">
+                                <i class="fas fa-info-circle mr-2"></i>
+                                <span class="font-medium">Downpayment Information</span>
+                            </div>
+                            <div class="text-blue-800">
+                                <div class="flex justify-between items-center">
+                                    <span>Total Amount:</span>
+                                    <span id="total_amount_display" class="font-semibold">₱0.00</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span>Required Downpayment (50%):</span>
+                                    <span id="downpayment_amount_display" class="font-bold text-lg">₱0.00</span>
+                                </div>
+                            </div>
                         </div>
                         <p class="text-xs text-gray-500 mt-1">Maximum: ₱{{ number_format($order->remaining_balance, 2) }}</p>
                         @error('amount_paid')
@@ -481,6 +508,9 @@ function openPaymentModal() {
     document.getElementById('paymentModal').classList.remove('hidden');
     // Set max amount to remaining balance
     document.getElementById('amount_paid').max = {{ $order->remaining_balance }};
+    // Initialize field visibility
+    toggleReferenceField();
+    toggleDownpaymentInfo();
 }
 
 function closePaymentModal() {
@@ -490,10 +520,102 @@ function closePaymentModal() {
     document.getElementById('payment_date').value = '{{ now()->format('Y-m-d') }}';
 }
 
+// Function to toggle reference number field visibility
+function toggleReferenceField() {
+    const paymentMethodSelect = document.getElementById('payment_method');
+    const referenceNumberField = document.getElementById('reference_number_field');
+    
+    if (paymentMethodSelect && referenceNumberField) {
+        const selectedMethod = paymentMethodSelect.value;
+        if (selectedMethod === 'GCash' || selectedMethod === 'Bank Transfer') {
+            referenceNumberField.style.display = 'block';
+        } else {
+            referenceNumberField.style.display = 'none';
+        }
+    }
+}
+
+// Function to toggle downpayment info visibility
+function toggleDownpaymentInfo() {
+    const paymentTermSelect = document.getElementById('payment_term');
+    const downpaymentInfo = document.getElementById('downpayment_info');
+    const totalAmount = {{ $order->total_amount }};
+    
+    if (paymentTermSelect && downpaymentInfo) {
+        const selectedTerm = paymentTermSelect.value;
+        
+        if (selectedTerm === 'Downpayment') {
+            const expectedDownpayment = totalAmount * 0.5;
+            
+            // Update display elements
+            document.getElementById('total_amount_display').textContent = `₱${totalAmount.toFixed(2)}`;
+            document.getElementById('downpayment_amount_display').textContent = `₱${expectedDownpayment.toFixed(2)}`;
+            
+            downpaymentInfo.style.display = 'block';
+        } else {
+            downpaymentInfo.style.display = 'none';
+        }
+    }
+}
+
+// Function to validate downpayment amount
+function validateDownpayment() {
+    const paymentTermSelect = document.getElementById('payment_term');
+    const amountInput = document.getElementById('amount_paid');
+    const downpaymentInfo = document.getElementById('downpayment_info');
+    const totalAmount = {{ $order->total_amount }};
+    
+    if (paymentTermSelect && amountInput && downpaymentInfo) {
+        const selectedTerm = paymentTermSelect.value;
+        const enteredAmount = parseFloat(amountInput.value);
+        
+        if (selectedTerm === 'Downpayment') {
+            const expectedDownpayment = totalAmount * 0.5;
+            const tolerance = 0.01;
+            
+            if (enteredAmount && Math.abs(enteredAmount - expectedDownpayment) > tolerance) {
+                amountInput.classList.add('border-red-500');
+                amountInput.classList.remove('border-gray-300');
+                downpaymentInfo.classList.remove('bg-blue-50', 'border-blue-200', 'text-blue-700');
+                downpaymentInfo.classList.add('bg-red-50', 'border-red-200', 'text-red-700');
+            } else {
+                amountInput.classList.remove('border-red-500');
+                amountInput.classList.add('border-gray-300');
+                downpaymentInfo.classList.remove('bg-red-50', 'border-red-200', 'text-red-700');
+                downpaymentInfo.classList.add('bg-blue-50', 'border-blue-200', 'text-blue-700');
+            }
+        } else {
+            amountInput.classList.remove('border-red-500');
+            amountInput.classList.add('border-gray-300');
+            downpaymentInfo.classList.remove('bg-red-50', 'border-red-200', 'text-red-700');
+            downpaymentInfo.classList.add('bg-blue-50', 'border-blue-200', 'text-blue-700');
+        }
+    }
+}
+
 // Close modal when clicking outside
 document.getElementById('paymentModal').addEventListener('click', function(e) {
     if (e.target === this) {
         closePaymentModal();
+    }
+});
+
+// Add event listeners for payment method and term changes
+document.addEventListener('DOMContentLoaded', function() {
+    const paymentMethodSelect = document.getElementById('payment_method');
+    const paymentTermSelect = document.getElementById('payment_term');
+    const amountInput = document.getElementById('amount_paid');
+    
+    if (paymentMethodSelect) {
+        paymentMethodSelect.addEventListener('change', toggleReferenceField);
+    }
+    
+    if (paymentTermSelect) {
+        paymentTermSelect.addEventListener('change', toggleDownpaymentInfo);
+    }
+    
+    if (amountInput) {
+        amountInput.addEventListener('input', validateDownpayment);
     }
 });
 
@@ -503,10 +625,23 @@ document.getElementById('paymentForm').addEventListener('submit', function(e) {
     
     const amount = parseFloat(document.getElementById('amount_paid').value);
     const remainingBalance = {{ $order->remaining_balance }};
+    const paymentTerm = document.getElementById('payment_term').value;
+    const totalAmount = {{ $order->total_amount }};
     
     if (amount > remainingBalance) {
         alert('Payment amount cannot exceed remaining balance of ₱' + remainingBalance.toFixed(2));
         return false;
+    }
+    
+    // Validate downpayment amount
+    if (paymentTerm === 'Downpayment') {
+        const expectedDownpayment = totalAmount * 0.5;
+        const tolerance = 0.01;
+        
+        if (Math.abs(amount - expectedDownpayment) > tolerance) {
+            alert('Downpayment must be exactly 50% of the total amount (₱' + expectedDownpayment.toFixed(2) + ')');
+            return false;
+        }
     }
     
     // Show loading state
@@ -523,6 +658,7 @@ document.getElementById('paymentForm').addEventListener('submit', function(e) {
         paymentMethod: document.getElementById('payment_method').value,
         paymentTerm: document.getElementById('payment_term').value,
         amount: amount,
+        referenceNumber: document.getElementById('reference_number').value,
         remarks: document.getElementById('remarks').value,
         totalAmount: {{ $order->total_amount }},
         totalPaid: {{ $order->total_paid }},
@@ -647,6 +783,7 @@ function printReceipt() {
                     <div><span class="label">Order #:</span><span class="value">${data.orderId}</span></div>
                     <div><span class="label">Payment Method:</span><span class="value">${data.paymentMethod}</span></div>
                     <div><span class="label">Payment Term:</span><span class="value">${data.paymentTerm}</span></div>
+                    ${data.referenceNumber ? `<div><span class="label">Reference #:</span><span class="value">${data.referenceNumber}</span></div>` : ''}
                 </div>
                 
                 <div class="items-section">

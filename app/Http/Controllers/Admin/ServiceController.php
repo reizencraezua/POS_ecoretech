@@ -15,7 +15,10 @@ class ServiceController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Service::with(['category', 'size', 'unit']);
+        $showArchived = $request->boolean('archived');
+        $query = $showArchived
+            ? Service::with(['category', 'size', 'unit'])->onlyTrashed()
+            : Service::with(['category', 'size', 'unit']);
 
         // Handle search functionality
         if ($request->has('search') && $request->search) {
@@ -28,9 +31,9 @@ class ServiceController extends Controller
         $services = $query->orderBy('service_id', 'asc')->paginate(9);
 
         // Preserve search parameters in pagination
-        $services->appends($request->only('search'));
+        $services->appends($request->query());
 
-        return view('admin.services.index', compact('services'));
+        return view('admin.services.index', compact('services', 'showArchived'));
     }
 
     /**

@@ -36,14 +36,18 @@
 	<!-- Header Actions -->
 	<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
 		<div class="flex items-center space-x-4">
-			<button @click="productModal = true" class="bg-maroon hover:bg-maroon-dark text-white px-4 py-2 rounded-lg font-medium transition-colors inline-flex items-center">
-				<i class="fas fa-plus mr-2"></i>
-				Add Product
-			</button>
+			@if(!$showArchived)
+				<button @click="productModal = true" class="bg-maroon hover:bg-maroon-dark text-white px-4 py-2 rounded-lg font-medium transition-colors inline-flex items-center">
+					<i class="fas fa-plus mr-2"></i>
+					Add Product
+				</button>
+			@endif
 		</div>
 		
-		<!-- Search -->
+		<!-- Search and Archive Toggle -->
 		<div class="flex items-center space-x-4">
+			<x-archive-toggle :showArchived="$showArchived" :route="route('admin.products.index')" />
+			
 			<form method="GET" class="flex items-center space-x-2">
 				<div class="relative">
 					<input type="text" name="search" value="{{ request('search') }}" placeholder="Search products..." 

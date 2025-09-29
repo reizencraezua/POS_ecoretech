@@ -126,60 +126,7 @@
                 </div>
             </div>
 
-            <!-- Category and Specifications -->
-            <div class="mb-8">
-                <h3 class="text-lg font-medium text-gray-900 mb-4 border-b border-gray-200 pb-2">Category and Specifications</h3>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div>
-                        <label for="category_id" class="block text-sm font-medium text-gray-700 mb-1">Category</label>
-                        <select name="category_id" id="category_id"
-                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon @error('category_id') border-red-500 @enderror">
-                            <option value="">Select Category</option>
-                            @foreach($categories as $category)
-                                <option value="{{ $category->category_id }}" {{ old('category_id', $product->category_id) == $category->category_id ? 'selected' : '' }}>
-                                    {{ $category->category_name }}
-                                </option>
-                            @endforeach
-                        </select>
-                        @error('category_id')
-                            <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
-                        @enderror
-                    </div>
-                    
-                    <div>
-                        <label for="size_id" class="block text-sm font-medium text-gray-700 mb-1">Size</label>
-                        <select name="size_id" id="size_id"
-                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon @error('size_id') border-red-500 @enderror">
-                            <option value="">Select Size</option>
-                            @foreach($sizes as $size)
-                                <option value="{{ $size->size_id }}" {{ old('size_id', $product->size_id) == $size->size_id ? 'selected' : '' }}>
-                                    {{ $size->size_name }}
-                                </option>
-                            @endforeach
-                        </select>
-                        @error('size_id')
-                            <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
-                        @enderror
-                    </div>
-                    
-                    <div>
-                        <label for="unit_id" class="block text-sm font-medium text-gray-700 mb-1">Unit</label>
-                        <select name="unit_id" id="unit_id"
-                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon @error('unit_id') border-red-500 @enderror">
-                            <option value="">Select Unit</option>
-                            @foreach($units as $unit)
-                                <option value="{{ $unit->unit_id }}" {{ old('unit_id', $product->unit_id) == $unit->unit_id ? 'selected' : '' }}>
-                                    {{ $unit->unit_name }}
-                                </option>
-                            @endforeach
-                        </select>
-                        @error('unit_id')
-                            <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
-                        @enderror
-                    </div>
-                </div>
-            </div>
-
+           
             <!-- Form Actions -->
             <div class="flex items-center justify-end space-x-4 border-t border-gray-200 pt-6">
                 <a href="{{ route('admin.products.show', $product) }}" class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors">

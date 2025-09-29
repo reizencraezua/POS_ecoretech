@@ -10,7 +10,10 @@ class ProductController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Product::with(['category', 'size', 'unit']);
+        $showArchived = $request->boolean('archived');
+        $query = $showArchived
+            ? Product::with(['category', 'size', 'unit'])->onlyTrashed()
+            : Product::with(['category', 'size', 'unit']);
 
         if ($request->has('search')) {
             $search = $request->search;
@@ -21,8 +24,9 @@ class ProductController extends Controller
         }
 
         $products = $query->orderBy('product_id', 'asc')->paginate(15);
+        $products->appends($request->query());
 
-        return view('admin.products.index', compact('products'));
+        return view('admin.products.index', compact('products', 'showArchived'));
     }
 
     public function create()

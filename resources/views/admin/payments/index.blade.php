@@ -6,13 +6,18 @@
 
 @section('content')
 <div class="space-y-6">
+    <!-- Archive Toggle -->
+    <x-archive-toggle :showArchived="$showArchived" :route="route('admin.payments.index')" />
+    
     <!-- Header Actions -->
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div class="flex items-center space-x-4">
-            <a href="{{ route('admin.payments.create') }}" class="bg-maroon hover:bg-maroon-dark text-white px-4 py-2 rounded-lg font-medium transition-colors inline-flex items-center">
-                <i class="fas fa-plus mr-2"></i>
-                Record Payment
-            </a>
+            @if(!$showArchived)
+                <a href="{{ route('admin.payments.create') }}" class="bg-maroon hover:bg-maroon-dark text-white px-4 py-2 rounded-lg font-medium transition-colors inline-flex items-center">
+                    <i class="fas fa-plus mr-2"></i>
+                    Record Payment
+                </a>
+            @endif
         </div>
         
         <!-- Search and Filters -->
@@ -49,6 +54,11 @@
             <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">
                     <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Receipt</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Method</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                     </tr>
@@ -101,12 +111,14 @@
                                 </span>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm font-medium text-gray-900">₱{{ number_format($payment->amount_paid, 2) }}</div>
+                                <div class="text-lg font-bold text-maroon">₱{{ number_format($payment->amount_paid, 2) }}</div>
                                 @if($payment->change > 0)
                                     <div class="text-sm text-gray-500">Change: ₱{{ number_format($payment->change, 2) }}</div>
                                 @endif
                                 @if($payment->balance > 0)
-                                    <div class="text-sm text-red-600">Balance: ₱{{ number_format($payment->balance, 2) }}</div>
+                                    <div class="text-sm text-red-600 font-medium">Balance: ₱{{ number_format($payment->balance, 2) }}</div>
+                                @else
+                                    <div class="text-sm text-green-600 font-medium">Fully Paid</div>
                                 @endif
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
@@ -117,10 +129,20 @@
                                 @endif
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                                <a href="{{ route('admin.payments.show', $payment) }}" class="text-blue-600 hover:text-blue-900 transition-colors">
-                                    <i class="fas fa-eye"></i>
-                                </a>
-                                <button onclick="printReceipt({{ $payment->payment_id }})" class="text-maroon hover:text-maroon-dark transition-colors">
+                                @if($showArchived)
+                                    <x-archive-actions 
+                                        :item="$payment" 
+                                        :archiveRoute="'admin.payments.archive'" 
+                                        :restoreRoute="'admin.payments.restore'" 
+                                        :showRestore="true" />
+                                @else
+                                    <x-archive-actions 
+                                        :item="$payment" 
+                                        :archiveRoute="'admin.payments.archive'" 
+                                        :restoreRoute="'admin.payments.restore'" 
+                                        :showRestore="false" />
+                                @endif
+                                <button onclick="printReceipt({{ $payment->payment_id }})" class="text-maroon hover:text-maroon-dark transition-colors" title="Print Receipt">
                                     <i class="fas fa-print"></i>
                                 </button>
                             </td>
