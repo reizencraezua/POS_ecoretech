@@ -246,9 +246,10 @@ class OrderController extends Controller
         $employees = Employee::with('job')->orderBy('employee_firstname')->get();
         $products = Product::orderBy('product_name')->get();
         $services = Service::orderBy('service_name')->get();
+        $discountRules = DiscountRule::active()->validAt()->orderBy('min_quantity')->get();
         $order->load(['details']);
 
-        return view('admin.orders.edit', compact('order', 'customers', 'employees', 'products', 'services'));
+        return view('admin.orders.edit', compact('order', 'customers', 'employees', 'products', 'services', 'discountRules'));
     }
 
     public function update(Request $request, Order $order)

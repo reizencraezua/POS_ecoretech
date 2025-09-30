@@ -219,30 +219,38 @@
                 <div class="p-6">
                     <div class="space-y-3">
                         <div class="flex justify-between">
-                            <span class="text-gray-600">Number of Items:</span>
+                            <span class="text-gray-600">No. of items: (quantity)</span>
                             <span class="font-medium">{{ $order->details->sum('quantity') }}</span>
                         </div>
                         
                         <div class="flex justify-between">
-                            <span class="text-gray-600">Subtotal:</span>
+                            <span class="text-gray-600">Layout Fees: (layout fee)</span>
+                            <span class="font-medium">₱{{ number_format($order->layout_fees, 2) }}</span>
+                        </div>
+                        
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Base Amount: (Subtotal - VAT Tax)</span>
                             <span class="font-medium">₱{{ number_format(($order->total_amount / 1.12), 2) }}</span>
                         </div>
+                        
                         <div class="flex justify-between">
-                            <span class="text-gray-600">VAT Tax:</span>
+                            <span class="text-gray-600">VAT Tax: (Sub total * .12)</span>
                             <span class="font-medium">₱{{ number_format(($order->total_amount * 0.12), 2) }}</span>
                         </div>
+                        
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Sub Total: (Quantity * Unit Price)</span>
+                            <span class="font-medium">₱{{ number_format($order->total_amount, 2) }}</span>
+                        </div>
+                        
                         <div class="flex justify-between">
                             <span class="text-gray-600">Order Discount:</span>
                             <span class="font-medium text-green-600">-₱{{ number_format($order->order_discount_amount, 2) }}</span>
                         </div>
-                        <div class="flex justify-between">
-                            <span class="text-gray-600">Layout Fees:</span>
-                            <span class="font-medium">₱{{ number_format($order->layout_fees, 2) }}</span>
-                        </div>
                         
                         <hr class="border-gray-200">
                         <div class="flex justify-between text-lg font-bold">
-                            <span>TOTAL AMOUNT:</span>
+                            <span>FINAL TOTAL AMOUNT: (Sub total - discount) + layout fee</span>
                             <span>₱{{ number_format($order->final_total_amount, 2) }}</span>
                         </div>
                     </div>
@@ -426,15 +434,8 @@
                 <input type="hidden" name="order_id" value="{{ $order->order_id }}">
                 
                 <div class="space-y-4">
-                    <!-- Payment Date -->
-                    <div>
-                        <label for="payment_date" class="block text-sm font-medium text-gray-700 mb-1">Payment Date *</label>
-                        <input type="date" name="payment_date" id="payment_date" value="{{ now()->format('Y-m-d') }}" required
-                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon @error('payment_date') border-red-500 @enderror">
-                        @error('payment_date')
-                            <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
-                        @enderror
-                    </div>
+                    <!-- Payment Date (Hidden) -->
+                    <input type="hidden" name="payment_date" id="payment_date" value="{{ now()->format('Y-m-d') }}">
                     
                     <!-- Payment Method -->
                     <div>
@@ -471,9 +472,10 @@
                         <select name="payment_term" id="payment_term" required
                                 class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon @error('payment_term') border-red-500 @enderror">
                             <option value="">Select Term</option>
+                            @if(!$order->payments->where('payment_term', 'Downpayment')->count())
                             <option value="Downpayment" {{ old('payment_term') == 'Downpayment' ? 'selected' : '' }}>Downpayment</option>
+                            @endif
                             <option value="Initial" {{ old('payment_term') == 'Initial' ? 'selected' : '' }}>Initial</option>
-                            <option value="Partial" {{ old('payment_term') == 'Partial' ? 'selected' : '' }}>Partial</option>
                             <option value="Full" {{ old('payment_term') == 'Full' ? 'selected' : '' }}>Full</option>
                         </select>
                         @error('payment_term')
@@ -578,12 +580,14 @@ function toggleReferenceField() {
 function toggleDownpaymentInfo() {
     const paymentTermSelect = document.getElementById('payment_term');
     const downpaymentInfo = document.getElementById('downpayment_info');
-    const totalAmount = {{ $order->final_total_amount }};
+    const totalAmount = {{ $order->total_amount }};
+    const hasDownpayment = {{ $order->payments->where('payment_term', 'Downpayment')->count() ? 'true' : 'false' }};
     
     if (paymentTermSelect && downpaymentInfo) {
         const selectedTerm = paymentTermSelect.value;
         
-        if (selectedTerm === 'Downpayment') {
+        // Only show downpayment info if downpayment option is available and selected
+        if (selectedTerm === 'Downpayment' && !hasDownpayment) {
             const expectedDownpayment = totalAmount * 0.5;
             
             // Update display elements
@@ -603,12 +607,14 @@ function validateDownpayment() {
     const amountInput = document.getElementById('amount_paid');
     const downpaymentInfo = document.getElementById('downpayment_info');
     const totalAmount = {{ $order->total_amount }};
+    const hasDownpayment = {{ $order->payments->where('payment_term', 'Downpayment')->count() ? 'true' : 'false' }};
     
     if (paymentTermSelect && amountInput && downpaymentInfo) {
         const selectedTerm = paymentTermSelect.value;
         const enteredAmount = parseFloat(amountInput.value);
         
-        if (selectedTerm === 'Downpayment') {
+        // Only validate downpayment if it's available and selected
+        if (selectedTerm === 'Downpayment' && !hasDownpayment) {
             const expectedDownpayment = totalAmount * 0.5;
             const tolerance = 0.01;
             
@@ -672,8 +678,9 @@ document.getElementById('paymentForm').addEventListener('submit', function(e) {
         return false;
     }
     
-    // Validate downpayment amount
-    if (paymentTerm === 'Downpayment') {
+    // Validate downpayment amount (only if downpayment is available)
+    const hasDownpayment = {{ $order->payments->where('payment_term', 'Downpayment')->count() ? 'true' : 'false' }};
+    if (paymentTerm === 'Downpayment' && !hasDownpayment) {
         const expectedDownpayment = totalAmount * 0.5;
         const tolerance = 0.01;
         
@@ -683,26 +690,10 @@ document.getElementById('paymentForm').addEventListener('submit', function(e) {
         }
     }
     
-    // Show loading state
+    // Disable submit button to prevent double submission
     const submitBtn = this.querySelector('button[type="submit"]');
-    const originalText = submitBtn.innerHTML;
-    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Processing...';
     submitBtn.disabled = true;
     
-    // Store form data for receipt
-    window.paymentData = {
-        orderId: '{{ $order->order_id }}',
-        customerName: '{{ $order->customer->display_name }}',
-        paymentDate: document.getElementById('payment_date').value,
-        paymentMethod: document.getElementById('payment_method').value,
-        paymentTerm: document.getElementById('payment_term').value,
-        amount: amount,
-        referenceNumber: document.getElementById('reference_number').value,
-        remarks: document.getElementById('remarks').value,
-        totalAmount: {{ $order->total_amount }},
-        totalPaid: {{ $order->total_paid }},
-        remainingBalance: remainingBalance - amount
-    };
     
     // Submit form via AJAX
     const formData = new FormData(this);
@@ -718,8 +709,7 @@ document.getElementById('paymentForm').addEventListener('submit', function(e) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            // Payment successful - print receipt and close modal
-            printReceipt();
+            // Payment successful - close modal
             closePaymentModal();
             
             // Show success message
@@ -732,135 +722,16 @@ document.getElementById('paymentForm').addEventListener('submit', function(e) {
         } else {
             // Show error message
             showNotification(data.message || 'Error adding payment. Please try again.', 'error');
-            submitBtn.innerHTML = originalText;
             submitBtn.disabled = false;
         }
     })
     .catch(error => {
         console.error('Error:', error);
         showNotification('Error adding payment. Please try again.', 'error');
-        submitBtn.innerHTML = originalText;
         submitBtn.disabled = false;
     });
 });
 
-// Function to print receipt
-function printReceipt() {
-    const data = window.paymentData;
-    if (!data) return;
-    
-    // Get order items from the page
-    const orderItems = [];
-    const itemRows = document.querySelectorAll('tbody tr');
-    itemRows.forEach(row => {
-        const cells = row.querySelectorAll('td');
-        if (cells.length >= 7) {
-            const type = cells[0].querySelector('span')?.textContent || '';
-            const item = cells[1].querySelector('div')?.textContent || '';
-            const quantity = cells[2].textContent || '';
-            const unit = cells[3].textContent || '';
-            const size = cells[4].textContent || '';
-            const unitPrice = cells[5].textContent || '';
-            const subtotal = cells[6].textContent || '';
-            
-            if (type && item) {
-                orderItems.push({
-                    type: type,
-                    item: item,
-                    quantity: quantity,
-                    unit: unit,
-                    size: size,
-                    unitPrice: unitPrice,
-                    subtotal: subtotal
-                });
-            }
-        }
-    });
-    
-    const receiptContent = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <title>Payment Receipt</title>
-            <style>
-                body { font-family: Arial, sans-serif; margin: 0; padding: 20px; }
-                .receipt { max-width: 400px; margin: 0 auto; }
-                .header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 20px; }
-                .company-name { font-size: 20px; font-weight: bold; margin-bottom: 5px; }
-                .company-address { font-size: 12px; color: #666; }
-                .receipt-title { font-size: 18px; font-weight: bold; text-align: center; margin-bottom: 20px; }
-                .receipt-details { margin-bottom: 20px; }
-                .receipt-details div { margin-bottom: 8px; display: flex; justify-content: space-between; }
-                .receipt-details .label { font-weight: bold; }
-                .receipt-details .value { text-align: right; }
-                .items-section { margin-bottom: 20px; }
-                .items-header { font-weight: bold; text-align: center; margin-bottom: 10px; border-bottom: 1px solid #000; padding-bottom: 5px; }
-                .item-row { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 12px; }
-                .item-name { flex: 1; }
-                .item-qty { width: 40px; text-align: center; }
-                .item-price { width: 60px; text-align: right; }
-                .amount-section { border-top: 1px solid #000; padding-top: 10px; margin-top: 20px; }
-                .amount-section div { margin-bottom: 5px; display: flex; justify-content: space-between; }
-                .total { font-size: 16px; border-top: 2px solid #000; padding-top: 5px; font-weight: bold; }
-                .footer { text-align: center; margin-top: 30px; font-size: 12px; color: #666; }
-                @media print { body { margin: 0; } }
-            </style>
-        </head>
-        <body>
-            <div class="receipt">
-                <div class="header">
-                    <div class="company-name">ECORETECH PRINTING</div>
-                    <div class="company-address">Your Business Address<br>City, Province, Philippines</div>
-                </div>
-                
-                <div class="receipt-title">PAYMENT RECEIPT</div>
-                
-                <div class="receipt-details">
-                    <div><span class="label">Receipt #:</span><span class="value">RCPT-${Date.now()}</span></div>
-                    <div><span class="label">Date:</span><span class="value">${new Date(data.paymentDate).toLocaleDateString()}</span></div>
-                    <div><span class="label">Customer:</span><span class="value">${data.customerName}</span></div>
-                    <div><span class="label">Order #:</span><span class="value">${data.orderId}</span></div>
-                    <div><span class="label">Payment Method:</span><span class="value">${data.paymentMethod}</span></div>
-                    <div><span class="label">Payment Term:</span><span class="value">${data.paymentTerm}</span></div>
-                    ${data.referenceNumber ? `<div><span class="label">Reference #:</span><span class="value">${data.referenceNumber}</span></div>` : ''}
-                </div>
-                
-                <div class="items-section">
-                    <div class="items-header">ORDER ITEMS</div>
-                    ${orderItems.map(item => `
-                        <div class="item-row">
-                            <div class="item-name">${item.item} (${item.type})</div>
-                            <div class="item-qty">${item.quantity} ${item.unit}</div>
-                            <div class="item-price">${item.subtotal}</div>
-                        </div>
-                    `).join('')}
-                </div>
-                
-                <div class="amount-section">
-                    <div><span>Total Amount:</span><span>₱${data.totalAmount.toFixed(2)}</span></div>
-                    <div><span>Total Paid (Before):</span><span>₱${data.totalPaid.toFixed(2)}</span></div>
-                    <div><span>Amount Paid (This Payment):</span><span>₱${data.amount.toFixed(2)}</span></div>
-                    <div class="total"><span>Remaining Balance:</span><span>₱${data.remainingBalance.toFixed(2)}</span></div>
-                </div>
-                
-                ${data.remarks ? `<div style="margin-top: 15px; font-size: 12px;"><strong>Remarks:</strong> ${data.remarks}</div>` : ''}
-                
-                <div class="footer">
-                    <div>Thank you for your payment!</div>
-                    <div>Generated on ${new Date().toLocaleString()}</div>
-                </div>
-            </div>
-        </body>
-        </html>
-    `;
-    
-    const printWindow = window.open('', '_blank');
-    printWindow.document.write(receiptContent);
-    printWindow.document.close();
-    printWindow.focus();
-    printWindow.print();
-    printWindow.close();
-}
 
 // Function to show notifications
 function showNotification(message, type = 'info') {
