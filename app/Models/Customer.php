@@ -45,6 +45,9 @@ class Customer extends Model
 
     public function getDisplayNameAttribute()
     {
-        return $this->business_name ?: $this->full_name;
+        if ($this->business_name) {
+            return $this->full_name . ' - ' . $this->business_name;
+        }
+        return $this->full_name;
     }
 }

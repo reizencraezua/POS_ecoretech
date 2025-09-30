@@ -34,6 +34,15 @@ class OrderController extends Controller
             });
         }
 
+        // Date filtering
+        if ($request->has('start_date')) {
+            $query->whereDate('order_date', '>=', $request->start_date);
+        }
+
+        if ($request->has('end_date')) {
+            $query->whereDate('order_date', '<=', $request->end_date);
+        }
+
         $orders = $query->latest('order_date')->paginate(15)->appends($request->query());
 
         return view('admin.orders.index', compact('orders', 'showArchived'));
@@ -72,8 +81,6 @@ class OrderController extends Controller
                 'items.*.price' => 'required|numeric|min:0',
                 'items.*.layout' => 'nullable|in:on,1,true,false,0',
                 'items.*.layoutPrice' => 'nullable|numeric|min:0',
-                'items.*.discountAmount' => 'nullable|numeric|min:0',
-                'items.*.discountRule' => 'nullable|string',
                 // optional initial payment
                 'payment.payment_date' => 'nullable|date',
                 'payment.payment_method' => 'nullable|in:Cash,GCash,Bank Transfer,Check,Credit Card',
@@ -96,33 +103,87 @@ class OrderController extends Controller
                 'layout_design_fee' => 0,
             ]);
 
-            // Process order details
+            // Group items by product for discount calculation
+            $productGroups = [];
+            foreach ($validated['items'] as $item) {
+                if ($item['type'] === 'product') {
+                    $productId = $item['id'];
+                    if (!isset($productGroups[$productId])) {
+                        $productGroups[$productId] = [];
+                    }
+                    $productGroups[$productId][] = $item;
+                }
+            }
+
+            // Calculate discounts for each product group
+            $productDiscounts = [];
+            foreach ($productGroups as $productId => $items) {
+                $totalQuantity = array_sum(array_column($items, 'quantity'));
+                $totalSubtotal = 0;
+                
+                foreach ($items as $item) {
+                    $baseAmount = $item['quantity'] * $item['price'];
+                    $layoutChecked = in_array($item['layout'] ?? false, ['on', '1', 'true', 1, true]);
+                    $subtotal = $baseAmount;
+                    if ($layoutChecked) {
+                        $subtotal += $item['layoutPrice'] ?? 0;
+                    }
+                    $totalSubtotal += $subtotal;
+                }
+                
+                // Calculate discount for this product group
+                $discount = $this->calculateProductDiscount($totalSubtotal, $totalQuantity);
+                $productDiscounts[$productId] = $discount;
+            }
+
+            // Process order details with product discounts
             foreach ($validated['items'] as $item) {
                 // Calculate base amount (Quantity × Price)
                 $baseAmount = $item['quantity'] * $item['price'];
 
-                // Apply discount to base amount
-                $discountAmount = $item['discountAmount'] ?? 0;
-                $subtotal = $baseAmount - $discountAmount;
-
-                // Add layout price if checked (after discount)
+                // Add layout price if checked
                 $layoutChecked = in_array($item['layout'] ?? false, ['on', '1', 'true', 1, true]);
+                $subtotal = $baseAmount;
                 if ($layoutChecked) {
                     $subtotal += $item['layoutPrice'] ?? 0;
                 }
 
-                $subtotal = max(0, $subtotal); // Ensure subtotal is not negative
-                $vat = $subtotal * 0.12;
-                $totalAmount += $subtotal + $vat; // Add VAT to total
+                // Apply product discount if applicable
+                $itemDiscount = 0;
+                if ($item['type'] === 'product' && isset($productDiscounts[$item['id']])) {
+                    $productId = $item['id'];
+                    $productItems = $productGroups[$productId];
+                    $productTotalSubtotal = 0;
+                    
+                    // Calculate total subtotal for this product group
+                    foreach ($productItems as $productItem) {
+                        $productBaseAmount = $productItem['quantity'] * $productItem['price'];
+                        $productLayoutChecked = in_array($productItem['layout'] ?? false, ['on', '1', 'true', 1, true]);
+                        $productSubtotal = $productBaseAmount;
+                        if ($productLayoutChecked) {
+                            $productSubtotal += $productItem['layoutPrice'] ?? 0;
+                        }
+                        $productTotalSubtotal += $productSubtotal;
+                    }
+                    
+                    // Distribute discount proportionally
+                    if ($productTotalSubtotal > 0) {
+                        $proportion = $subtotal / $productTotalSubtotal;
+                        $itemDiscount = $productDiscounts[$productId] * $proportion;
+                    }
+                }
+
+                $finalSubtotal = max(0, $subtotal - $itemDiscount); // Apply discount
+                $totalAmount += $finalSubtotal; // Add to total
 
                 $order->details()->create([
                     'quantity' => $item['quantity'],
                     'unit' => $item['unit'],
                     'size' => $item['size'],
                     'price' => $item['price'],
-                    'subtotal' => $subtotal,
-                    'vat' => $vat,
-                    'discount' => $discountAmount,
+                    'subtotal' => $finalSubtotal, // Store final subtotal
+                    'vat' => 0, // No VAT
+                    'discount' => $itemDiscount,
                     'layout' => in_array($item['layout'] ?? false, ['on', '1', 'true', 1, true]),
                     'layout_price' => $item['layoutPrice'] ?? 0,
                     'product_id' => $item['type'] === 'product' ? $item['id'] : null,
@@ -130,8 +191,25 @@ class OrderController extends Controller
                 ]);
             }
 
+            // Calculate total amount (items + layout fees - product discounts)
+            $layoutDesignFee = $order->layout_design_fee ?? 0;
+            $totalAmount = $totalAmount + $layoutDesignFee;
+            
+            // Calculate VAT (12% of total amount)
+            $vatAmount = $totalAmount * 0.12;
+            
+            // Calculate order discount based on total quantity
+            $totalQuantity = array_sum(array_column($validated['items'], 'quantity'));
+            $orderDiscount = $this->calculateOrderDiscount($totalAmount, $totalQuantity);
+            
+            // Subtotal = Total Amount - VAT Tax
+            $subtotal = $totalAmount - $vatAmount;
+            
+            // Final total amount is the original total amount
+            $finalTotalAmount = $totalAmount;
+            
             // Update order with final total amount
-            $order->update(['total_amount' => $totalAmount]);
+            $order->update(['total_amount' => $finalTotalAmount]);
 
             // Optional initial payment at creation
             if (!empty($validated['payment']['amount_paid'])) {
@@ -221,8 +299,6 @@ class OrderController extends Controller
             'items.*.price' => 'required|numeric|min:0',
             'items.*.layout' => 'nullable|in:on,1,true,false,0',
             'items.*.layoutPrice' => 'nullable|numeric|min:0',
-            'items.*.discountAmount' => 'nullable|numeric|min:0',
-            'items.*.discountRule' => 'nullable|string',
         ]);
 
         $totalAmount = 0;
@@ -240,33 +316,87 @@ class OrderController extends Controller
         // Delete existing order details
         $order->details()->delete();
 
-        // Create new order details
+        // Group items by product for discount calculation
+        $productGroups = [];
+        foreach ($validated['items'] as $item) {
+            if ($item['type'] === 'product') {
+                $productId = $item['id'];
+                if (!isset($productGroups[$productId])) {
+                    $productGroups[$productId] = [];
+                }
+                $productGroups[$productId][] = $item;
+            }
+        }
+
+        // Calculate discounts for each product group
+        $productDiscounts = [];
+        foreach ($productGroups as $productId => $items) {
+            $totalQuantity = array_sum(array_column($items, 'quantity'));
+            $totalSubtotal = 0;
+            
+            foreach ($items as $item) {
+                $baseAmount = $item['quantity'] * $item['price'];
+                $layoutChecked = in_array($item['layout'] ?? false, ['on', '1', 'true', 1, true]);
+                $subtotal = $baseAmount;
+                if ($layoutChecked) {
+                    $subtotal += $item['layoutPrice'] ?? 0;
+                }
+                $totalSubtotal += $subtotal;
+            }
+            
+            // Calculate discount for this product group
+            $discount = $this->calculateProductDiscount($totalSubtotal, $totalQuantity);
+            $productDiscounts[$productId] = $discount;
+        }
+
+        // Process order details with product discounts
         foreach ($validated['items'] as $item) {
             // Calculate base amount (Quantity × Price)
             $baseAmount = $item['quantity'] * $item['price'];
 
-            // Apply discount to base amount
-            $discountAmount = $item['discountAmount'] ?? 0;
-            $subtotal = $baseAmount - $discountAmount;
-
-            // Add layout price if checked (after discount)
+            // Add layout price if checked
             $layoutChecked = in_array($item['layout'] ?? false, ['on', '1', 'true', 1, true]);
+            $subtotal = $baseAmount;
             if ($layoutChecked) {
                 $subtotal += $item['layoutPrice'] ?? 0;
             }
 
-            $subtotal = max(0, $subtotal); // Ensure subtotal is not negative
-            $vat = $subtotal * 0.12;
-            $totalAmount += $subtotal + $vat; // Add VAT to total
+            // Apply product discount if applicable
+            $itemDiscount = 0;
+            if ($item['type'] === 'product' && isset($productDiscounts[$item['id']])) {
+                $productId = $item['id'];
+                $productItems = $productGroups[$productId];
+                $productTotalSubtotal = 0;
+                
+                // Calculate total subtotal for this product group
+                foreach ($productItems as $productItem) {
+                    $productBaseAmount = $productItem['quantity'] * $productItem['price'];
+                    $productLayoutChecked = in_array($productItem['layout'] ?? false, ['on', '1', 'true', 1, true]);
+                    $productSubtotal = $productBaseAmount;
+                    if ($productLayoutChecked) {
+                        $productSubtotal += $productItem['layoutPrice'] ?? 0;
+                    }
+                    $productTotalSubtotal += $productSubtotal;
+                }
+                
+                // Distribute discount proportionally
+                if ($productTotalSubtotal > 0) {
+                    $proportion = $subtotal / $productTotalSubtotal;
+                    $itemDiscount = $productDiscounts[$productId] * $proportion;
+                }
+            }
+
+            $finalSubtotal = max(0, $subtotal - $itemDiscount); // Apply discount
+            $totalAmount += $finalSubtotal; // Add to total
 
             $order->details()->create([
                 'quantity' => $item['quantity'],
                 'unit' => $item['unit'],
                 'size' => $item['size'],
                 'price' => $item['price'],
-                'subtotal' => $subtotal,
-                'vat' => $vat,
-                'discount' => $discountAmount,
+                'subtotal' => $finalSubtotal, // Store final subtotal
+                'vat' => 0, // No VAT
+                'discount' => $itemDiscount,
                 'layout' => in_array($item['layout'] ?? false, ['on', '1', 'true', 1, true]),
                 'layout_price' => $item['layoutPrice'] ?? 0,
                 'product_id' => $item['type'] === 'product' ? $item['id'] : null,
@@ -274,8 +404,25 @@ class OrderController extends Controller
             ]);
         }
 
+        // Calculate total amount (items + layout fees - product discounts)
+        $layoutDesignFee = $order->layout_design_fee ?? 0;
+        $totalAmount = $totalAmount + $layoutDesignFee;
+        
+        // Calculate VAT (12% of total amount)
+        $vatAmount = $totalAmount * 0.12;
+        
+        // Calculate order discount based on total quantity
+        $totalQuantity = array_sum(array_column($validated['items'], 'quantity'));
+        $orderDiscount = $this->calculateOrderDiscount($totalAmount, $totalQuantity);
+        
+        // Subtotal = Total Amount - VAT Tax
+        $subtotal = $totalAmount - $vatAmount;
+        
+        // Final total amount is the original total amount
+        $finalTotalAmount = $totalAmount;
+        
         // Update order with final total amount
-        $order->update(['total_amount' => $totalAmount]);
+        $order->update(['total_amount' => $finalTotalAmount]);
 
         return redirect()->route('admin.orders.index')
             ->with('success', 'Order updated successfully.');
@@ -311,5 +458,43 @@ class OrderController extends Controller
         $order = Order::withTrashed()->findOrFail($orderId);
         $order->restore();
         return back()->with('success', 'Order restored successfully.');
+    }
+
+    private function calculateProductDiscount($subtotal, $quantity)
+    {
+        $discountRules = DiscountRule::active()->validAt()->orderBy('min_quantity')->get();
+        
+        foreach ($discountRules as $rule) {
+            if ($quantity >= $rule->min_quantity && 
+                ($rule->max_quantity === null || $quantity <= $rule->max_quantity)) {
+                
+                if ($rule->discount_type === 'percentage') {
+                    return $subtotal * ($rule->discount_percentage / 100);
+                } else {
+                    return $rule->discount_amount;
+                }
+            }
+        }
+        
+        return 0;
+    }
+
+    private function calculateOrderDiscount($totalAmount, $totalQuantity)
+    {
+        $discountRules = DiscountRule::active()->validAt()->orderBy('min_quantity')->get();
+        
+        foreach ($discountRules as $rule) {
+            if ($totalQuantity >= $rule->min_quantity && 
+                ($rule->max_quantity === null || $totalQuantity <= $rule->max_quantity)) {
+                
+                if ($rule->discount_type === 'percentage') {
+                    return $totalAmount * ($rule->discount_percentage / 100);
+                } else {
+                    return $rule->discount_amount;
+                }
+            }
+        }
+        
+        return 0;
     }
 }

@@ -15,6 +15,7 @@ class Size extends Model
     protected $fillable = [
         'size_name',
         'size_value',
+        'size_group',
         'unit_id',
         'is_active',
     ];

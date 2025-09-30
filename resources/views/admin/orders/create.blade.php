@@ -138,8 +138,6 @@
                                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Size</th>
                                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unit Price</th>
                                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Layout</th>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Discount</th>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Subtotal</th>
                                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
                             </tr>
                         </thead>
@@ -205,15 +203,6 @@
                                         </div>
                                     </td>
                                     <td class="px-4 py-4">
-                                        <div class="text-center">
-                                            <span class="text-sm font-medium text-gray-900" x-text="item.discountAmount > 0 ? '₱' + item.discountAmount.toFixed(2) : '-'"></span>
-                                            <div class="text-xs text-gray-500" x-text="item.discountRule ? item.discountRule : ''"></div>
-                                            <!-- Hidden inputs for discount data -->
-                                            <input type="hidden" x-model="item.discountAmount" :name="`items[${index}][discountAmount]`">
-                                            <input type="hidden" x-model="item.discountRule" :name="`items[${index}][discountRule]`">
-                                        </div>
-                                    </td>
-                                    <td class="px-4 py-4">
                                         <span class="font-medium text-gray-900" x-text="'₱' + item.subtotal.toFixed(2)"></span>
                                     </td>
                                     <td class="px-4 py-4">
@@ -251,34 +240,40 @@
                     </div>
                     <div class="p-6">
                         <div class="space-y-4">
-                            <!-- Items Summary -->
+                            <!-- No. of Items -->
                             <div class="flex justify-between items-center py-2 border-b border-gray-100">
-                                <span class="text-sm text-gray-600">Items Subtotal:</span>
-                                <span class="text-sm font-medium text-gray-900" x-text="'₱' + items.reduce((sum, item) => sum + (item.quantity * item.price), 0).toFixed(2)"></span>
+                                <span class="text-sm text-gray-600">No. of items:</span>
+                                <span class="text-sm font-medium text-gray-900" x-text="getTotalQuantity()"></span>
                             </div>
                             
-                            <!-- Layout Fees Summary -->
+                            <!-- Layout Fees -->
                             <div class="flex justify-between items-center py-2 border-b border-gray-100">
                                 <span class="text-sm text-gray-600">Layout Fees:</span>
-                                <span class="text-sm font-medium text-gray-900" x-text="'₱' + items.reduce((sum, item) => sum + (item.layout ? item.layoutPrice : 0), 0).toFixed(2)"></span>
+                                <span class="text-sm font-medium text-gray-900" x-text="'₱' + getLayoutFees().toFixed(2)"></span>
                             </div>
                             
-                            <!-- Discount Summary -->
+                            <!-- Sub Total -->
                             <div class="flex justify-between items-center py-2 border-b border-gray-100">
-                                <span class="text-sm text-gray-600">Total Discount:</span>
-                                <span class="text-sm font-medium text-green-600" x-text="'-₱' + items.reduce((sum, item) => sum + item.discountAmount, 0).toFixed(2)"></span>
+                                <span class="text-sm text-gray-600">Sub Total:</span>
+                                <span class="text-sm font-medium text-gray-900" x-text="'₱' + getSubTotal().toFixed(2)"></span>
                             </div>
                             
-                            <!-- Items Count -->
+                            <!-- VAT Tax -->
                             <div class="flex justify-between items-center py-2 border-b border-gray-100">
-                                <span class="text-sm text-gray-600">Total Quantity:</span>
-                                <span class="text-sm font-medium text-gray-900" x-text="items.reduce((sum, item) => sum + (parseInt(item.quantity) || 0), 0) + ' quantity'"></span>
+                                <span class="text-sm text-gray-600">VAT Tax:</span>
+                                <span class="text-sm font-medium text-gray-900" x-text="'₱' + getVATAmount().toFixed(2)"></span>
+                            </div>
+                            
+                            <!-- Order Discount -->
+                            <div class="flex justify-between items-center py-2 border-b border-gray-100">
+                                <span class="text-sm text-gray-600">Order Discount:</span>
+                                <span class="text-sm font-medium text-green-600" x-text="'-₱' + getOrderDiscount().toFixed(2)"></span>
                             </div>
                             
                             <!-- Total Amount -->
                             <div class="flex justify-between items-center py-3 border-t-2 border-maroon">
                                 <span class="text-lg font-semibold text-gray-900">TOTAL AMOUNT:</span>
-                                <span class="text-xl font-bold text-maroon" x-text="'₱' + totalAmount.toFixed(2)"></span>
+                                <span class="text-xl font-bold text-maroon" x-text="'₱' + getTotalAmount().toFixed(2)"></span>
                             </div>
                         </div>
                     </div>
@@ -368,6 +363,7 @@
                     </div>
                 </div>
             </div>
+            
         </form>
     </div>
 </div>
@@ -395,8 +391,6 @@ function orderForm() {
                 price: 0,
                 layout: false,
                 layoutPrice: 0,
-                discountAmount: 0,
-                discountRule: '',
                 subtotal: 0
             });
             console.log('Items count:', this.items.length);
@@ -413,8 +407,6 @@ function orderForm() {
             this.items[index].price = 0;
             this.items[index].layout = false;
             this.items[index].layoutPrice = 0;
-            this.items[index].discountAmount = 0;
-            this.items[index].discountRule = '';
             this.items[index].size = '';
             this.calculateSubtotal(index);
         },
@@ -455,59 +447,38 @@ function orderForm() {
             // Step 1: Compute base price (Quantity × Unit Price)
             let baseAmount = quantity * price;
 
-            // Step 2: Compute discount from baseAmount only (not including layout fee)
-            item.discountAmount = this.calculateDiscount(baseAmount, quantity);
-            item.discountRule = this.getDiscountRule(quantity);
-
-            // Step 3: Apply discount
-            let subtotal = baseAmount - item.discountAmount;
-
-            // Step 4: Add layout fee if applicable
+            // Step 2: Add layout fee if applicable
+            let subtotal = baseAmount;
             if (item.layout && layoutPrice > 0) {
                 subtotal += layoutPrice;
             }
 
-            // Step 5: Ensure subtotal is never negative
+            // Step 3: Ensure subtotal is never negative
             item.subtotal = Math.max(0, subtotal);
 
-            // Step 6: Recalculate overall total
+            // Step 4: Recalculate overall total
             this.calculateTotal();
         },
         
         calculateTotal() {
-            this.totalAmount = this.items.reduce((sum, item) => sum + item.subtotal, 0);
+            // Update total amount using the new calculation method
+            this.totalAmount = this.getTotalAmount();
         },
         
-        
-        assignProductionEmployee() {
-            // Find production employees
-            const productionEmployees = this.employees.filter(emp => 
-                emp.job && emp.job.job_title && 
-                (emp.job.job_title.toLowerCase().includes('production') || 
-                 emp.job.job_title.toLowerCase().includes('operator') ||
-                 emp.job.job_title.toLowerCase().includes('supervisor') ||
-                 emp.job.job_title.toLowerCase().includes('manager'))
-            );
-            
-            if (productionEmployees.length > 0) {
-                // Select the first production employee
-                const productionEmp = productionEmployees[0];
-                const employeeSelect = document.getElementById('employee_id');
-                if (employeeSelect) {
-                    // Check if the option exists in the dropdown
-                    const optionExists = Array.from(employeeSelect.options).some(option => 
-                        option.value == productionEmp.employee_id
-                    );
-                    if (optionExists) {
-                        employeeSelect.value = productionEmp.employee_id;
-                        // Trigger change event to update any dependent elements
-                        employeeSelect.dispatchEvent(new Event('change'));
+        groupItemsByProduct() {
+            const groups = {};
+            this.items.forEach(item => {
+                if (item.type === 'product' && item.id) {
+                    if (!groups[item.id]) {
+                        groups[item.id] = [];
                     }
+                    groups[item.id].push(item);
                 }
-            }
+            });
+            return groups;
         },
         
-        calculateDiscount(subtotal, quantity) {
+        calculateProductDiscount(subtotal, quantity) {
             for (const rule of this.discountRules) {
                 if (quantity >= rule.min_quantity && (rule.max_quantity === null || quantity <= rule.max_quantity)) {
                     if (rule.discount_type === 'percentage') {
@@ -517,23 +488,104 @@ function orderForm() {
                     }
                 }
             }
-            
             return 0;
         },
         
-        getDiscountRule(quantity) {
+        distributeDiscountToItems(items, totalDiscount, totalSubtotal) {
+            if (totalDiscount <= 0 || totalSubtotal <= 0) return;
+            
+            items.forEach(item => {
+                const proportion = item.subtotal / totalSubtotal;
+                const itemDiscount = totalDiscount * proportion;
+                item.subtotal = Math.max(0, item.subtotal - itemDiscount);
+            });
+        },
+        
+        getProductDiscounts() {
+            const productGroups = this.groupItemsByProduct();
+            let totalDiscount = 0;
+            
+            for (const [productId, items] of Object.entries(productGroups)) {
+                const totalQuantity = items.reduce((sum, item) => sum + (parseInt(item.quantity) || 0), 0);
+                const totalSubtotal = items.reduce((sum, item) => {
+                    const baseAmount = (parseInt(item.quantity) || 0) * (parseFloat(item.price) || 0);
+                    const layoutPrice = item.layout ? (parseFloat(item.layoutPrice) || 0) : 0;
+                    return sum + baseAmount + layoutPrice;
+                }, 0);
+                
+                const discount = this.calculateProductDiscount(totalSubtotal, totalQuantity);
+                totalDiscount += discount;
+            }
+            
+            return totalDiscount;
+        },
+        
+        getItemsSubtotal() {
+            // Calculate items subtotal (items + layout fees - product discounts)
+            const itemsTotal = this.items.reduce((sum, item) => {
+                const baseAmount = (parseInt(item.quantity) || 0) * (parseFloat(item.price) || 0);
+                const layoutPrice = item.layout ? (parseFloat(item.layoutPrice) || 0) : 0;
+                return sum + baseAmount + layoutPrice;
+            }, 0);
+            
+            const productDiscounts = this.getProductDiscounts();
+            return Math.max(0, itemsTotal - productDiscounts);
+        },
+        
+        // New calculation methods for the updated order summary
+        getTotalQuantity() {
+            return this.items.reduce((sum, item) => sum + (parseInt(item.quantity) || 0), 0);
+        },
+        
+        getLayoutFees() {
+            return this.items.reduce((sum, item) => sum + (item.layout ? (parseFloat(item.layoutPrice) || 0) : 0), 0);
+        },
+        
+        getTotalAmount() {
+            // Total amount is fixed (items + layout fees - product discounts)
+            const itemsTotal = this.items.reduce((sum, item) => {
+                const baseAmount = (parseInt(item.quantity) || 0) * (parseFloat(item.price) || 0);
+                const layoutPrice = item.layout ? (parseFloat(item.layoutPrice) || 0) : 0;
+                return sum + baseAmount + layoutPrice;
+            }, 0);
+            
+            const layoutFees = this.getLayoutFees();
+            const productDiscounts = this.getProductDiscounts();
+            
+            return Math.max(0, itemsTotal + layoutFees - productDiscounts);
+        },
+        
+        getVATAmount() {
+            // VAT = Total Amount * 0.12
+            const totalAmount = this.getTotalAmount();
+            return totalAmount * 0.12;
+        },
+        
+        getSubTotal() {
+            // Sub Total = Total Amount - VAT Tax
+            const totalAmount = this.getTotalAmount();
+            const vatAmount = this.getVATAmount();
+            return totalAmount - vatAmount;
+        },
+        
+        getOrderDiscount() {
+            // Automatically calculate order discount based on total quantity and discount rules
+            const totalQuantity = this.getTotalQuantity();
+            const totalAmount = this.getTotalAmount();
+            
+            // Find applicable discount rule
             for (const rule of this.discountRules) {
-                if (quantity >= rule.min_quantity && (rule.max_quantity === null || quantity <= rule.max_quantity)) {
+                if (totalQuantity >= rule.min_quantity && (rule.max_quantity === null || totalQuantity <= rule.max_quantity)) {
                     if (rule.discount_type === 'percentage') {
-                        return rule.discount_percentage + '%';
+                        return totalAmount * (rule.discount_percentage / 100);
                     } else {
-                        return '₱' + rule.discount_amount.toFixed(2);
+                        return rule.discount_amount;
                     }
                 }
             }
-            
-            return '';
+            return 0;
         },
+        
         
         init() {
             console.log('Initializing order form...');
@@ -542,8 +594,8 @@ function orderForm() {
             console.log('Customers available:', this.customers.length);
             console.log('Employees available:', this.employees.length);
             
-            this.addItem(); // Add first item by default
-            this.assignProductionEmployee(); // Auto-assign production employee
+            // Removed automatic item addition - users must click "Add Item" button
+            // Removed automatic production employee assignment - users must select manually
         }
     }
 }

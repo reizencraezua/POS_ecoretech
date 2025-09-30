@@ -27,6 +27,19 @@
 <div class="space-y-6">
     <!-- Stats Cards -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+
+        <div class="bg-white rounded-lg shadow p-6 border-l-4 border-green-500">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-600">Monthly Sales</p>
+                    <p class="text-3xl font-bold text-gray-900">₱{{ number_format($stats['monthly_sales'], 2) }}</p>
+                </div>
+                <div class="p-3 bg-green-500 bg-opacity-10 rounded-full">
+                    <i class="fas fa-chart-line text-green-500 text-xl"></i>
+                </div>
+            </div>
+        </div>
+
         <div class="bg-white rounded-lg shadow p-6 border-l-4 border-maroon">
             <div class="flex items-center justify-between">
                 <div>
@@ -63,17 +76,7 @@
             </div>
         </div>
 
-        <div class="bg-white rounded-lg shadow p-6 border-l-4 border-green-500">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm font-medium text-gray-600">Monthly Sales</p>
-                    <p class="text-3xl font-bold text-gray-900">₱{{ number_format($stats['monthly_sales'], 2) }}</p>
-                </div>
-                <div class="p-3 bg-green-500 bg-opacity-10 rounded-full">
-                    <i class="fas fa-chart-line text-green-500 text-xl"></i>
-                </div>
-            </div>
-        </div>
+       
     </div>
 
     <!-- Charts and Analytics Row -->

@@ -4,6 +4,26 @@
 @section('page-title', 'Job Order Management')
 @section('page-description', 'Track and manage all job orders')
 
+@section('header-actions')
+<form method="GET" action="{{ route('admin.orders.index') }}" class="flex items-end gap-3">
+    <div>
+        <label for="start_date" class="block text-xs font-medium text-gray-600 mb-1">Start date</label>
+        <input type="date" id="start_date" name="start_date" value="{{ request('start_date') }}"
+               class="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon">
+    </div>
+    <div>
+        <label for="end_date" class="block text-xs font-medium text-gray-600 mb-1">End date</label>
+        <input type="date" id="end_date" name="end_date" value="{{ request('end_date') }}"
+               class="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon">
+    </div>
+    <div class="flex items-center gap-2">
+        <input type="hidden" name="archived" value="{{ (isset($showArchived) && $showArchived) ? 1 : 0 }}">
+        <button type="submit" class="bg-maroon hover:bg-maroon-dark text-white px-4 py-2 rounded-md">Filter</button>
+        <a href="{{ route('admin.orders.index', ['archived' => (isset($showArchived) && $showArchived) ? 1 : 0]) }}" class="px-3 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">Reset</a>
+    </div>
+</form>
+@endsection
+
 @section('content')
 <div class="space-y-6">
     <!-- Header Actions -->
@@ -38,10 +58,12 @@
                     <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
                 </div>
                 <input type="hidden" name="archived" value="{{ (isset($showArchived) && $showArchived) ? 1 : 0 }}">
+                <input type="hidden" name="start_date" value="{{ request('start_date') }}">
+                <input type="hidden" name="end_date" value="{{ request('end_date') }}">
                 <button type="submit" class="bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-lg transition-colors">
                     <i class="fas fa-search"></i>
                 </button>
-                @if(request('search') || request('status') || request('archived'))
+                @if(request('search') || request('status') || request('start_date') || request('end_date') || request('archived'))
                     <a href="{{ route('admin.orders.index', ['archived' => (isset($showArchived) && $showArchived) ? 1 : 0]) }}" class="bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-lg transition-colors">
                         <i class="fas fa-times"></i>
                     </a>
@@ -124,8 +146,68 @@
         </div>
     @endif
 
+    <!-- Active Filters Summary -->
+    @if(request('search') || request('status') || request('start_date') || request('end_date'))
+    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-4">
+                <i class="fas fa-filter text-blue-600"></i>
+                <span class="text-sm font-medium text-blue-800">Active Filters:</span>
+                <div class="flex flex-wrap gap-2">
+                    @if(request('search'))
+                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                            Search: "{{ request('search') }}"
+                            <a href="{{ route('admin.orders.index', array_merge(request()->except('search'), ['archived' => (isset($showArchived) && $showArchived) ? 1 : 0])) }}" 
+                               class="ml-1 text-blue-600 hover:text-blue-800">
+                                <i class="fas fa-times"></i>
+                            </a>
+                        </span>
+                    @endif
+                    @if(request('status'))
+                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                            Status: {{ request('status') }}
+                            <a href="{{ route('admin.orders.index', array_merge(request()->except('status'), ['archived' => (isset($showArchived) && $showArchived) ? 1 : 0])) }}" 
+                               class="ml-1 text-blue-600 hover:text-blue-800">
+                                <i class="fas fa-times"></i>
+                            </a>
+                        </span>
+                    @endif
+                    @if(request('start_date'))
+                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                            From: {{ \Carbon\Carbon::parse(request('start_date'))->format('M d, Y') }}
+                            <a href="{{ route('admin.orders.index', array_merge(request()->except('start_date'), ['archived' => (isset($showArchived) && $showArchived) ? 1 : 0])) }}" 
+                               class="ml-1 text-blue-600 hover:text-blue-800">
+                                <i class="fas fa-times"></i>
+                            </a>
+                        </span>
+                    @endif
+                    @if(request('end_date'))
+                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                            To: {{ \Carbon\Carbon::parse(request('end_date'))->format('M d, Y') }}
+                            <a href="{{ route('admin.orders.index', array_merge(request()->except('end_date'), ['archived' => (isset($showArchived) && $showArchived) ? 1 : 0])) }}" 
+                               class="ml-1 text-blue-600 hover:text-blue-800">
+                                <i class="fas fa-times"></i>
+                            </a>
+                        </span>
+                    @endif
+                </div>
+            </div>
+            <a href="{{ route('admin.orders.index', ['archived' => (isset($showArchived) && $showArchived) ? 1 : 0]) }}" 
+               class="text-sm text-blue-600 hover:text-blue-800 font-medium">
+                Clear All Filters
+            </a>
+        </div>
+    </div>
+    @endif
+
     <!-- Orders Table -->
     <div class="bg-white rounded-lg shadow overflow-hidden">
+        <div class="px-6 py-3 bg-blue-50 border-b border-blue-200">
+            <p class="text-sm text-blue-700">
+                <i class="fas fa-info-circle mr-2"></i>
+                Click on any order row to view details
+            </p>
+        </div>
         <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">
@@ -141,14 +223,17 @@
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
                     @forelse($orders as $order)
-                        <tr class="hover:bg-gray-50 transition-colors">
+                        <tr class="hover:bg-blue-50 hover:shadow-sm transition-all duration-200 cursor-pointer group" onclick="window.location.href='{{ route('admin.orders.show', $order) }}'">
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <div class="flex items-center">
                                     <div class="w-10 h-10 bg-maroon text-white rounded-full flex items-center justify-center font-bold text-sm">
                                         {{ str_pad($order->order_id, 3, '0', STR_PAD_LEFT) }}
                                     </div>
                                     <div class="ml-4">
-                                        <div class="text-sm font-medium text-gray-900">Order #{{ str_pad($order->order_id, 5, '0', STR_PAD_LEFT) }}</div>
+                                        <div class="flex items-center gap-2">
+                                            <div class="text-sm font-medium text-gray-900 group-hover:text-blue-600">Order #{{ str_pad($order->order_id, 5, '0', STR_PAD_LEFT) }}</div>
+                                            <i class="fas fa-external-link-alt text-xs text-gray-400 group-hover:text-blue-600 transition-colors"></i>
+                                        </div>
                                         <div class="text-sm text-gray-500">{{ $order->employee->full_name ?? 'Unassigned' }}</div>
                                     </div>
                                 </div>
@@ -231,19 +316,14 @@
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                 <div class="flex items-center space-x-2">
-                                    <!-- View Order -->
-                                    <a href="{{ route('admin.orders.show', $order) }}" class="text-blue-600 hover:text-blue-900 transition-colors" title="View Order">
-                                        <i class="fas fa-eye"></i>
-                                    </a>
-                                    
                                     <!-- Edit Order -->
-                                    <a href="{{ route('admin.orders.edit', $order) }}" class="text-indigo-600 hover:text-indigo-900 transition-colors" title="Edit Order">
+                                    <a href="{{ route('admin.orders.edit', $order) }}" class="text-indigo-600 hover:text-indigo-900 transition-colors" title="Edit Order" onclick="event.stopPropagation();">
                                         <i class="fas fa-edit"></i>
                                     </a>
                                     
                                     @if(isset($showArchived) && $showArchived)
                                         <!-- Restore Order -->
-                                        <form method="POST" action="{{ route('admin.orders.restore', $order->order_id) }}" onsubmit="return confirm('Restore this order?');" class="inline">
+                                        <form method="POST" action="{{ route('admin.orders.restore', $order->order_id) }}" onsubmit="return confirm('Restore this order?');" class="inline" onclick="event.stopPropagation();">
                                             @csrf
                                             @method('PATCH')
                                             <button type="submit" class="text-green-600 hover:text-green-800 transition-colors" title="Restore Order">
@@ -252,7 +332,7 @@
                                         </form>
                                     @else
                                         <!-- Status Management -->
-                                        <div class="relative" x-data="{ open: false }">
+                                        <div class="relative" x-data="{ open: false }" onclick="event.stopPropagation();">
                                             <button @click="open = !open" class="text-maroon hover:text-maroon-dark transition-colors" title="Change Status">
                                                 <i class="fas fa-cog"></i>
                                             </button>
@@ -276,7 +356,7 @@
                                         </div>
                                         
                                         <!-- Archive Order -->
-                                        <form method="POST" action="{{ route('admin.orders.archive', $order) }}" onsubmit="return confirm('Archive this order? It will be moved to archives.');" class="inline">
+                                        <form method="POST" action="{{ route('admin.orders.archive', $order) }}" onsubmit="return confirm('Archive this order? It will be moved to archives.');" class="inline" onclick="event.stopPropagation();">
                                             @csrf
                                             @method('DELETE')
                                             <button type="submit" class="text-orange-600 hover:text-orange-800 transition-colors" title="Archive Order">

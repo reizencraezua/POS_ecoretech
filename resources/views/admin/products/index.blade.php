@@ -46,7 +46,6 @@
 		
 		<!-- Search and Archive Toggle -->
 		<div class="flex items-center space-x-4">
-			<x-archive-toggle :showArchived="$showArchived" :route="route('admin.products.index')" />
 			
 			<form method="GET" class="flex items-center space-x-2">
 				<div class="relative">
@@ -69,10 +68,12 @@
 	<!-- Products Grid -->
 	<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
 		@forelse($products as $product)
-			<div class="bg-white rounded-lg shadow hover:shadow-lg transition-shadow border border-gray-200">
+			<div class="bg-white rounded-lg shadow hover:shadow-lg transition-all duration-200 border border-gray-200 group cursor-pointer relative">
+				<!-- Clickable overlay for the entire card -->
+				<a href="{{ route('admin.products.show', $product) }}" class="absolute inset-0 z-10"></a>
 				
 				<!-- Product Content -->
-				<div class="p-4">
+				<div class="p-4 relative">
 					<div class="mb-3">
 						<div class="flex items-center justify-between mb-2">
 							<span class="text-sm text-gray-500">#{{ str_pad($product->product_id, 3, '0', STR_PAD_LEFT) }}</span>
@@ -83,10 +84,13 @@
 								</span>
 							@endif
 						</div>
-						<h3 class="text-lg font-semibold text-gray-900 mb-1">{{ $product->product_name }}</h3>
+						<h3 class="text-lg font-semibold text-gray-900 mb-1 group-hover:text-maroon transition-colors">{{ $product->product_name }}</h3>
 						@if($product->product_description)
-							<p class="text-sm text-gray-600 line-clamp-2">{{ Str::limit($product->product_description, 80) }}</p>
+							<p class="text-sm text-gray-600 truncate w-full max-w-xs">
+								{{ $product->product_description }}
+							</p>
 						@endif
+
 					</div>
 
 					<!-- Price -->
@@ -98,19 +102,21 @@
 					</div>
 
 					<!-- Actions -->
-					<div class="flex items-center justify-between border-t border-gray-200 pt-4">
+					<div class="flex items-center justify-between border-t border-gray-200 pt-4 relative z-20">
 						<div class="flex items-center space-x-2">
-							
-							<a href="{{ route('admin.products.edit', $product) }}" class="text-maroon hover:text-maroon-dark transition-colors" title="Edit Product">
-								<i class="fas fa-edit"></i>
-							</a>
-							<form method="POST" action="{{ route('admin.products.destroy', $product) }}" class="inline" onsubmit="return confirm('Are you sure you want to archive this product?')">
-								@csrf
-								@method('DELETE')
-								<button type="submit" class="text-red-600 hover:text-red-800 transition-colors" title="Archive Product">
-									<i class="fas fa-archive"></i>
-								</button>
-							</form>
+							@if($showArchived)
+								<x-archive-actions 
+									:item="$product" 
+									:archiveRoute="'admin.products.archive'" 
+									:restoreRoute="'admin.products.restore'" 
+									:showRestore="true" />
+							@else
+								<x-archive-actions 
+									:item="$product" 
+									:archiveRoute="'admin.products.archive'" 
+									:restoreRoute="'admin.products.restore'" 
+									:showRestore="false" />
+							@endif
 						</div>
 						<span class="text-xs text-gray-500">
 							Updated {{ $product->updated_at->diffForHumans() }}
@@ -249,38 +255,6 @@
                         @error('product_description')
                             <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
                         @enderror
-                    </div>
-                </div>
-            </div>
-
-
-            <!-- Product Guidelines -->
-            <div class="mb-8 bg-green-50 rounded-lg p-4">
-                <h4 class="text-sm font-medium text-green-900 mb-2">Product Guidelines</h4>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-green-700">
-                    <div class="flex items-center space-x-2">
-                        <i class="fas fa-box"></i>
-                        <span>Minimum order quantity may apply</span>
-                    </div>
-                    <div class="flex items-center space-x-2">
-                        <i class="fas fa-ruler-combined"></i>
-                        <span>Sizes and dimensions must be confirmed before production</span>
-                    </div>
-                    <div class="flex items-center space-x-2">
-                        <i class="fas fa-palette"></i>
-                        <span>Color shades may vary slightly from digital preview</span>
-                    </div>
-                    <div class="flex items-center space-x-2">
-                        <i class="fas fa-shipping-fast"></i>
-                        <span>Lead time depends on stock availability and quantity</span>
-                    </div>
-                    <div class="flex items-center space-x-2">
-                        <i class="fas fa-undo-alt"></i>
-                        <span>No returns/refunds once production has started</span>
-                    </div>
-                    <div class="flex items-center space-x-2">
-                        <i class="fas fa-tools"></i>
-                        <span>Special finishes or add-ons may have extra charges</span>
                     </div>
                 </div>
             </div>

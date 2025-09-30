@@ -27,19 +27,28 @@
                         </div>
                     </div>
                 </div>
-                <div class="flex items-center space-x-4">
-                    <a href="{{ route('admin.services.edit', $service) }}" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md transition-colors">
-                        <i class="fas fa-edit mr-2"></i>
-                        Edit Service
+                <div class="flex items-center space-x-3">
+                    <a href="{{ route('admin.services.edit', $service) }}" 
+                       class="bg-maroon hover:bg-red-700 text-white px-4 py-2.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-2">
+                        <i class="fas fa-edit"></i>
+                        <span>Edit Service</span>
                     </a>
-                    <form method="POST" action="{{ route('admin.services.destroy', $service) }}" class="inline" onsubmit="return confirm('Are you sure you want to archive this service?')">
+                    
+                    <form method="POST" action="{{ route('admin.services.archive', $service) }}" class="inline" 
+                          onsubmit="return confirm('Are you sure you want to archive this service?')">
                         @csrf
-                        @method('DELETE')
-                        <button type="submit" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md transition-colors">
-                            <i class="fas fa-archive mr-2"></i>
-                            Archive
+                        <button type="submit" 
+                                class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-2">
+                            <i class="fas fa-archive"></i>
+                            <span>Archive Service</span>
                         </button>
                     </form>
+                    
+                    <a href="{{ route('admin.services.index') }}" 
+                       class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-2">
+                        <i class="fas fa-arrow-left"></i>
+                        <span>Back to Services</span>
+                    </a>
                 </div>
             </div>
         </div>
@@ -135,14 +144,21 @@
             @if($orders->count() > 0)
             <div class="bg-white rounded-lg shadow-sm border border-gray-200">
                 <div class="px-6 py-4 border-b border-gray-200">
-                    <h3 class="text-lg font-semibold text-gray-900">Recent Orders</h3>
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-900">Recent Orders</h3>
+                        <p class="text-xs text-gray-500 mt-1">Click on any order to view details</p>
+                    </div>
                 </div>
                 <div class="p-6">
                     <div class="space-y-4">
                         @foreach($orders->take(5) as $order)
-                        <div class="flex justify-between items-center py-2 border-b border-gray-100 last:border-b-0">
+                        <div class="flex justify-between items-center py-3 px-3 border-b border-gray-100 last:border-b-0 hover:bg-blue-50 hover:shadow-sm transition-all duration-200 cursor-pointer group rounded-lg" 
+                             onclick="window.location.href='{{ route('admin.orders.show', $order) }}'">
                             <div>
-                                <p class="text-sm font-medium text-gray-900">Order #{{ $order->order_id }}</p>
+                                <div class="flex items-center gap-2">
+                                    <p class="text-sm font-medium text-gray-900 group-hover:text-blue-600">Order #{{ $order->order_id }}</p>
+                                    <i class="fas fa-external-link-alt text-xs text-gray-400 group-hover:text-blue-600 transition-colors"></i>
+                                </div>
                                 <p class="text-xs text-gray-500">{{ $order->customer->display_name ?? 'Unknown Customer' }}</p>
                             </div>
                             <div class="text-right">

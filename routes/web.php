@@ -79,6 +79,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
 		Route::resource('categories', CategoryController::class);
 		Route::post('categories/{category}/archive', [CategoryController::class, 'archive'])->name('categories.archive');
 		Route::post('categories/{category}/restore', [CategoryController::class, 'restore'])->name('categories.restore');
+		Route::get('categories/sizes/by-group', [CategoryController::class, 'getSizesByGroup'])->name('categories.sizes.by-group');
 		Route::resource('sizes', SizeController::class);
 		Route::post('sizes/{size}/archive', [SizeController::class, 'archive'])->name('sizes.archive');
 		Route::post('sizes/{size}/restore', [SizeController::class, 'restore'])->name('sizes.restore');
@@ -101,6 +102,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
 		
 		// Jobs
 		Route::resource('jobs', AdminJobController::class);
+		Route::post('jobs/{job}/archive', [AdminJobController::class, 'archive'])->name('jobs.archive');
+		Route::post('jobs/{job}/restore', [AdminJobController::class, 'restore'])->name('jobs.restore');
 
 		// Payments
 		Route::resource('payments', PaymentController::class);
@@ -110,6 +113,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
 		// Delivery
 		Route::resource('deliveries', DeliveryController::class);
+		Route::post('deliveries/{delivery}/archive', [DeliveryController::class, 'archive'])->name('deliveries.archive');
+		Route::post('deliveries/{delivery}/restore', [DeliveryController::class, 'restore'])->name('deliveries.restore');
 
 		// Reports
 		Route::get('reports', [ReportController::class, 'index'])->name('reports.index');

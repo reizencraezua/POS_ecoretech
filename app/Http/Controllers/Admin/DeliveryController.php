@@ -11,7 +11,10 @@ class DeliveryController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Delivery::with(['order.customer']);
+        $showArchived = $request->boolean('archived');
+        $query = $showArchived
+            ? Delivery::with(['order.customer'])->onlyTrashed()
+            : Delivery::with(['order.customer']);
 
         if ($request->has('status')) {
             $query->where('status', $request->status);
@@ -27,8 +30,9 @@ class DeliveryController extends Controller
         }
 
         $deliveries = $query->latest('delivery_date')->paginate(15);
+        $deliveries->appends($request->query());
 
-        return view('admin.deliveries.index', compact('deliveries'));
+        return view('admin.deliveries.index', compact('deliveries', 'showArchived'));
     }
 
     public function create()
@@ -92,6 +96,23 @@ class DeliveryController extends Controller
         $delivery->delete();
 
         return redirect()->route('admin.deliveries.index')
-            ->with('success', 'Delivery deleted successfully.');
+            ->with('success', 'Delivery archived successfully.');
+    }
+
+    public function archive(Delivery $delivery)
+    {
+        $delivery->delete();
+
+        return redirect()->route('admin.deliveries.index')
+            ->with('success', 'Delivery archived successfully.');
+    }
+
+    public function restore($deliveryId)
+    {
+        $delivery = Delivery::withTrashed()->findOrFail($deliveryId);
+        $delivery->restore();
+
+        return redirect()->route('admin.deliveries.index')
+            ->with('success', 'Delivery restored successfully.');
     }
 }

@@ -58,22 +58,40 @@
                     @enderror
                 </div>
 
+                <!-- Size Group Selection -->
+                <div>
+                    <label for="size_group" class="block text-sm font-medium text-gray-700 mb-2">Size Group</label>
+                    <select name="size_group" id="size_group" 
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon @error('size_group') border-red-500 @enderror">
+                        <option value="">Select a size group (optional)</option>
+                        @foreach($sizeGroups as $group)
+                            <option value="{{ $group }}" {{ old('size_group', $category->size_group) == $group ? 'selected' : '' }}>
+                                {{ ucfirst(str_replace('_', ' ', $group)) }}
+                            </option>
+                        @endforeach
+                    </select>
+                    @error('size_group')
+                        <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                    @enderror
+                    <p class="text-xs text-gray-500 mt-1">Choose a size group to filter applicable sizes below</p>
+                </div>
+
                 <!-- Size Selection -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Applicable Sizes</label>
-                    <div class="max-h-96 overflow-y-auto border border-gray-200 rounded-md p-4">
+                    <div id="size-selection-container" class="max-h-96 overflow-y-auto border border-gray-200 rounded-md p-4">
                         @php
-                            $sizesByUnit = $sizes->groupBy('unit.unit_name');
+                            $sizesByGroup = $sizes->groupBy('size_group');
                         @endphp
                         
-                        @foreach($sizesByUnit as $unitName => $unitSizes)
-                            <div class="mb-4">
-                                <h4 class="text-sm font-semibold text-gray-800 mb-2 flex items-center">
-                                    <i class="fas fa-ruler mr-2 text-maroon"></i>
-                                    {{ $unitName }}
+                        @foreach($sizesByGroup as $groupName => $groupSizes)
+                            <div class="size-group mb-6" data-group="{{ $groupName }}">
+                                <h4 class="text-sm font-semibold text-gray-800 mb-3 flex items-center">
+                                    <i class="fas fa-tags mr-2 text-maroon"></i>
+                                    {{ ucfirst(str_replace('_', ' ', $groupName)) }}
                                 </h4>
-                                <div class="grid grid-cols-2 md:grid-cols-5 lg:grid-cols-8 gap-2">
-                                    @foreach($unitSizes as $size)
+                                <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2">
+                                    @foreach($groupSizes as $size)
                                     <label class="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-2 rounded border border-gray-100">
                                         <input type="checkbox" name="size_ids[]" value="{{ $size->size_id }}" 
                                                {{ in_array($size->size_id, old('size_ids', $category->sizes->pluck('size_id')->toArray())) ? 'checked' : '' }}
@@ -120,8 +138,46 @@
 </div>
 
 <script>
-document.getElementById('category_color').addEventListener('change', function() {
-    this.nextElementSibling.value = this.value;
+document.addEventListener('DOMContentLoaded', function() {
+    const colorInput = document.getElementById('category_color');
+    const sizeGroupSelect = document.getElementById('size_group');
+    const sizeContainer = document.getElementById('size-selection-container');
+    const sizeGroups = document.querySelectorAll('.size-group');
+
+    // Color picker functionality
+    colorInput.addEventListener('change', function() {
+        this.nextElementSibling.value = this.value;
+    });
+
+    // Size group filtering
+    sizeGroupSelect.addEventListener('change', function() {
+        const selectedGroup = this.value;
+        
+        if (selectedGroup === '') {
+            // Show all groups
+            sizeGroups.forEach(group => {
+                group.style.display = 'block';
+            });
+        } else {
+            // Hide all groups first
+            sizeGroups.forEach(group => {
+                group.style.display = 'none';
+            });
+            
+            // Show only the selected group
+            const selectedGroupElement = document.querySelector(`[data-group="${selectedGroup}"]`);
+            if (selectedGroupElement) {
+                selectedGroupElement.style.display = 'block';
+            }
+        }
+    });
+
+    // Initialize with current or old value
+    const currentSizeGroup = '{{ old("size_group", $category->size_group) }}';
+    if (currentSizeGroup) {
+        sizeGroupSelect.value = currentSizeGroup;
+        sizeGroupSelect.dispatchEvent(new Event('change'));
+    }
 });
 </script>
 @endsection

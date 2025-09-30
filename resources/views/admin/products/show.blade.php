@@ -5,146 +5,238 @@
 @section('page-description', 'View detailed information about this product')
 
 @section('content')
-<div class="max-w-7xl mx-auto">
-    <!-- Header -->
-    <div class="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
-        <div class="px-6 py-4 border-b border-gray-200">
+<div class="max-w-7xl mx-auto space-y-6">
+    <!-- Back Button & Title -->
+    <div class="flex items-center justify-between">
+        <div class="flex items-center gap-4">
+            <a href="{{ route('admin.products.index') }}" 
+               class="p-2 text-gray-600 hover:text-maroon hover:bg-gray-100 rounded-lg transition-all">
+                <i class="fas fa-arrow-left text-xl"></i>
+            </a>
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">{{ $product->product_name }}</h1>
+                <p class="text-sm text-gray-500">Product Details & Performance</p>
+            </div>
+        </div>
+        
+        <!-- Quick Actions -->
+        <div class="flex items-center space-x-3">
+            <a href="{{ route('admin.products.edit', $product) }}" 
+               class="bg-maroon hover:bg-red-700 text-white px-4 py-2.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-2">
+                <i class="fas fa-edit"></i>
+                <span>Edit Product</span>
+            </a>
+            
+            <form method="POST" action="{{ route('admin.products.archive', $product) }}" class="inline" 
+                  onsubmit="return confirm('Are you sure you want to archive this product?')">
+                @csrf
+                <button type="submit" 
+                        class="bg-gray-500 hover:bg-gray-300 text-white px-4 py-2.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-2">
+                    <i class="fas fa-archive"></i>
+                    <span>Archive Product</span>
+                </button>
+            </form>
+            
+            <a href="{{ route('admin.products.index') }}" 
+               class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-2">
+                <i class="fas fa-arrow-left"></i>
+                <span>Back to Products</span>
+            </a>
+        </div>
+    </div>
+    <!-- Top Stats Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- Base Price Card -->
+        <div class="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
             <div class="flex items-center justify-between">
-                <div class="flex items-center space-x-4">
-                    <a href="{{ route('admin.products.index') }}" class="text-gray-500 hover:text-gray-700 transition-colors">
-                        <i class="fas fa-arrow-left text-lg"></i>
-                    </a>
-                    <div>
-                        <h2 class="text-2xl font-semibold text-gray-900">{{ $product->product_name }}</h2>
-                        <div class="flex items-center space-x-6 text-sm text-gray-600 mt-1">
-                            <span><i class="fas fa-tag mr-1"></i>₱{{ number_format($product->base_price, 2) }}</span>
-                            <span><i class="fas fa-shopping-cart mr-1"></i>{{ $totalQuantity }} sold</span>
-                            <span><i class="fas fa-file-invoice mr-1"></i>{{ $totalOrders }} orders</span>
-                        </div>
-                    </div>
+                <div>
+                    <p class="text-sm text-gray-500 mb-1">Base Price</p>
+                    <p class="text-2xl font-bold text-maroon">₱{{ number_format($product->base_price, 2) }}</p>
                 </div>
-                <div class="flex items-center space-x-8">
-                    <div class="text-right">
-                        <div class="text-2xl font-bold text-gray-900">₱{{ number_format($totalRevenue, 2) }}</div>
-                        <div class="text-sm text-gray-600">Total Revenue</div>
-                    </div>
-                    <div class="text-right">
-                        <div class="text-xl font-semibold text-gray-700">₱{{ number_format($totalPaid, 2) }}</div>
-                        <div class="text-sm text-gray-600">Total Paid</div>
-                    </div>
-                    <div class="text-right">
-                        <div class="text-lg font-semibold {{ ($totalRevenue - $totalPaid) > 0 ? 'text-red-600' : 'text-green-600' }}">
-                            ₱{{ number_format($totalRevenue - $totalPaid, 2) }}
-                        </div>
-                        <div class="text-sm text-gray-600">Outstanding</div>
-                    </div>
+                <div class="w-12 h-12 bg-maroon bg-opacity-10 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-tag text-maroon text-xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Total Revenue Card -->
+        <div class="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-gray-500 mb-1">Total Revenue</p>
+                    <p class="text-2xl font-bold text-gray-900">₱{{ number_format($totalRevenue, 2) }}</p>
+                </div>
+                <div class="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-chart-line text-blue-600 text-xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quantity Sold Card -->
+        <div class="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-gray-500 mb-1">Quantity Sold</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ $totalQuantity }}</p>
+                </div>
+                <div class="w-12 h-12 bg-green-50 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-boxes text-green-600 text-xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Total Orders Card -->
+        <div class="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-gray-500 mb-1">Total Orders</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ $totalOrders }}</p>
+                </div>
+                <div class="w-12 h-12 bg-purple-50 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-shopping-cart text-purple-600 text-xl"></i>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        <!-- Main Content -->
-        <div class="xl:col-span-2 space-y-6">
-            <!-- Product Overview -->
-            <div class="bg-white rounded-lg shadow-sm border border-gray-200">
-                <div class="px-6 py-4 border-b border-gray-200">
-                    <h3 class="text-lg font-semibold text-gray-900">Product Overview</h3>
+    <!-- Main Content Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Left Column - Main Content -->
+        <div class="lg:col-span-2 space-y-6">
+            <!-- Product Information Card -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+                <div class="p-6 border-b border-gray-100">
+                    <h2 class="text-lg font-semibold text-gray-900">Product Information</h2>
                 </div>
                 <div class="p-6">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <div class="space-y-4">
-                            <div>
-                                <h4 class="text-sm font-medium text-gray-500 uppercase tracking-wide mb-2">Product Details</h4>
-                                <div class="space-y-2">
-                                    <div class="flex justify-between">
-                                        <span class="text-sm text-gray-600">Name</span>
-                                        <span class="text-sm font-medium text-gray-900">{{ $product->product_name }}</span>
-                                    </div>
-                                    <div class="flex justify-between">
-                                        <span class="text-sm text-gray-600">Base Price</span>
-                                        <span class="text-sm font-medium text-gray-900">₱{{ number_format($product->base_price, 2) }}</span>
-                                    </div>
-                                    @if($product->product_description)
-                                    <div class="pt-2 border-t border-gray-100">
-                                        <span class="text-sm text-gray-600">Description</span>
-                                        <p class="text-sm text-gray-900 mt-1">{{ $product->product_description }}</p>
-                                    </div>
-                                    @endif
-                                </div>
-                            </div>
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between py-3 border-b border-gray-50">
+                            <span class="text-sm text-gray-600">Product Name</span>
+                            <span class="text-sm font-medium text-gray-900">{{ $product->product_name }}</span>
                         </div>
-                        <div class="space-y-4">
-                            <div>
-                                <h4 class="text-sm font-medium text-gray-500 uppercase tracking-wide mb-2">Sales Performance</h4>
-                                <div class="space-y-3">
-                                    <div class="flex justify-between">
-                                        <span class="text-sm text-gray-600">Total Orders</span>
-                                        <span class="text-sm font-medium text-gray-900">{{ $totalOrders }}</span>
-                                    </div>
-                                    <div class="flex justify-between">
-                                        <span class="text-sm text-gray-600">Quantity Sold</span>
-                                        <span class="text-sm font-medium text-gray-900">{{ $totalQuantity }}</span>
-                                    </div>
-                                    <div class="flex justify-between">
-                                        <span class="text-sm text-gray-600">Avg per Order</span>
-                                        <span class="text-sm font-medium text-gray-900">
-                                            {{ $totalOrders > 0 ? round($totalQuantity / $totalOrders, 1) : 0 }}
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
+                        
+                        @if($product->category)
+                        <div class="flex items-center justify-between py-3 border-b border-gray-50">
+                            <span class="text-sm text-gray-600">Category</span>
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium" 
+                                  style="background-color: {{ $product->category->category_color }}20; color: {{ $product->category->category_color }};">
+                                {{ $product->category->category_name }}
+                            </span>
+                        </div>
+                        @endif
+
+                        <div class="flex items-center justify-between py-3 border-b border-gray-50">
+                            <span class="text-sm text-gray-600">Base Price</span>
+                            <span class="text-sm font-semibold text-maroon">₱{{ number_format($product->base_price, 2) }}</span>
+                        </div>
+
+                        @if($product->requires_layout)
+                        <div class="flex items-center justify-between py-3 border-b border-gray-50">
+                            <span class="text-sm text-gray-600">Layout Required</span>
+                            <span class="text-sm font-medium text-green-600">Yes</span>
+                        </div>
+                        
+                        @if($product->layout_price > 0)
+                        <div class="flex items-center justify-between py-3 border-b border-gray-50">
+                            <span class="text-sm text-gray-600">Layout Price</span>
+                            <span class="text-sm font-semibold text-maroon">₱{{ number_format($product->layout_price, 2) }}</span>
+                        </div>
+                        @endif
+                        @endif
+
+                        <div class="flex items-center justify-between py-3">
+                            <span class="text-sm text-gray-600">Last Updated</span>
+                            <span class="text-sm text-gray-900">{{ $product->updated_at->diffForHumans() }}</span>
                         </div>
                     </div>
+
+                    @if($product->product_description)
+                    <div class="mt-6 pt-6 border-t border-gray-100">
+                        <h3 class="text-sm font-medium text-gray-900 mb-3">Description</h3>
+                        <p class="text-sm text-gray-600 leading-relaxed">{{ $product->product_description }}</p>
+                    </div>
+                    @endif
                 </div>
             </div>
 
-            <!-- Orders Table -->
+            
+
+            <!-- Order History Card -->
             @if($orders->count() > 0)
-            <div class="bg-white rounded-lg shadow-sm border border-gray-200">
-                <div class="px-6 py-4 border-b border-gray-200">
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+                <div class="p-6 border-b border-gray-100">
                     <div class="flex items-center justify-between">
-                        <h3 class="text-lg font-semibold text-gray-900">Order History</h3>
-                        <div class="flex items-center space-x-4 text-sm text-gray-600">
-                            <span>{{ $orders->count() }} orders</span>
-                            <span>₱{{ number_format($totalRevenue, 2) }} revenue</span>
+                        <div>
+                            <h2 class="text-lg font-semibold text-gray-900">Order History</h2>
+                            <p class="text-xs text-gray-500 mt-1">Click on any order to view details</p>
                         </div>
+                        <span class="text-sm text-gray-500">{{ $orders->count() }} orders</span>
                     </div>
                 </div>
                 <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-gray-200">
+                    <table class="min-w-full divide-y divide-gray-100">
                         <thead class="bg-gray-50">
                             <tr>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order</th>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Qty</th>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Order</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Customer</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Qty</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Price</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
                             </tr>
                         </thead>
-                        <tbody class="bg-white divide-y divide-gray-200">
+                        <tbody class="bg-white divide-y divide-gray-100">
                             @foreach($orders as $order)
                             @php
                                 $orderDetail = $order->details->where('product_id', $product->product_id)->first();
                             @endphp
-                            <tr class="hover:bg-gray-50">
-                                <td class="px-4 py-3 whitespace-nowrap">
-                                    <a href="{{ route('admin.orders.show', $order) }}" class="text-sm font-medium text-blue-600 hover:text-blue-900">
-                                        #{{ $order->order_id }}
-                                    </a>
+                            <tr class="hover:bg-blue-50 hover:shadow-sm transition-all duration-200 cursor-pointer group" onclick="window.location.href='{{ route('admin.orders.show', $order) }}'">
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-sm font-medium text-blue-600 group-hover:text-blue-800">
+                                            #{{ $order->order_id }}
+                                        </span>
+                                        <i class="fas fa-external-link-alt text-xs text-gray-400 group-hover:text-blue-600 transition-colors"></i>
+                                    </div>
                                 </td>
-                                <td class="px-4 py-3 whitespace-nowrap">
-                                    <div class="text-sm font-medium text-gray-900">{{ $order->customer->display_name }}</div>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-8 h-8 rounded-full bg-maroon flex items-center justify-center">
+                                            <span class="text-xs font-medium text-white">
+                                                {{ substr($order->customer->display_name, 0, 1) }}
+                                            </span>
+                                        </div>
+                                        <span class="text-sm text-gray-900">{{ $order->customer->display_name }}</span>
+                                    </div>
                                 </td>
-                                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ $order->order_date->format('M d, Y') }}</td>
-                                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ $orderDetail ? $orderDetail->quantity : 0 }}</td>
-                                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">₱{{ number_format($orderDetail ? $orderDetail->unit_price : 0, 2) }}</td>
-                                <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">₱{{ number_format($orderDetail ? $orderDetail->subtotal : 0, 2) }}</td>
-                                <td class="px-4 py-3 whitespace-nowrap">
-                                    <span class="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-800">
-                                        {{ $order->order_status }}
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                                    {{ $order->order_date->format('M d, Y') }}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700">
+                                        {{ $orderDetail ? $orderDetail->quantity : 0 }}
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    ₱{{ number_format($orderDetail ? $orderDetail->unit_price : 0, 2) }}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
+                                    ₱{{ number_format($orderDetail ? $orderDetail->subtotal : 0, 2) }}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    @php
+                                        $statusColors = [
+                                            'pending' => 'bg-yellow-50 text-yellow-700',
+                                            'processing' => 'bg-blue-50 text-blue-700',
+                                            'completed' => 'bg-green-50 text-green-700',
+                                            'cancelled' => 'bg-red-50 text-red-700',
+                                            'shipped' => 'bg-purple-50 text-purple-700'
+                                        ];
+                                        $statusColor = $statusColors[$order->order_status] ?? 'bg-gray-50 text-gray-700';
+                                    @endphp
+                                    <span class="px-2.5 py-1 text-xs font-medium rounded-full {{ $statusColor }}">
+                                        {{ ucfirst($order->order_status) }}
                                     </span>
                                 </td>
                             </tr>
@@ -156,86 +248,103 @@
             @endif
         </div>
 
-        <!-- Sidebar -->
+        <!-- Right Column - Sidebar -->
         <div class="space-y-6">
-            <!-- Financial Summary -->
-            <div class="bg-white rounded-lg shadow-sm border border-gray-200">
-                <div class="px-4 py-3 border-b border-gray-200">
-                    <h3 class="text-sm font-semibold text-gray-900">Financial Summary</h3>
+            <!-- Financial Summary Card -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+                <div class="p-6 border-b border-gray-100">
+                    <h2 class="text-lg font-semibold text-gray-900">Financial Summary</h2>
                 </div>
-                <div class="p-4">
-                    <div class="space-y-4">
-                        <div class="text-center p-4 bg-gray-50 rounded-lg">
-                            <div class="text-2xl font-bold text-gray-900 mb-1">₱{{ number_format($totalRevenue, 2) }}</div>
-                            <div class="text-sm text-gray-600">Total Revenue</div>
-                        </div>
-                        <div class="text-center p-4 bg-green-50 rounded-lg">
-                            <div class="text-xl font-semibold text-green-700 mb-1">₱{{ number_format($totalPaid, 2) }}</div>
-                            <div class="text-sm text-green-600">Total Paid</div>
-                        </div>
-                        <div class="text-center p-4 {{ ($totalRevenue - $totalPaid) > 0 ? 'bg-red-50' : 'bg-gray-50' }} rounded-lg">
-                            <div class="text-lg font-semibold {{ ($totalRevenue - $totalPaid) > 0 ? 'text-red-700' : 'text-gray-700' }} mb-1">
-                                ₱{{ number_format($totalRevenue - $totalPaid, 2) }}
+                <div class="p-6 space-y-4">
+                    <!-- Total Revenue -->
+                    <div class="bg-gradient-to-br from-maroon to-red-700 rounded-lg p-5 text-white">
+                        <p class="text-sm opacity-90 mb-1">Total Revenue</p>
+                        <p class="text-3xl font-bold">₱{{ number_format($totalRevenue, 2) }}</p>
+                    </div>
+
+                    <!-- Paid Amount -->
+                    <div class="bg-green-50 rounded-lg p-4 border border-green-100">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-xs text-green-600 mb-1">Total Paid</p>
+                                <p class="text-xl font-bold text-green-700">₱{{ number_format($totalPaid, 2) }}</p>
                             </div>
-                            <div class="text-sm {{ ($totalRevenue - $totalPaid) > 0 ? 'text-red-600' : 'text-gray-600' }}">Outstanding</div>
+                            <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                                <i class="fas fa-check-circle text-green-600"></i>
+                            </div>
                         </div>
-                        <div class="pt-2">
-                            <div class="flex justify-between text-xs text-gray-500 mb-1">
-                                <span>Payment Progress</span>
-                                <span>{{ $totalRevenue > 0 ? round(($totalPaid / $totalRevenue) * 100) : 0 }}%</span>
+                    </div>
+
+                    <!-- Outstanding Amount -->
+                    <div class="bg-{{ ($totalRevenue - $totalPaid) > 0 ? 'red' : 'gray' }}-50 rounded-lg p-4 border border-{{ ($totalRevenue - $totalPaid) > 0 ? 'red' : 'gray' }}-100">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-xs text-{{ ($totalRevenue - $totalPaid) > 0 ? 'red' : 'gray' }}-600 mb-1">Outstanding</p>
+                                <p class="text-xl font-bold text-{{ ($totalRevenue - $totalPaid) > 0 ? 'red' : 'gray' }}-700">
+                                    ₱{{ number_format($totalRevenue - $totalPaid, 2) }}
+                                </p>
                             </div>
-                            <div class="w-full bg-gray-200 rounded-full h-2">
-                                <div class="bg-gray-600 h-2 rounded-full" style="width: {{ $totalRevenue > 0 ? round(($totalPaid / $totalRevenue) * 100) : 0 }}%"></div>
+                            <div class="w-10 h-10 bg-{{ ($totalRevenue - $totalPaid) > 0 ? 'red' : 'gray' }}-100 rounded-lg flex items-center justify-center">
+                                <i class="fas fa-{{ ($totalRevenue - $totalPaid) > 0 ? 'exclamation-triangle' : 'check-circle' }} text-{{ ($totalRevenue - $totalPaid) > 0 ? 'red' : 'gray' }}-600"></i>
                             </div>
+                        </div>
+                    </div>
+
+                    <!-- Payment Progress -->
+                    <div class="pt-4">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs text-gray-600">Payment Progress</span>
+                            <span class="text-xs font-semibold text-gray-900">
+                                {{ $totalRevenue > 0 ? round(($totalPaid / $totalRevenue) * 100) : 0 }}%
+                            </span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div class="bg-gradient-to-r from-green-500 to-green-600 h-2 rounded-full transition-all" 
+                                 style="width: {{ $totalRevenue > 0 ? round(($totalPaid / $totalRevenue) * 100) : 0 }}%"></div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Quick Actions -->
-            <div class="bg-white rounded-lg shadow-sm border border-gray-200">
-                <div class="px-4 py-3 border-b border-gray-200">
-                    <h3 class="text-sm font-semibold text-gray-900">Quick Actions</h3>
-                </div>
-                <div class="p-4 space-y-3">
-                    <a href="{{ route('admin.products.edit', $product) }}" class="w-full bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-sm transition-colors inline-flex items-center justify-center">
-                        <i class="fas fa-edit mr-2"></i>Edit Product
-                    </a>
-                    <a href="{{ route('admin.products.index') }}" class="w-full bg-gray-100 hover:bg-gray-200 text-gray-900 px-3 py-2 rounded text-sm transition-colors inline-flex items-center justify-center">
-                        <i class="fas fa-arrow-left mr-2"></i>Back to Products
-                    </a>
-                </div>
-            </div>
-
-            <!-- Recent Payments -->
+            <!-- Performance Metrics Card -->
+           
             @if($payments->count() > 0)
-            <div class="bg-white rounded-lg shadow-sm border border-gray-200">
-                <div class="px-4 py-3 border-b border-gray-200">
-                    <h3 class="text-sm font-semibold text-gray-900">Recent Payments</h3>
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+                <div class="p-6 border-b border-gray-100">
+                    <h2 class="text-lg font-semibold text-gray-900">Recent Payments</h2>
                 </div>
-                <div class="p-4">
-                    <div class="space-y-3 max-h-64 overflow-y-auto">
+                <div class="p-6">
+                    <div class="space-y-3 max-h-80 overflow-y-auto">
                         @foreach($payments->take(5) as $payment)
-                        <div class="border-l-2 border-gray-200 pl-3 py-2">
-                            <div class="flex justify-between items-start">
-                                <div>
-                                    <p class="text-sm font-medium text-gray-900">₱{{ number_format($payment->amount_paid, 2) }}</p>
-                                    <p class="text-xs text-gray-500">{{ $payment->payment_date->format('M d, Y') }}</p>
-                                    <p class="text-xs text-gray-600">Order #{{ $payment->order->order_id }}</p>
-                                </div>
-                                <span class="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">{{ $payment->payment_method }}</span>
+                        <div class="bg-gray-50 rounded-lg p-4 border-l-4 border-maroon">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-lg font-bold text-gray-900">₱{{ number_format($payment->amount_paid, 2) }}</span>
+                                <span class="text-xs font-medium text-gray-600 bg-white px-2 py-1 rounded-full">
+                                    {{ ucfirst($payment->payment_method) }}
+                                </span>
+                            </div>
+                            <div class="text-xs text-gray-600 space-y-1">
+                                <div>{{ $payment->payment_date->format('M d, Y') }}</div>
+                                <div>Order #{{ $payment->order->order_id }}</div>
                             </div>
                         </div>
                         @endforeach
                         @if($payments->count() > 5)
                         <div class="text-center pt-2">
-                            <span class="text-xs text-gray-500">+{{ $payments->count() - 5 }} more payments</span>
+                            <span class="text-xs text-gray-500">
+                                +{{ $payments->count() - 5 }} more payments
+                            </span>
                         </div>
                         @endif
                     </div>
                 </div>
             </div>
             @endif
+            <!-- Quick Actions Card -->
+            
+
+            <!-- Recent Payments Card -->
+            
         </div>
     </div>
 </div>

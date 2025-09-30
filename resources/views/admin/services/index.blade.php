@@ -46,7 +46,6 @@
         
         <!-- Search and Archive Toggle -->
         <div class="flex items-center space-x-4">
-            <x-archive-toggle :showArchived="$showArchived" :route="route('admin.services.index')" />
             
             <form method="GET" class="flex items-center space-x-2">
                 <div class="relative">

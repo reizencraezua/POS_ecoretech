@@ -6,8 +6,8 @@
 
 @section('content')
 <div class="space-y-6">
-    <!-- Archive Toggle -->
-    <x-archive-toggle :showArchived="$showArchived" :route="route('admin.payments.index')" />
+    <!-- Archive Toggle
+    <x-archive-toggle :showArchived="$showArchived" :route="route('admin.payments.index')" /> -->
     
     <!-- Header Actions -->
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">

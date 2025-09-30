@@ -141,7 +141,6 @@
                         <h3 class="text-lg font-semibold text-gray-900">Order Items</h3>
                         <div class="flex items-center space-x-6 text-sm text-gray-600">
                             <span>{{ $order->details->count() }} items</span>
-                            <span>₱{{ number_format($order->details->sum('subtotal'), 2) }} subtotal</span>
                             @if($order->layout_design_fee > 0)
                             <span>₱{{ number_format($order->layout_design_fee, 2) }} layout fee</span>
                             @endif
@@ -158,6 +157,8 @@
                                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unit</th>
                                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Size</th>
                                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unit Price</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Layout</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Layout Price</th>
                                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Subtotal</th>
                             </tr>
                         </thead>
@@ -179,34 +180,72 @@
                                 <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ $detail->unit }}</td>
                                 <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ $detail->size }}</td>
                                 <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">₱{{ number_format($detail->price, 2) }}</td>
+                                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                                    @if($detail->layout)
+                                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                            <i class="fas fa-check mr-1"></i>Yes
+                                        </span>
+                                    @else
+                                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                            <i class="fas fa-times mr-1"></i>No
+                                        </span>
+                                    @endif
+                                </td>
+                                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                                    @if($detail->layout && $detail->layout_price > 0)
+                                        ₱{{ number_format($detail->layout_price, 2) }}
+                                    @else
+                                        <span class="text-gray-400">-</span>
+                                    @endif
+                                </td>
                                 <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">₱{{ number_format($detail->subtotal, 2) }}</td>
                             </tr>
                             @empty
                             <tr>
-                                <td colspan="7" class="px-4 py-8 text-center text-gray-500">
+                                <td colspan="9" class="px-4 py-8 text-center text-gray-500">
                                     <i class="fas fa-box text-4xl mb-2"></i>
                                     <p>No items found for this order.</p>
                                 </td>
                             </tr>
                             @endforelse
                         </tbody>
-                        <tfoot class="bg-gray-50">
-                            <tr class="border-t border-gray-200">
-                                <td colspan="7" class="px-4 py-2 text-sm text-gray-600 text-right">Items Total:</td>
-                                <td class="px-4 py-2 text-sm font-medium text-gray-900">₱{{ number_format($order->details->sum('subtotal'), 2) }}</td>
-                            </tr>
-                            @if($order->layout_design_fee > 0)
-                            <tr class="border-t border-gray-200">
-                                <td colspan="7" class="px-4 py-2 text-sm text-gray-600 text-right">Layout Design Fee:</td>
-                                <td class="px-4 py-2 text-sm font-medium text-gray-900">₱{{ number_format($order->layout_design_fee, 2) }}</td>
-                            </tr>
-                            @endif
-                            <tr class="bg-maroon text-white">
-                                <td colspan="7" class="px-4 py-4 text-right font-semibold text-lg">TOTAL AMOUNT:</td>
-                                <td class="px-4 py-4 font-bold text-xl">₱{{ number_format($order->total_amount, 2) }}</td>
-                            </tr>
-                        </tfoot>
                     </table>
+                </div>
+            </div>
+
+            <!-- Order Summary -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h3 class="text-lg font-semibold text-gray-900">Order Summary</h3>
+                </div>
+                <div class="p-6">
+                    <div class="space-y-3">
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Number of Items:</span>
+                            <span class="font-medium">{{ $order->details->sum('quantity') }}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Layout Fees:</span>
+                            <span class="font-medium">₱{{ number_format($order->layout_design_fee ?? 0, 2) }}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Subtotal:</span>
+                            <span class="font-medium">₱{{ number_format(($order->total_amount / 1.12), 2) }}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">VAT Tax:</span>
+                            <span class="font-medium">₱{{ number_format(($order->total_amount * 0.12), 2) }}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Order Discount:</span>
+                            <span class="font-medium text-green-600">-₱{{ number_format($order->details->sum('discount'), 2) }}</span>
+                        </div>
+                        <hr class="border-gray-200">
+                        <div class="flex justify-between text-lg font-bold">
+                            <span>TOTAL AMOUNT:</span>
+                            <span>₱{{ number_format($order->total_amount, 2) }}</span>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

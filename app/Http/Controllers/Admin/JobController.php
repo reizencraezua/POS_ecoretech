@@ -11,7 +11,10 @@ class JobController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Job::query();
+        $showArchived = $request->boolean('archived');
+        $query = $showArchived
+            ? Job::with('employees')->onlyTrashed()
+            : Job::with('employees');
 
         if ($request->has('search')) {
             $search = $request->search;
@@ -19,9 +22,10 @@ class JobController extends Controller
                 ->orWhere('job_description', 'like', "%{$search}%");
         }
 
-        $jobs = $query->with('employees')->orderBy('job_title')->paginate(15);
+        $jobs = $query->orderBy('job_title')->paginate(15);
+        $jobs->appends($request->query());
 
-        return view('admin.jobs.index', compact('jobs'));
+        return view('admin.jobs.index', compact('jobs', 'showArchived'));
     }
 
     public function create()
@@ -112,10 +116,37 @@ class JobController extends Controller
             $job->delete();
 
             return redirect()->route('admin.jobs.index')
-                ->with('success', 'Job position deleted successfully.');
+                ->with('success', 'Job position archived successfully.');
         } catch (\Exception $e) {
             return redirect()->back()
-                ->with('error', 'Failed to delete job position. Please try again.');
+                ->with('error', 'Failed to archive job position. Please try again.');
+        }
+    }
+
+    public function archive(Job $job)
+    {
+        try {
+            $job->delete();
+
+            return redirect()->route('admin.jobs.index')
+                ->with('success', 'Job position archived successfully.');
+        } catch (\Exception $e) {
+            return redirect()->back()
+                ->with('error', 'Failed to archive job position. Please try again.');
+        }
+    }
+
+    public function restore($jobId)
+    {
+        try {
+            $job = Job::withTrashed()->findOrFail($jobId);
+            $job->restore();
+
+            return redirect()->route('admin.jobs.index')
+                ->with('success', 'Job position restored successfully.');
+        } catch (\Exception $e) {
+            return redirect()->back()
+                ->with('error', 'Failed to restore job position. Please try again.');
         }
     }
 }

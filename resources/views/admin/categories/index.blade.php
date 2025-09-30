@@ -6,8 +6,6 @@
 
 @section('content')
 <div class="max-w-7xl mx-auto">
-    <!-- Archive Toggle -->
-    <x-archive-toggle :showArchived="$showArchived" :route="route('admin.categories.index')" />
     
     <div class="bg-white rounded-lg shadow-md">
         <div class="px-6 py-4 border-b border-gray-200">
@@ -41,13 +39,14 @@
             @if($categories->count() > 0)
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     @foreach($categories as $category)
-                        <div class="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">
+                        <div class="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow cursor-pointer" 
+                             onclick="window.location.href='{{ route('admin.categories.show', $category) }}'">
                             <div class="flex items-center justify-between mb-4">
                                 <div class="flex items-center space-x-3">
                                     <div class="w-4 h-4 rounded-full" style="background-color: {{ $category->category_color }}"></div>
                                     <h3 class="text-lg font-semibold text-gray-900">{{ $category->category_name }}</h3>
                                 </div>
-                                <div class="flex space-x-2">
+                                <div class="flex space-x-2" onclick="event.stopPropagation();">
                                     @if($showArchived)
                                         <x-archive-actions 
                                             :item="$category" 
@@ -65,7 +64,7 @@
                             </div>
                             
                             @if($category->category_description)
-                                <p class="text-gray-600 text-sm mb-3">{{ $category->category_description }}</p>
+                                <p class="text-gray-600 text-sm mb-3 truncate">{{ $category->category_description }}</p>
                             @endif
                             
                             <!-- Size Organization -->

@@ -16,6 +16,7 @@ class Category extends Model
         'category_name',
         'category_description',
         'category_color',
+        'size_group',
         'is_active',
     ];
 
