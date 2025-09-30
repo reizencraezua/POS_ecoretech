@@ -252,6 +252,12 @@
                                 <span class="text-sm font-medium text-gray-900" x-text="'₱' + getLayoutFees().toFixed(2)"></span>
                             </div>
                             
+                            <!-- Total Amount -->
+                            <div class="flex justify-between items-center py-2 border-b border-gray-100">
+                                <span class="text-sm text-gray-600">Total Amount:</span>
+                                <span class="text-sm font-medium text-gray-900" x-text="'₱' + getTotalAmount().toFixed(2)"></span>
+                            </div>
+                            
                             <!-- Sub Total -->
                             <div class="flex justify-between items-center py-2 border-b border-gray-100">
                                 <span class="text-sm text-gray-600">Sub Total:</span>
@@ -270,10 +276,10 @@
                                 <span class="text-sm font-medium text-green-600" x-text="'-₱' + getOrderDiscount().toFixed(2)"></span>
                             </div>
                             
-                            <!-- Total Amount -->
+                            <!-- Final Total Amount -->
                             <div class="flex justify-between items-center py-3 border-t-2 border-maroon">
-                                <span class="text-lg font-semibold text-gray-900">TOTAL AMOUNT:</span>
-                                <span class="text-xl font-bold text-maroon" x-text="'₱' + getTotalAmount().toFixed(2)"></span>
+                                <span class="text-lg font-semibold text-gray-900">FINAL TOTAL AMOUNT:</span>
+                                <span class="text-xl font-bold text-maroon" x-text="'₱' + getFinalTotalAmount().toFixed(2)"></span>
                             </div>
                         </div>
                     </div>
@@ -316,13 +322,31 @@
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Payment Term</label>
-                        <select name="payment[payment_term]"
+                        <select name="payment[payment_term]" id="payment_term" @change="toggleDownpaymentInfo()"
                                 class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon">
                             <option value="">Select Term</option>
                             <option value="Downpayment">Downpayment</option>
                             <option value="Initial">Initial</option>
                             <option value="Full">Full</option>
                         </select>
+                    </div>
+                    
+                    <!-- Downpayment Information -->
+                    <div id="downpayment_info" class="md:col-span-2 mt-2 p-3 bg-blue-50 border border-blue-200 rounded-md text-sm" style="display: none;">
+                        <div class="flex items-center text-blue-700 mb-2">
+                            <i class="fas fa-info-circle mr-2"></i>
+                            <span class="font-medium">Downpayment Information</span>
+                        </div>
+                        <div class="text-blue-800">
+                            <div class="flex justify-between items-center">
+                                <span>Total Amount:</span>
+                                <span id="final_total_amount" class="font-semibold">₱0.00</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span>Required Downpayment (50%):</span>
+                                <span id="downpayment_amount_display" class="font-bold text-lg">₱0.00</span>
+                            </div>
+                        </div>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Amount</label>
@@ -462,7 +486,7 @@ function orderForm() {
         
         calculateTotal() {
             // Update total amount using the new calculation method
-            this.totalAmount = this.getTotalAmount();
+            this.totalAmount = this.getFinalTotalAmount();
         },
         
         groupItemsByProduct() {
@@ -510,7 +534,7 @@ function orderForm() {
                 const totalSubtotal = items.reduce((sum, item) => {
                     const baseAmount = (parseInt(item.quantity) || 0) * (parseFloat(item.price) || 0);
                     const layoutPrice = item.layout ? (parseFloat(item.layoutPrice) || 0) : 0;
-                    return sum + baseAmount + layoutPrice;
+                    return sum + baseAmount;
                 }, 0);
                 
                 const discount = this.calculateProductDiscount(totalSubtotal, totalQuantity);
@@ -542,36 +566,30 @@ function orderForm() {
         },
         
         getTotalAmount() {
-            // Total amount is fixed (items + layout fees - product discounts)
-            const itemsTotal = this.items.reduce((sum, item) => {
-                const baseAmount = (parseInt(item.quantity) || 0) * (parseFloat(item.price) || 0);
-                const layoutPrice = item.layout ? (parseFloat(item.layoutPrice) || 0) : 0;
-                return sum + baseAmount + layoutPrice;
+            // Formula 1: Total Amount = (Quantity × Unit Price)
+            return this.items.reduce((sum, item) => {
+                const quantity = parseInt(item.quantity) || 0;
+                const unitPrice = parseFloat(item.price) || 0;
+                return sum + (quantity * unitPrice);
             }, 0);
-            
-            const layoutFees = this.getLayoutFees();
-            const productDiscounts = this.getProductDiscounts();
-            
-            return Math.max(0, itemsTotal + layoutFees - productDiscounts);
         },
         
         getVATAmount() {
-            // VAT = Total Amount * 0.12
+            // Formula 3: VAT Tax = Total Amount × 0.12
             const totalAmount = this.getTotalAmount();
             return totalAmount * 0.12;
         },
         
         getSubTotal() {
-            // Sub Total = Total Amount - VAT Tax
+            // Formula 2: Sub Total = Total Amount ÷ 1.12
             const totalAmount = this.getTotalAmount();
-            const vatAmount = this.getVATAmount();
-            return totalAmount - vatAmount;
+            return totalAmount / 1.12;
         },
         
         getOrderDiscount() {
-            // Automatically calculate order discount based on total quantity and discount rules
-            const totalQuantity = this.getTotalQuantity();
+            // Formula 4: Discount Amount = Total Amount × Discount Rate
             const totalAmount = this.getTotalAmount();
+            const totalQuantity = this.getTotalQuantity();
             
             // Find applicable discount rule
             for (const rule of this.discountRules) {
@@ -584,6 +602,37 @@ function orderForm() {
                 }
             }
             return 0;
+        },
+        
+        getFinalTotalAmount() {
+            // Formula 5: Final Total Amount = (Total Amount - Discount Amount) + layout fee
+            const totalAmount = this.getTotalAmount();
+            const discountAmount = this.getOrderDiscount();
+            const layoutFees = this.getLayoutFees();
+            
+            return (totalAmount - discountAmount) + layoutFees;
+        },
+        
+        toggleDownpaymentInfo() {
+            const paymentTermSelect = document.getElementById('payment_term');
+            const downpaymentInfo = document.getElementById('downpayment_info');
+            
+            if (paymentTermSelect && downpaymentInfo) {
+                const selectedTerm = paymentTermSelect.value;
+                
+                if (selectedTerm === 'Downpayment') {
+                    const finalTotalAmount = this.getFinalTotalAmount();
+                    const expectedDownpayment = finalTotalAmount * 0.5;
+                    
+                    // Update display elements
+                    document.getElementById('final_total_amount').textContent = `₱${finalTotalAmount.toFixed(2)}`;
+                    document.getElementById('downpayment_amount_display').textContent = `₱${expectedDownpayment.toFixed(2)}`;
+                    
+                    downpaymentInfo.style.display = 'block';
+                } else {
+                    downpaymentInfo.style.display = 'none';
+                }
+            }
         },
         
         
@@ -618,6 +667,8 @@ document.addEventListener('DOMContentLoaded', function() {
             referenceNumberInput.value = ''; // Clear the field when hidden
         }
     });
+    
+    // Downpayment functionality is now handled by Alpine.js @change="toggleDownpaymentInfo()"
 });
 </script>
 @endsection

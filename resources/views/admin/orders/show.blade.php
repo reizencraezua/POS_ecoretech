@@ -25,7 +25,7 @@
                 </div>
                 <div class="flex items-center space-x-8">
                     <div class="text-right">
-                        <div class="text-2xl font-bold text-gray-900">₱{{ number_format($order->total_amount, 2) }}</div>
+                        <div class="text-2xl font-bold text-gray-900">₱{{ number_format($order->final_total_amount, 2) }}</div>
                         <div class="text-sm text-gray-600">Total Amount</div>
                     </div>
                     <div class="text-right">
@@ -118,12 +118,12 @@
                                     <div class="flex justify-between">
                                         <span class="text-sm text-gray-600">Payment Progress</span>
                                         <span class="text-sm font-medium text-gray-900">
-                                            {{ $order->total_amount > 0 ? round(($order->total_paid / $order->total_amount) * 100) : 0 }}%
+                                            {{ $order->final_total_amount > 0 ? round(($order->total_paid / $order->final_total_amount) * 100) : 0 }}%
                                         </span>
                                     </div>
                                     <div class="pt-2 border-t border-gray-100">
                                         <div class="w-full bg-gray-200 rounded-full h-2">
-                                            <div class="bg-gray-600 h-2 rounded-full" style="width: {{ $order->total_amount > 0 ? round(($order->total_paid / $order->total_amount) * 100) : 0 }}%"></div>
+                                            <div class="bg-gray-600 h-2 rounded-full" style="width: {{ $order->final_total_amount > 0 ? round(($order->total_paid / $order->final_total_amount) * 100) : 0 }}%"></div>
                                         </div>
                                     </div>
                                 </div>
@@ -159,7 +159,6 @@
                                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unit Price</th>
                                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Layout</th>
                                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Layout Price</th>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Subtotal</th>
                             </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200">
@@ -198,8 +197,7 @@
                                         <span class="text-gray-400">-</span>
                                     @endif
                                 </td>
-                                <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">₱{{ number_format($detail->subtotal, 2) }}</td>
-                            </tr>
+                               
                             @empty
                             <tr>
                                 <td colspan="9" class="px-4 py-8 text-center text-gray-500">
@@ -224,10 +222,7 @@
                             <span class="text-gray-600">Number of Items:</span>
                             <span class="font-medium">{{ $order->details->sum('quantity') }}</span>
                         </div>
-                        <div class="flex justify-between">
-                            <span class="text-gray-600">Layout Fees:</span>
-                            <span class="font-medium">₱{{ number_format($order->layout_design_fee ?? 0, 2) }}</span>
-                        </div>
+                        
                         <div class="flex justify-between">
                             <span class="text-gray-600">Subtotal:</span>
                             <span class="font-medium">₱{{ number_format(($order->total_amount / 1.12), 2) }}</span>
@@ -238,12 +233,17 @@
                         </div>
                         <div class="flex justify-between">
                             <span class="text-gray-600">Order Discount:</span>
-                            <span class="font-medium text-green-600">-₱{{ number_format($order->details->sum('discount'), 2) }}</span>
+                            <span class="font-medium text-green-600">-₱{{ number_format($order->order_discount_amount, 2) }}</span>
                         </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Layout Fees:</span>
+                            <span class="font-medium">₱{{ number_format($order->layout_fees, 2) }}</span>
+                        </div>
+                        
                         <hr class="border-gray-200">
                         <div class="flex justify-between text-lg font-bold">
                             <span>TOTAL AMOUNT:</span>
-                            <span>₱{{ number_format($order->total_amount, 2) }}</span>
+                            <span>₱{{ number_format($order->final_total_amount, 2) }}</span>
                         </div>
                     </div>
                 </div>
@@ -500,7 +500,7 @@
                             <div class="text-blue-800">
                                 <div class="flex justify-between items-center">
                                     <span>Total Amount:</span>
-                                    <span id="total_amount_display" class="font-semibold">₱0.00</span>
+                                    <span id="final_total_amount" class="font-semibold">₱0.00</span>
                                 </div>
                                 <div class="flex justify-between items-center">
                                     <span>Required Downpayment (50%):</span>
@@ -578,7 +578,7 @@ function toggleReferenceField() {
 function toggleDownpaymentInfo() {
     const paymentTermSelect = document.getElementById('payment_term');
     const downpaymentInfo = document.getElementById('downpayment_info');
-    const totalAmount = {{ $order->total_amount }};
+    const totalAmount = {{ $order->final_total_amount }};
     
     if (paymentTermSelect && downpaymentInfo) {
         const selectedTerm = paymentTermSelect.value;
@@ -587,7 +587,7 @@ function toggleDownpaymentInfo() {
             const expectedDownpayment = totalAmount * 0.5;
             
             // Update display elements
-            document.getElementById('total_amount_display').textContent = `₱${totalAmount.toFixed(2)}`;
+            document.getElementById('final_total_amount').textContent = `₱${totalAmount.toFixed(2)}`;
             document.getElementById('downpayment_amount_display').textContent = `₱${expectedDownpayment.toFixed(2)}`;
             
             downpaymentInfo.style.display = 'block';

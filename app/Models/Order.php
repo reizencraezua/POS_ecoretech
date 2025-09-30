@@ -74,6 +74,66 @@ class Order extends Model
 
     public function getRemainingBalanceAttribute()
     {
-        return $this->total_amount - $this->total_paid;
+        return $this->final_total_amount - $this->total_paid;
+    }
+
+    // New calculation methods following the formula
+    public function getTotalAmountAttribute()
+    {
+        // Formula 1: Total Amount = (Quantity × Unit Price)
+        return $this->details->sum(function ($detail) {
+            return $detail->quantity * $detail->price;
+        });
+    }
+
+    public function getSubTotalAttribute()
+    {
+        // Formula 2: Sub Total = Total Amount ÷ 1.12
+        return $this->total_amount / 1.12;
+    }
+
+    public function getVATAmountAttribute()
+    {
+        // Formula 3: VAT Tax = Total Amount × 0.12
+        return $this->total_amount * 0.12;
+    }
+
+    public function getOrderDiscountAmountAttribute()
+    {
+        // Formula 4: Discount Amount = Total Amount × Discount Rate
+        $totalQuantity = $this->details->sum('quantity');
+        $totalAmount = $this->total_amount;
+        
+        // Get discount rules (you may need to adjust this based on your discount rules implementation)
+        $discountRules = \App\Models\DiscountRule::all();
+        
+        foreach ($discountRules as $rule) {
+            if ($totalQuantity >= $rule->min_quantity && 
+                ($rule->max_quantity === null || $totalQuantity <= $rule->max_quantity)) {
+                if ($rule->discount_type === 'percentage') {
+                    return $totalAmount * ($rule->discount_percentage / 100);
+                } else {
+                    return $rule->discount_amount;
+                }
+            }
+        }
+        return 0;
+    }
+
+    public function getLayoutFeesAttribute()
+    {
+        return $this->details->sum(function ($detail) {
+            return $detail->layout ? $detail->layout_price : 0;
+        });
+    }
+
+    public function getFinalTotalAmountAttribute()
+    {
+        // Formula 5: Final Total Amount = (Total Amount - Discount Amount) + layout fee
+        $totalAmount = $this->total_amount;
+        $discountAmount = $this->order_discount_amount;
+        $layoutFees = $this->layout_fees;
+        
+        return ($totalAmount - $discountAmount) + $layoutFees;
     }
 }

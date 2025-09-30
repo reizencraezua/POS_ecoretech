@@ -95,7 +95,7 @@
 
     <!-- Order Statistics -->
     @if(!isset($showArchived) || !$showArchived)
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
             <div class="bg-white rounded-lg shadow p-4">
                 <div class="flex items-center">
                     <div class="p-2 bg-blue-100 rounded-lg">
@@ -116,6 +116,18 @@
                     <div class="ml-4">
                         <p class="text-sm font-medium text-gray-600">Production</p>
                         <p class="text-2xl font-bold text-gray-900">{{ $orders->where('order_status', 'Production')->count() }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow p-4">
+                <div class="flex items-center">
+                    <div class="p-2 bg-purple-100 rounded-lg">
+                        <i class="fas fa-paint-brush text-purple-600"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Designing</p>
+                        <p class="text-2xl font-bold text-gray-900">{{ $orders->where('order_status', 'Designing')->count() }}</p>
                     </div>
                 </div>
             </div>
@@ -215,7 +227,7 @@
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order Info</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dates</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dates</th>   
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payment</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
@@ -289,14 +301,14 @@
                                 </div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm font-medium text-gray-900">₱{{ number_format($order->total_amount, 2) }}</div>
+                                <div class="text-sm font-medium text-gray-900">₱{{ number_format($order->final_total_amount, 2) }}</div>
                                 <div class="text-sm text-gray-500">{{ $order->details->count() }} item(s)</div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 @php
                                     $totalPaid = $order->total_paid ?? 0;
-                                    $remainingBalance = $order->total_amount - $totalPaid;
-                                    $paymentPercentage = $order->total_amount > 0 ? ($totalPaid / $order->total_amount) * 100 : 0;
+                                    $remainingBalance = $order->final_total_amount - $totalPaid;
+                                    $paymentPercentage = $order->final_total_amount > 0 ? ($totalPaid / $order->final_total_amount) * 100 : 0;
                                 @endphp
                                 <div class="space-y-1">
                                     <div class="text-sm">
@@ -321,6 +333,7 @@
                                         <i class="fas fa-edit"></i>
                                     </a>
                                     
+                                    
                                     @if(isset($showArchived) && $showArchived)
                                         <!-- Restore Order -->
                                         <form method="POST" action="{{ route('admin.orders.restore', $order->order_id) }}" onsubmit="return confirm('Restore this order?');" class="inline" onclick="event.stopPropagation();">
@@ -331,30 +344,7 @@
                                             </button>
                                         </form>
                                     @else
-                                        <!-- Status Management -->
-                                        <div class="relative" x-data="{ open: false }" onclick="event.stopPropagation();">
-                                            <button @click="open = !open" class="text-maroon hover:text-maroon-dark transition-colors" title="Change Status">
-                                                <i class="fas fa-cog"></i>
-                                            </button>
-                                            <div x-show="open" @click.away="open = false" x-transition class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10 border border-gray-200">
-                                                <div class="py-1">
-                                                    <div class="px-4 py-2 text-xs font-medium text-gray-500 bg-gray-50">Change Status To:</div>
-                                                    @foreach(['On-Process', 'Designing', 'Production', 'For Releasing', 'Completed', 'Cancelled'] as $status)
-                                                        @if($status !== $order->order_status)
-                                                            <form method="POST" action="{{ route('admin.orders.status', $order) }}" class="inline w-full">
-                                                                @csrf
-                                                                @method('PATCH')
-                                                                <input type="hidden" name="order_status" value="{{ $status }}">
-                                                                <button type="submit" class="block w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left">
-                                                                    <i class="fas fa-arrow-right mr-2"></i>{{ $status }}
-                                                                </button>
-                                                            </form>
-                                                        @endif
-                                                    @endforeach
-                                                </div>
-                                            </div>
-                                        </div>
-                                        
+                                       
                                         <!-- Archive Order -->
                                         <form method="POST" action="{{ route('admin.orders.archive', $order) }}" onsubmit="return confirm('Archive this order? It will be moved to archives.');" class="inline" onclick="event.stopPropagation();">
                                             @csrf

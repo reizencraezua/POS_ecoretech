@@ -136,54 +136,19 @@ class OrderController extends Controller
                 $productDiscounts[$productId] = $discount;
             }
 
-            // Process order details with product discounts
+            // Process order details following the new formula
             foreach ($validated['items'] as $item) {
-                // Calculate base amount (Quantity × Price)
+                // Store the base amount (Quantity × Price) for each item
                 $baseAmount = $item['quantity'] * $item['price'];
-
-                // Add layout price if checked
-                $layoutChecked = in_array($item['layout'] ?? false, ['on', '1', 'true', 1, true]);
-                $subtotal = $baseAmount;
-                if ($layoutChecked) {
-                    $subtotal += $item['layoutPrice'] ?? 0;
-                }
-
-                // Apply product discount if applicable
-                $itemDiscount = 0;
-                if ($item['type'] === 'product' && isset($productDiscounts[$item['id']])) {
-                    $productId = $item['id'];
-                    $productItems = $productGroups[$productId];
-                    $productTotalSubtotal = 0;
-                    
-                    // Calculate total subtotal for this product group
-                    foreach ($productItems as $productItem) {
-                        $productBaseAmount = $productItem['quantity'] * $productItem['price'];
-                        $productLayoutChecked = in_array($productItem['layout'] ?? false, ['on', '1', 'true', 1, true]);
-                        $productSubtotal = $productBaseAmount;
-                        if ($productLayoutChecked) {
-                            $productSubtotal += $productItem['layoutPrice'] ?? 0;
-                        }
-                        $productTotalSubtotal += $productSubtotal;
-                    }
-                    
-                    // Distribute discount proportionally
-                    if ($productTotalSubtotal > 0) {
-                        $proportion = $subtotal / $productTotalSubtotal;
-                        $itemDiscount = $productDiscounts[$productId] * $proportion;
-                    }
-                }
-
-                $finalSubtotal = max(0, $subtotal - $itemDiscount); // Apply discount
-                $totalAmount += $finalSubtotal; // Add to total
 
                 $order->details()->create([
                     'quantity' => $item['quantity'],
                     'unit' => $item['unit'],
                     'size' => $item['size'],
                     'price' => $item['price'],
-                    'subtotal' => $finalSubtotal, // Store final subtotal
-                    'vat' => 0, // No VAT
-                    'discount' => $itemDiscount,
+                    'subtotal' => $baseAmount, // Store base amount (Quantity × Price)
+                    'vat' => 0, // VAT will be calculated at order level
+                    'discount' => 0, // Discount will be calculated at order level
                     'layout' => in_array($item['layout'] ?? false, ['on', '1', 'true', 1, true]),
                     'layout_price' => $item['layoutPrice'] ?? 0,
                     'product_id' => $item['type'] === 'product' ? $item['id'] : null,
@@ -191,22 +156,27 @@ class OrderController extends Controller
                 ]);
             }
 
-            // Calculate total amount (items + layout fees - product discounts)
-            $layoutDesignFee = $order->layout_design_fee ?? 0;
-            $totalAmount = $totalAmount + $layoutDesignFee;
+            // Calculate using the new formula
+            // Formula 1: Total Amount = (Quantity × Unit Price)
+            $totalAmount = $order->details->sum(function ($detail) {
+                return $detail->quantity * $detail->price;
+            });
             
-            // Calculate VAT (12% of total amount)
+            // Formula 2: Sub Total = Total Amount ÷ 1.12
+            $subTotal = $totalAmount / 1.12;
+            
+            // Formula 3: VAT Tax = Total Amount × 0.12
             $vatAmount = $totalAmount * 0.12;
             
-            // Calculate order discount based on total quantity
+            // Formula 4: Discount Amount = Total Amount × Discount Rate
             $totalQuantity = array_sum(array_column($validated['items'], 'quantity'));
-            $orderDiscount = $this->calculateOrderDiscount($totalAmount, $totalQuantity);
+            $discountAmount = $this->calculateOrderDiscount($totalAmount, $totalQuantity);
             
-            // Subtotal = Total Amount - VAT Tax
-            $subtotal = $totalAmount - $vatAmount;
-            
-            // Final total amount is the original total amount
-            $finalTotalAmount = $totalAmount;
+            // Formula 5: Final Total Amount = (Total Amount - Discount Amount) + layout fee
+            $layoutFees = $order->details->sum(function ($detail) {
+                return $detail->layout ? $detail->layout_price : 0;
+            });
+            $finalTotalAmount = ($totalAmount - $discountAmount) + $layoutFees;
             
             // Update order with final total amount
             $order->update(['total_amount' => $finalTotalAmount]);
@@ -215,8 +185,8 @@ class OrderController extends Controller
             if (!empty($validated['payment']['amount_paid'])) {
                 $payment = $validated['payment'];
                 $totalPaid = (float) $payment['amount_paid'];
-                $remaining = max(0, $order->total_amount - $totalPaid);
-                $change = $totalPaid > (float) $order->total_amount ? ($totalPaid - (float) $order->total_amount) : 0;
+                $remaining = max(0, $finalTotalAmount - $totalPaid);
+                $change = $totalPaid > $finalTotalAmount ? ($totalPaid - $finalTotalAmount) : 0;
 
                 \App\Models\Payment::create([
                     'receipt_number' => 'RCPT-' . now()->format('YmdHis') . '-' . $order->order_id,
@@ -349,54 +319,19 @@ class OrderController extends Controller
             $productDiscounts[$productId] = $discount;
         }
 
-        // Process order details with product discounts
+        // Process order details following the new formula
         foreach ($validated['items'] as $item) {
-            // Calculate base amount (Quantity × Price)
+            // Store the base amount (Quantity × Price) for each item
             $baseAmount = $item['quantity'] * $item['price'];
-
-            // Add layout price if checked
-            $layoutChecked = in_array($item['layout'] ?? false, ['on', '1', 'true', 1, true]);
-            $subtotal = $baseAmount;
-            if ($layoutChecked) {
-                $subtotal += $item['layoutPrice'] ?? 0;
-            }
-
-            // Apply product discount if applicable
-            $itemDiscount = 0;
-            if ($item['type'] === 'product' && isset($productDiscounts[$item['id']])) {
-                $productId = $item['id'];
-                $productItems = $productGroups[$productId];
-                $productTotalSubtotal = 0;
-                
-                // Calculate total subtotal for this product group
-                foreach ($productItems as $productItem) {
-                    $productBaseAmount = $productItem['quantity'] * $productItem['price'];
-                    $productLayoutChecked = in_array($productItem['layout'] ?? false, ['on', '1', 'true', 1, true]);
-                    $productSubtotal = $productBaseAmount;
-                    if ($productLayoutChecked) {
-                        $productSubtotal += $productItem['layoutPrice'] ?? 0;
-                    }
-                    $productTotalSubtotal += $productSubtotal;
-                }
-                
-                // Distribute discount proportionally
-                if ($productTotalSubtotal > 0) {
-                    $proportion = $subtotal / $productTotalSubtotal;
-                    $itemDiscount = $productDiscounts[$productId] * $proportion;
-                }
-            }
-
-            $finalSubtotal = max(0, $subtotal - $itemDiscount); // Apply discount
-            $totalAmount += $finalSubtotal; // Add to total
 
             $order->details()->create([
                 'quantity' => $item['quantity'],
                 'unit' => $item['unit'],
                 'size' => $item['size'],
                 'price' => $item['price'],
-                'subtotal' => $finalSubtotal, // Store final subtotal
-                'vat' => 0, // No VAT
-                'discount' => $itemDiscount,
+                'subtotal' => $baseAmount, // Store base amount (Quantity × Price)
+                'vat' => 0, // VAT will be calculated at order level
+                'discount' => 0, // Discount will be calculated at order level
                 'layout' => in_array($item['layout'] ?? false, ['on', '1', 'true', 1, true]),
                 'layout_price' => $item['layoutPrice'] ?? 0,
                 'product_id' => $item['type'] === 'product' ? $item['id'] : null,
@@ -404,22 +339,27 @@ class OrderController extends Controller
             ]);
         }
 
-        // Calculate total amount (items + layout fees - product discounts)
-        $layoutDesignFee = $order->layout_design_fee ?? 0;
-        $totalAmount = $totalAmount + $layoutDesignFee;
+        // Calculate using the new formula
+        // Formula 1: Total Amount = (Quantity × Unit Price)
+        $totalAmount = $order->details->sum(function ($detail) {
+            return $detail->quantity * $detail->price;
+        });
         
-        // Calculate VAT (12% of total amount)
+        // Formula 2: Sub Total = Total Amount ÷ 1.12
+        $subTotal = $totalAmount / 1.12;
+        
+        // Formula 3: VAT Tax = Total Amount × 0.12
         $vatAmount = $totalAmount * 0.12;
         
-        // Calculate order discount based on total quantity
+        // Formula 4: Discount Amount = Total Amount × Discount Rate
         $totalQuantity = array_sum(array_column($validated['items'], 'quantity'));
-        $orderDiscount = $this->calculateOrderDiscount($totalAmount, $totalQuantity);
+        $discountAmount = $this->calculateOrderDiscount($totalAmount, $totalQuantity);
         
-        // Subtotal = Total Amount - VAT Tax
-        $subtotal = $totalAmount - $vatAmount;
-        
-        // Final total amount is the original total amount
-        $finalTotalAmount = $totalAmount;
+        // Formula 5: Final Total Amount = (Total Amount - Discount Amount) + layout fee
+        $layoutFees = $order->details->sum(function ($detail) {
+            return $detail->layout ? $detail->layout_price : 0;
+        });
+        $finalTotalAmount = ($totalAmount - $discountAmount) + $layoutFees;
         
         // Update order with final total amount
         $order->update(['total_amount' => $finalTotalAmount]);
