@@ -44,7 +44,7 @@
                         </div>
                         <div>
                             <p class="text-sm text-gray-500">Order Total</p>
-                            <p class="font-medium">₱{{ number_format($payment->order->total_amount, 2) }}</p>
+                            <p class="font-medium">₱{{ number_format($payment->order->final_total_amount, 2) }}</p>
                         </div>
                     </div>
                 </div>

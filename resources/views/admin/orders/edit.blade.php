@@ -120,7 +120,7 @@
                         <option value="Designing" {{ old('order_status', $order->order_status) == 'Designing' ? 'selected' : '' }}>Designing</option>
                         <option value="Production" {{ old('order_status', $order->order_status) == 'Production' ? 'selected' : '' }}>Production</option>
                         <option value="For Releasing" {{ old('order_status', $order->order_status) == 'For Releasing' ? 'selected' : '' }}>For Releasing</option>
-                        <option value="Completed" {{ old('order_status', $order->order_status) == 'Completed' ? 'selected' : '' }}>Completed</option>
+                        <option value="Completed" {{ old('order_status', $order->order_status) == 'Completed' ? 'selected' : '' }} {{ !$order->isFullyPaid() ? 'disabled' : '' }}>Completed{{ !$order->isFullyPaid() ? ' (Must be fully paid)' : '' }}</option>
                         <option value="Cancelled" {{ old('order_status', $order->order_status) == 'Cancelled' ? 'selected' : '' }}>Cancelled</option>
                     </select>
                     @error('order_status')
@@ -201,8 +201,8 @@
                                            placeholder="Size">
                                 </td>
                                 <td class="px-4 py-4">
-                                    <input type="number" name="items[{{ $index }}][price]" value="{{ $detail->price }}" step="0.01" min="0" required 
-                                           class="w-32 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon"
+                                    <input type="number" name="items[{{ $index }}][price]" value="{{ $detail->price }}" step="0.01" min="0" required readonly
+                                           class="w-32 px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-700 cursor-not-allowed"
                                            placeholder="0.00">
                                 </td>
                                 <td class="px-4 py-4">
@@ -352,7 +352,10 @@
                             <!-- Order Discount -->
                             <div class="flex justify-between items-center py-2 border-b border-gray-100">
                                 <span class="text-sm text-gray-600">Order Discount:</span>
-                                <span class="text-sm font-medium text-green-600" x-text="'-₱' + getOrderDiscount().toFixed(2)"></span>
+                                <div class="text-right">
+                                    <div class="text-sm font-medium text-green-600" x-text="'-₱' + getOrderDiscount().toFixed(2)"></div>
+                                    <div class="text-xs text-gray-500" x-text="getDiscountInfo()"></div>
+                                </div>
                             </div>
 
                             <!-- Final Total Amount -->
@@ -614,6 +617,23 @@ function orderForm() {
             return 0;
         },
         
+        getDiscountInfo() {
+            // Get discount rule information for display
+            const totalQuantity = this.getTotalQuantity();
+            
+            // Find applicable discount rule based on quantity
+            for (const rule of this.discountRules) {
+                if (totalQuantity >= rule.min_quantity && (rule.max_quantity === null || totalQuantity <= rule.max_quantity)) {
+                    if (rule.discount_type === 'percentage') {
+                        return `${rule.discount_percentage}% off${rule.rule_name ? ' (' + rule.rule_name + ')' : ''}`;
+                    } else {
+                        return `₱${rule.discount_amount.toFixed(2)} off${rule.rule_name ? ' (' + rule.rule_name + ')' : ''}`;
+                    }
+                }
+            }
+            return '';
+        },
+        
         getFinalTotalAmount() {
             // Final Total Amount = (Sub total - discount) + layout fee
             const subTotal = this.getSubTotal();
@@ -649,14 +669,24 @@ function orderForm() {
             const paymentTermSelect = document.getElementById('payment_term');
             const amountPaidInput = document.querySelector('input[name="payment[amount_paid]"]');
             
-            if (paymentTermSelect && paymentTermSelect.value === 'Downpayment' && amountPaidInput) {
+            if (amountPaidInput) {
                 const finalTotalAmount = this.getFinalTotalAmount();
-                const requiredDownpayment = finalTotalAmount * 0.5;
                 const amountPaid = parseFloat(amountPaidInput.value) || 0;
                 
-                if (amountPaid < requiredDownpayment) {
-                    alert(`Downpayment must be at least 50% of the total amount (₱${requiredDownpayment.toFixed(2)}). Current amount: ₱${amountPaid.toFixed(2)}`);
+                // Check if payment amount exceeds total amount
+                if (amountPaid > finalTotalAmount) {
+                    alert(`Payment amount cannot exceed the total amount of ₱${finalTotalAmount.toFixed(2)}. Current amount: ₱${amountPaid.toFixed(2)}`);
                     return false;
+                }
+                
+                // Check downpayment validation
+                if (paymentTermSelect && paymentTermSelect.value === 'Downpayment') {
+                    const requiredDownpayment = finalTotalAmount * 0.5;
+                    
+                    if (amountPaid < requiredDownpayment) {
+                        alert(`Downpayment must be at least 50% of the total amount (₱${requiredDownpayment.toFixed(2)}). Current amount: ₱${amountPaid.toFixed(2)}`);
+                        return false;
+                    }
                 }
             }
             return true;

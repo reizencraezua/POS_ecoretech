@@ -28,7 +28,7 @@
                                 @foreach($orders as $order)
                                     <option value="{{ $order->order_id }}" {{ old('order_id') == $order->order_id ? 'selected' : '' }}>
                                         Order #{{ $order->order_id }} - {{ $order->customer->customer_firstname }} {{ $order->customer->customer_lastname }}
-                                        (₱{{ number_format($order->total_amount, 2) }})
+                                        (₱{{ number_format($order->final_total_amount, 2) }})
                                     </option>
                                 @endforeach
                             </select>

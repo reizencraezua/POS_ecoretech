@@ -39,9 +39,93 @@ class Quotation extends Model
         return $this->hasMany(QuotationDetail::class, 'quotation_id');
     }
 
+    // Calculation methods following the same formula as orders
     public function getTotalAmountAttribute()
     {
-        // Use stored total_amount if available, otherwise calculate from details
-        return $this->attributes['total_amount'] ?? $this->details->sum('subtotal');
+        // Formula 1: Total Amount = (Quantity × Unit Price)
+        return $this->details->sum(function ($detail) {
+            return $detail->quantity * $detail->price;
+        });
+    }
+
+    public function getSubTotalAttribute()
+    {
+        // Formula 1: Sub Total = (Quantity × Unit Price)
+        return $this->details->sum(function ($detail) {
+            return $detail->quantity * $detail->price;
+        });
+    }
+
+    public function getVATAmountAttribute()
+    {
+        // Formula 2: VAT Tax = Sub Total × 0.12
+        return $this->sub_total * 0.12;
+    }
+
+    public function getBaseAmountAttribute()
+    {
+        // Formula 3: Base Amount = Sub Total - VAT
+        return $this->sub_total - $this->vat_amount;
+    }
+
+    public function getQuotationDiscountAmountAttribute()
+    {
+        // Formula 4: Discount Amount = Sub Total × Discount Rate
+        $totalQuantity = $this->details->sum('quantity');
+        $subTotal = $this->sub_total;
+        
+        // Get discount rules
+        $discountRules = \App\Models\DiscountRule::all();
+        
+        foreach ($discountRules as $rule) {
+            if ($totalQuantity >= $rule->min_quantity && 
+                ($rule->max_quantity === null || $totalQuantity <= $rule->max_quantity)) {
+                if ($rule->discount_type === 'percentage') {
+                    return $subTotal * ($rule->discount_percentage / 100);
+                } else {
+                    return $rule->discount_amount;
+                }
+            }
+        }
+        return 0;
+    }
+
+    public function getLayoutFeesAttribute()
+    {
+        return $this->details->sum(function ($detail) {
+            return $detail->layout ? $detail->layout_price : 0;
+        });
+    }
+
+    public function getFinalTotalAmountAttribute()
+    {
+        // Formula 5: Final Total Amount = (Sub Total - Discount Amount) + layout fee
+        $subTotal = $this->sub_total;
+        $discountAmount = $this->quotation_discount_amount;
+        $layoutFees = $this->layout_fees;
+        
+        return ($subTotal - $discountAmount) + $layoutFees;
+    }
+
+    public function getQuotationDiscountInfoAttribute()
+    {
+        $totalQuantity = $this->details->sum('quantity');
+        $subTotal = $this->sub_total;
+        
+        $discountRules = \App\Models\DiscountRule::active()->validAt()->orderBy('min_quantity')->get();
+        
+        foreach ($discountRules as $rule) {
+            if ($totalQuantity >= $rule->min_quantity && 
+                ($rule->max_quantity === null || $totalQuantity <= $rule->max_quantity)) {
+                return [
+                    'type' => $rule->discount_type,
+                    'percentage' => $rule->discount_percentage,
+                    'amount' => $rule->discount_amount,
+                    'rule_name' => $rule->rule_name,
+                    'description' => $rule->description,
+                ];
+            }
+        }
+        return null;
     }
 }

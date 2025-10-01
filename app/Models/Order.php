@@ -77,6 +77,11 @@ class Order extends Model
         return $this->final_total_amount - $this->total_paid;
     }
 
+    public function isFullyPaid()
+    {
+        return $this->remaining_balance <= 0;
+    }
+
     // New calculation methods following the formula
     public function getTotalAmountAttribute()
     {
@@ -88,21 +93,29 @@ class Order extends Model
 
     public function getSubTotalAttribute()
     {
-        // Formula 2: Sub Total = Total Amount ÷ 1.12
-        return $this->total_amount / 1.12;
+        // Formula 1: Sub Total = (Quantity × Unit Price)
+        return $this->details->sum(function ($detail) {
+            return $detail->quantity * $detail->price;
+        });
     }
 
     public function getVATAmountAttribute()
     {
-        // Formula 3: VAT Tax = Total Amount × 0.12
-        return $this->total_amount * 0.12;
+        // Formula 2: VAT Tax = Sub Total × 0.12
+        return $this->sub_total * 0.12;
+    }
+
+    public function getBaseAmountAttribute()
+    {
+        // Formula 3: Base Amount = Sub Total - VAT
+        return $this->sub_total - $this->vat_amount;
     }
 
     public function getOrderDiscountAmountAttribute()
     {
-        // Formula 4: Discount Amount = Total Amount × Discount Rate
+        // Formula 4: Discount Amount = Sub Total × Discount Rate
         $totalQuantity = $this->details->sum('quantity');
-        $totalAmount = $this->total_amount;
+        $subTotal = $this->sub_total;
         
         // Get discount rules (you may need to adjust this based on your discount rules implementation)
         $discountRules = \App\Models\DiscountRule::all();
@@ -111,13 +124,35 @@ class Order extends Model
             if ($totalQuantity >= $rule->min_quantity && 
                 ($rule->max_quantity === null || $totalQuantity <= $rule->max_quantity)) {
                 if ($rule->discount_type === 'percentage') {
-                    return $totalAmount * ($rule->discount_percentage / 100);
+                    return $subTotal * ($rule->discount_percentage / 100);
                 } else {
                     return $rule->discount_amount;
                 }
             }
         }
         return 0;
+    }
+
+    public function getOrderDiscountInfoAttribute()
+    {
+        $totalQuantity = $this->details->sum('quantity');
+        $subTotal = $this->sub_total;
+        
+        $discountRules = \App\Models\DiscountRule::active()->validAt()->orderBy('min_quantity')->get();
+        
+        foreach ($discountRules as $rule) {
+            if ($totalQuantity >= $rule->min_quantity && 
+                ($rule->max_quantity === null || $totalQuantity <= $rule->max_quantity)) {
+                return [
+                    'type' => $rule->discount_type,
+                    'percentage' => $rule->discount_percentage,
+                    'amount' => $rule->discount_amount,
+                    'rule_name' => $rule->rule_name,
+                    'description' => $rule->description,
+                ];
+            }
+        }
+        return null;
     }
 
     public function getLayoutFeesAttribute()
@@ -129,11 +164,11 @@ class Order extends Model
 
     public function getFinalTotalAmountAttribute()
     {
-        // Formula 5: Final Total Amount = (Total Amount - Discount Amount) + layout fee
-        $totalAmount = $this->total_amount;
+        // Formula 5: Final Total Amount = (Sub Total - Discount Amount) + layout fee
+        $subTotal = $this->sub_total;
         $discountAmount = $this->order_discount_amount;
         $layoutFees = $this->layout_fees;
         
-        return ($totalAmount - $discountAmount) + $layoutFees;
+        return ($subTotal - $discountAmount) + $layoutFees;
     }
 }

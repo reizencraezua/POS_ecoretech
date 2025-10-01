@@ -65,7 +65,7 @@
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
                     @forelse($payments as $payment)
-                        <tr class="hover:bg-gray-50 transition-colors">
+                        <tr class="hover:bg-gray-50 transition-colors cursor-pointer" onclick="window.location.href='{{ route('admin.payments.show', $payment) }}'">
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <div class="flex items-center">
                                     <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
@@ -79,7 +79,7 @@
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <div class="text-sm font-medium text-gray-900">Order #{{ str_pad($payment->order->order_id, 5, '0', STR_PAD_LEFT) }}</div>
-                                <div class="text-sm text-gray-500">₱{{ number_format($payment->order->total_amount, 2) }} total</div>
+                                <div class="text-sm text-gray-500">₱{{ number_format($payment->order->final_total_amount, 2) }} total</div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <div class="text-sm font-medium text-gray-900">{{ $payment->order->customer->display_name }}</div>
@@ -128,7 +128,7 @@
                                     <span class="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">Complete</span>
                                 @endif
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2" onclick="event.stopPropagation()">
                                 @if($showArchived)
                                     <x-archive-actions 
                                         :item="$payment" 
@@ -142,9 +142,7 @@
                                         :restoreRoute="'admin.payments.restore'" 
                                         :showRestore="false" />
                                 @endif
-                                <button onclick="printReceipt({{ $payment->payment_id }})" class="text-maroon hover:text-maroon-dark transition-colors" title="Print Receipt">
-                                    <i class="fas fa-print"></i>
-                                </button>
+                               
                             </td>
                         </tr>
                     @empty

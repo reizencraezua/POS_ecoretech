@@ -19,11 +19,21 @@ class DashboardController extends Controller
         $startDate = $startDateParam ? Carbon::parse($startDateParam)->startOfDay() : null;
         $endDate = $endDateParam ? Carbon::parse($endDateParam)->endOfDay() : null;
 
+        // Calculate total sales - all payments regardless of date
+        $totalSales = Payment::sum('amount_paid');
+        
+        // Calculate period sales for display (if date range is provided, show that range; otherwise show all-time)
+        $periodSales = $totalSales;
+        if ($startDate && $endDate) {
+            $periodSales = Payment::whereBetween('payment_date', [$startDate, $endDate])->sum('amount_paid');
+        }
+
         $stats = [
             'total_customers' => Customer::count(),
             'pending_quotations' => Quotation::where('status', Quotation::STATUS_PENDING)->count(),
             'active_orders' => Order::whereNotIn('order_status', [Order::STATUS_COMPLETED, Order::STATUS_CANCELLED])->count(),
-            'monthly_sales' => Payment::whereMonth('payment_date', Carbon::now()->month)->sum('amount_paid'),
+            'monthly_sales' => $periodSales,
+            'total_sales' => $totalSales,
         ];
 
         // Job order distribution by status (active orders only)
@@ -54,13 +64,16 @@ class DashboardController extends Controller
             ->take(5)
             ->get();
 
-        // Get orders with pending payments (simplified approach)
-        $pending_payments = Order::with('customer')
-            ->whereDoesntHave('payments')
-            ->take(5)
-            ->get();
+        // Get orders with pending payments (outstanding balances)
+        $pending_payments = Order::with(['customer', 'payments'])
+            ->whereNotIn('order_status', [Order::STATUS_COMPLETED, Order::STATUS_CANCELLED])
+            ->get()
+            ->filter(function($order) {
+                return $order->remaining_balance > 0;
+            })
+            ->take(5);
 
-        // Monthly sales overview data
+        // Monthly sales overview data for chart
         // Determine the period: either provided date range or last 6 months
         if ($startDate && $endDate && $startDate->lte($endDate)) {
             $periodStart = (clone $startDate)->startOfMonth();

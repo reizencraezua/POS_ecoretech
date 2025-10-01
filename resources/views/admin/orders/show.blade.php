@@ -46,6 +46,7 @@
         </div>
     </div>
 
+
     <div class="grid grid-cols-1 xl:grid-cols-4 gap-6">
         <!-- Main Content -->
         <div class="xl:col-span-3 space-y-4">
@@ -97,13 +98,7 @@
                                         <span class="text-sm text-gray-600">Deadline</span>
                                         <span class="text-sm font-medium text-gray-900">{{ $order->deadline_date->format('M d, Y') }}</span>
                                     </div>
-                                    <div class="flex justify-between">
-                                        <span class="text-sm text-gray-600">Days Remaining</span>
-                                        <span class="text-sm font-medium {{ $order->deadline_date->diffInDays(now()) < 0 ? 'text-red-600' : 
-                                           ($order->deadline_date->diffInDays(now()) <= 3 ? 'text-yellow-600' : 'text-gray-900') }}">
-                                            {{ max(0, $order->deadline_date->diffInDays(now())) }} days
-                                        </span>
-                                    </div>
+                                    
                                 </div>
                             </div>
                         </div>
@@ -219,38 +214,57 @@
                 <div class="p-6">
                     <div class="space-y-3">
                         <div class="flex justify-between">
-                            <span class="text-gray-600">No. of items: (quantity)</span>
+                            <span class="text-gray-600">No. of items: </span>
                             <span class="font-medium">{{ $order->details->sum('quantity') }}</span>
                         </div>
                         
+                       
+
                         <div class="flex justify-between">
-                            <span class="text-gray-600">Layout Fees: (layout fee)</span>
-                            <span class="font-medium">₱{{ number_format($order->layout_fees, 2) }}</span>
+                            <span class="text-gray-600">Base Amount:</span>
+                            <span class="font-medium">₱{{ number_format($order->base_amount, 2) }}</span>
+                        </div>
+                        
+                       
+                        
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">VAT (12%):</span>
+                            <span class="font-medium">₱{{ number_format($order->vat_amount, 2) }}</span>
                         </div>
                         
                         <div class="flex justify-between">
-                            <span class="text-gray-600">Base Amount: (Subtotal - VAT Tax)</span>
-                            <span class="font-medium">₱{{ number_format(($order->total_amount / 1.12), 2) }}</span>
+                            <span class="text-gray-600">Sub Total:</span>
+                            <span class="font-medium">₱{{ number_format($order->sub_total, 2) }}</span>
                         </div>
-                        
-                        <div class="flex justify-between">
-                            <span class="text-gray-600">VAT Tax: (Sub total * .12)</span>
-                            <span class="font-medium">₱{{ number_format(($order->total_amount * 0.12), 2) }}</span>
-                        </div>
-                        
-                        <div class="flex justify-between">
-                            <span class="text-gray-600">Sub Total: (Quantity * Unit Price)</span>
-                            <span class="font-medium">₱{{ number_format($order->total_amount, 2) }}</span>
-                        </div>
+                       
                         
                         <div class="flex justify-between">
                             <span class="text-gray-600">Order Discount:</span>
-                            <span class="font-medium text-green-600">-₱{{ number_format($order->order_discount_amount, 2) }}</span>
+                            <div class="text-right">
+                                <div class="font-medium text-green-600">-₱{{ number_format($order->order_discount_amount, 2) }}</div>
+                                @if($order->order_discount_info)
+                                    <div class="text-xs text-gray-500">
+                                        @if($order->order_discount_info['type'] === 'percentage')
+                                            {{ $order->order_discount_info['percentage'] }}% off
+                                        @else
+                                            ₱{{ number_format($order->order_discount_info['amount'], 2) }} off
+                                        @endif
+                                        @if($order->order_discount_info['rule_name'])
+                                            ({{ $order->order_discount_info['rule_name'] }})
+                                        @endif
+                                    </div>
+                                @endif
+                            </div>
+                        </div>
+
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Layout Fees: </span>
+                            <span class="font-medium">₱{{ number_format($order->layout_fees, 2) }}</span>
                         </div>
                         
                         <hr class="border-gray-200">
                         <div class="flex justify-between text-lg font-bold">
-                            <span>FINAL TOTAL AMOUNT: (Sub total - discount) + layout fee</span>
+                            <span>TOTAL AMOUNT: </span>
                             <span>₱{{ number_format($order->final_total_amount, 2) }}</span>
                         </div>
                     </div>
@@ -280,15 +294,18 @@
                     <form method="POST" action="{{ route('admin.orders.status', $order) }}" class="w-full">
                         @csrf
                         @method('PATCH')
-                        <select name="order_status" onchange="this.form.submit()" class="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-gray-500 focus:border-gray-500">
+                        <select name="order_status" onchange="this.form.submit()" class="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-gray-500 focus:border-gray-500 @error('order_status') border-red-500 @enderror">
                             <option value="">Update Status</option>
                             <option value="On-Process">On-Process</option>
                             <option value="Designing">Designing</option>
                             <option value="Production">Production</option>
                             <option value="For Releasing">For Releasing</option>
-                            <option value="Completed">Completed</option>
+                            <option value="Completed" {{ !$order->isFullyPaid() ? 'disabled' : '' }}>Completed{{ !$order->isFullyPaid() ? ' (Must be fully paid)' : '' }}</option>
                             <option value="Cancelled">Cancelled</option>
                         </select>
+                        @error('order_status')
+                            <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                        @enderror
                     </form>
                     @endif
                 </div>

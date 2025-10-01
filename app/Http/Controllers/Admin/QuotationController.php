@@ -84,37 +84,48 @@ class QuotationController extends Controller
                 'total_amount' => 0, // Will be calculated after details
             ]);
 
-            // Process quotation details
+            // Process quotation details following the same formula as orders
             foreach ($validated['items'] as $item) {
-                // Calculate base amount (Quantity × Price)
+                // Store the base amount (Quantity × Price) for each item
                 $baseAmount = $item['quantity'] * $item['price'];
-
-                // Apply discount to base amount
-                $discountAmount = $item['discountAmount'] ?? 0;
-                $subtotal = $baseAmount - $discountAmount;
-
-                // Add layout price if checked (after discount)
-                $layoutChecked = in_array($item['layout'] ?? false, ['on', '1', 'true', 1, true]);
-                if ($layoutChecked) {
-                    $subtotal += $item['layoutPrice'] ?? 0;
-                }
-
-                $subtotal = max(0, $subtotal); // Ensure subtotal is not negative
-                $totalAmount += $subtotal; // No VAT for quotations
 
                 $quotation->details()->create([
                     'quantity' => $item['quantity'],
                     'unit' => $item['unit'],
                     'size' => $item['size'],
                     'price' => $item['price'],
-                    'subtotal' => $subtotal,
+                    'subtotal' => $baseAmount, // Store base amount (Quantity × Price)
+                    'layout' => in_array($item['layout'] ?? false, ['on', '1', 'true', 1, true]),
+                    'layout_price' => $item['layoutPrice'] ?? 0,
                     'product_id' => $item['type'] === 'product' ? $item['id'] : null,
                     'service_id' => $item['type'] === 'service' ? $item['id'] : null,
                 ]);
             }
 
+            // Calculate using the same formula as orders
+            // Formula 1: Total Amount = (Quantity × Unit Price)
+            $totalAmount = $quotation->details->sum(function ($detail) {
+                return $detail->quantity * $detail->price;
+            });
+            
+            // Formula 2: Sub Total = Total Amount ÷ 1.12
+            $subTotal = $totalAmount / 1.12;
+            
+            // Formula 3: VAT Tax = Total Amount × 0.12
+            $vatAmount = $totalAmount * 0.12;
+            
+            // Formula 4: Discount Amount = Total Amount × Discount Rate
+            $totalQuantity = array_sum(array_column($validated['items'], 'quantity'));
+            $discountAmount = $this->calculateOrderDiscount($totalAmount, $totalQuantity);
+            
+            // Formula 5: Final Total Amount = (Total Amount - Discount Amount) + layout fee
+            $layoutFees = $quotation->details->sum(function ($detail) {
+                return $detail->layout ? $detail->layout_price : 0;
+            });
+            $finalTotalAmount = ($totalAmount - $discountAmount) + $layoutFees;
+            
             // Update quotation with final total amount
-            $quotation->update(['total_amount' => $totalAmount]);
+            $quotation->update(['total_amount' => $finalTotalAmount]);
 
             return redirect()->route('admin.quotations.index')
                 ->with('success', 'Quotation created successfully.');
@@ -183,37 +194,48 @@ class QuotationController extends Controller
         // Delete existing quotation details
         $quotation->details()->delete();
 
-        // Create new quotation details
+        // Create new quotation details following the same formula as orders
         foreach ($validated['items'] as $item) {
-            // Calculate base amount (Quantity × Price)
+            // Store the base amount (Quantity × Price) for each item
             $baseAmount = $item['quantity'] * $item['price'];
-
-            // Apply discount to base amount
-            $discountAmount = $item['discountAmount'] ?? 0;
-            $subtotal = $baseAmount - $discountAmount;
-
-            // Add layout price if checked (after discount)
-            $layoutChecked = in_array($item['layout'] ?? false, ['on', '1', 'true', 1, true]);
-            if ($layoutChecked) {
-                $subtotal += $item['layoutPrice'] ?? 0;
-            }
-
-            $subtotal = max(0, $subtotal); // Ensure subtotal is not negative
-            $totalAmount += $subtotal; // No VAT for quotations
 
             $quotation->details()->create([
                 'quantity' => $item['quantity'],
                 'unit' => $item['unit'],
                 'size' => $item['size'],
                 'price' => $item['price'],
-                'subtotal' => $subtotal,
+                'subtotal' => $baseAmount, // Store base amount (Quantity × Price)
+                'layout' => in_array($item['layout'] ?? false, ['on', '1', 'true', 1, true]),
+                'layout_price' => $item['layoutPrice'] ?? 0,
                 'product_id' => $item['type'] === 'product' ? $item['id'] : null,
                 'service_id' => $item['type'] === 'service' ? $item['id'] : null,
             ]);
         }
 
+        // Calculate using the same formula as orders
+        // Formula 1: Total Amount = (Quantity × Unit Price)
+        $totalAmount = $quotation->details->sum(function ($detail) {
+            return $detail->quantity * $detail->price;
+        });
+        
+        // Formula 2: Sub Total = Total Amount ÷ 1.12
+        $subTotal = $totalAmount / 1.12;
+        
+        // Formula 3: VAT Tax = Total Amount × 0.12
+        $vatAmount = $totalAmount * 0.12;
+        
+        // Formula 4: Discount Amount = Total Amount × Discount Rate
+        $totalQuantity = array_sum(array_column($validated['items'], 'quantity'));
+        $discountAmount = $this->calculateOrderDiscount($totalAmount, $totalQuantity);
+        
+        // Formula 5: Final Total Amount = (Total Amount - Discount Amount) + layout fee
+        $layoutFees = $quotation->details->sum(function ($detail) {
+            return $detail->layout ? $detail->layout_price : 0;
+        });
+        $finalTotalAmount = ($totalAmount - $discountAmount) + $layoutFees;
+        
         // Update quotation with final total amount
-        $quotation->update(['total_amount' => $totalAmount]);
+        $quotation->update(['total_amount' => $finalTotalAmount]);
 
         return redirect()->route('admin.quotations.index')
             ->with('success', 'Quotation updated successfully.');
@@ -253,5 +275,47 @@ class QuotationController extends Controller
 
         return redirect()->route('admin.quotations.index')
             ->with('success', 'Quotation restored successfully.');
+    }
+
+    /**
+     * Calculate order discount based on quantity
+     */
+    private function calculateOrderDiscount($totalAmount, $totalQuantity)
+    {
+        $discountRules = DiscountRule::active()->validAt()->orderBy('min_quantity')->get();
+        
+        foreach ($discountRules as $rule) {
+            if ($totalQuantity >= $rule->min_quantity && 
+                ($rule->max_quantity === null || $totalQuantity <= $rule->max_quantity)) {
+                if ($rule->discount_type === 'percentage') {
+                    return $totalAmount * ($rule->discount_percentage / 100);
+                } else {
+                    return $rule->discount_amount;
+                }
+            }
+        }
+        
+        return 0;
+    }
+
+    /**
+     * Calculate product discount for a specific product group
+     */
+    private function calculateProductDiscount($subtotal, $quantity)
+    {
+        $discountRules = DiscountRule::active()->validAt()->orderBy('min_quantity')->get();
+        
+        foreach ($discountRules as $rule) {
+            if ($quantity >= $rule->min_quantity && 
+                ($rule->max_quantity === null || $quantity <= $rule->max_quantity)) {
+                if ($rule->discount_type === 'percentage') {
+                    return $subtotal * ($rule->discount_percentage / 100);
+                } else {
+                    return $rule->discount_amount;
+                }
+            }
+        }
+        
+        return 0;
     }
 }

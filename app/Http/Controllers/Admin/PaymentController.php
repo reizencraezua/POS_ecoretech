@@ -54,7 +54,7 @@ class PaymentController extends Controller
             
             // Validate downpayment amount (must be exactly 50% of total amount)
             if ($validated['payment_term'] === 'Downpayment') {
-                $expectedDownpayment = $order->total_amount * 0.5;
+                $expectedDownpayment = $order->final_total_amount * 0.5;
                 $tolerance = 0.01; // Allow 1 cent tolerance for rounding
                 
                 if (abs($validated['amount_paid'] - $expectedDownpayment) > $tolerance) {
@@ -66,8 +66,8 @@ class PaymentController extends Controller
 
             // Calculate balance and change
             $totalPaid = $order->payments->sum('amount_paid') + $validated['amount_paid'];
-            $remaining = max(0, $order->total_amount - $totalPaid);
-            $change = $totalPaid > $order->total_amount ? ($totalPaid - $order->total_amount) : 0;
+            $remaining = max(0, $order->final_total_amount - $totalPaid);
+            $change = $totalPaid > $order->final_total_amount ? ($totalPaid - $order->final_total_amount) : 0;
 
             Payment::create([
                 'receipt_number' => 'RCPT-' . now()->format('YmdHis') . '-' . $order->order_id,
@@ -147,7 +147,7 @@ class PaymentController extends Controller
         
         // Validate downpayment amount (must be exactly 50% of total amount)
         if ($validated['payment_term'] === 'Downpayment') {
-            $expectedDownpayment = $order->total_amount * 0.5;
+            $expectedDownpayment = $order->final_total_amount * 0.5;
             $tolerance = 0.01; // Allow 1 cent tolerance for rounding
             
             if (abs($validated['amount_paid'] - $expectedDownpayment) > $tolerance) {
@@ -159,8 +159,8 @@ class PaymentController extends Controller
 
         // Calculate balance and change
         $totalPaid = $order->payments->where('id', '!=', $payment->id)->sum('amount_paid') + $validated['amount_paid'];
-        $remaining = max(0, $order->total_amount - $totalPaid);
-        $change = $totalPaid > $order->total_amount ? ($totalPaid - $order->total_amount) : 0;
+        $remaining = max(0, $order->final_total_amount - $totalPaid);
+        $change = $totalPaid > $order->final_total_amount ? ($totalPaid - $order->final_total_amount) : 0;
 
         $payment->update([
             'payment_date' => $validated['payment_date'],

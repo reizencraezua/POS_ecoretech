@@ -156,27 +156,27 @@ class OrderController extends Controller
                 ]);
             }
 
-            // Calculate using the new formula
-            // Formula 1: Total Amount = (Quantity × Unit Price)
-            $totalAmount = $order->details->sum(function ($detail) {
+            // Calculate using the corrected formula
+            // Formula 1: Sub Total = (Quantity × Unit Price)
+            $subTotal = $order->details->sum(function ($detail) {
                 return $detail->quantity * $detail->price;
             });
             
-            // Formula 2: Sub Total = Total Amount ÷ 1.12
-            $subTotal = $totalAmount / 1.12;
+            // Formula 2: VAT Tax = Sub Total × 0.12
+            $vatAmount = $subTotal * 0.12;
             
-            // Formula 3: VAT Tax = Total Amount × 0.12
-            $vatAmount = $totalAmount * 0.12;
+            // Formula 3: Base Amount = Sub Total - VAT
+            $baseAmount = $subTotal - $vatAmount;
             
-            // Formula 4: Discount Amount = Total Amount × Discount Rate
+            // Formula 4: Discount Amount = Sub Total × Discount Rate
             $totalQuantity = array_sum(array_column($validated['items'], 'quantity'));
-            $discountAmount = $this->calculateOrderDiscount($totalAmount, $totalQuantity);
+            $discountAmount = $this->calculateOrderDiscount($subTotal, $totalQuantity);
             
-            // Formula 5: Final Total Amount = (Total Amount - Discount Amount) + layout fee
+            // Formula 5: Final Total Amount = (Sub Total - Discount Amount) + layout fee
             $layoutFees = $order->details->sum(function ($detail) {
                 return $detail->layout ? $detail->layout_price : 0;
             });
-            $finalTotalAmount = ($totalAmount - $discountAmount) + $layoutFees;
+            $finalTotalAmount = ($subTotal - $discountAmount) + $layoutFees;
             
             // Update order with final total amount
             $order->update(['total_amount' => $finalTotalAmount]);
@@ -201,10 +201,8 @@ class OrderController extends Controller
                     'order_id' => $order->order_id,
                 ]);
 
-                // Update order status if fully paid
-                if ($remaining <= 0) {
-                    $order->update(['order_status' => 'Completed']);
-                }
+                // Note: Order status is not automatically changed to Completed when fully paid
+                // The order status must be manually changed by the user
             }
 
             return redirect()->route('admin.orders.index')
@@ -271,6 +269,15 @@ class OrderController extends Controller
             'items.*.layout' => 'nullable|in:on,1,true,false,0',
             'items.*.layoutPrice' => 'nullable|numeric|min:0',
         ]);
+
+        // Check if trying to set status to Completed but order is not fully paid
+        if ($validated['order_status'] === 'Completed' && !$order->isFullyPaid()) {
+            return redirect()->back()
+                ->withErrors([
+                    'order_status' => 'Cannot mark order as Completed. Order must be fully paid first. Remaining balance: ₱' . number_format($order->remaining_balance, 2)
+                ])
+                ->withInput();
+        }
 
         $totalAmount = 0;
 
@@ -374,6 +381,13 @@ class OrderController extends Controller
         $validated = $request->validate([
             'order_status' => 'required|in:On-Process,Designing,Production,For Releasing,Completed,Cancelled',
         ]);
+
+        // Check if trying to set status to Completed but order is not fully paid
+        if ($validated['order_status'] === 'Completed' && !$order->isFullyPaid()) {
+            return back()->withErrors([
+                'order_status' => 'Cannot mark order as Completed. Order must be fully paid first. Remaining balance: ₱' . number_format($order->remaining_balance, 2)
+            ]);
+        }
 
         $order->update(['order_status' => $validated['order_status']]);
 

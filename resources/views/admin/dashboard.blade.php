@@ -5,22 +5,27 @@
 @section('page-description', 'Overview of printing shop operations')
 
 @section('header-actions')
-<form method="GET" action="{{ route('admin.dashboard') }}" class="flex items-end gap-3">
-    <div>
-        <label for="start_date" class="block text-xs font-medium text-gray-600 mb-1">Start date</label>
-        <input type="date" id="start_date" name="start_date" value="{{ request('start_date') }}"
-               class="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon">
-    </div>
-    <div>
-        <label for="end_date" class="block text-xs font-medium text-gray-600 mb-1">End date</label>
-        <input type="date" id="end_date" name="end_date" value="{{ request('end_date') }}"
-               class="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon">
-    </div>
-    <div class="flex items-center gap-2">
-        <button type="submit" class="bg-maroon hover:bg-maroon-dark text-white px-4 py-2 rounded-md">Filter</button>
-        <a href="{{ route('admin.dashboard') }}" class="px-3 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">Reset</a>
-    </div>
-</form>
+<div class="flex items-center gap-6">
+    <!-- Monthly Sales Display -->
+    
+    <!-- Date Filter Form -->
+    <form method="GET" action="{{ route('admin.dashboard') }}" class="flex items-end gap-3">
+        <div>
+            <label for="start_date" class="block text-xs font-medium text-gray-600 mb-1">Start date</label>
+            <input type="date" id="start_date" name="start_date" value="{{ request('start_date') }}"
+                   class="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon">
+        </div>
+        <div>
+            <label for="end_date" class="block text-xs font-medium text-gray-600 mb-1">End date</label>
+            <input type="date" id="end_date" name="end_date" value="{{ request('end_date') }}"
+                   class="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon">
+        </div>
+        <div class="flex items-center gap-2">
+            <button type="submit" class="bg-maroon hover:bg-maroon-dark text-white px-4 py-2 rounded-md">Filter</button>
+            <a href="{{ route('admin.dashboard') }}" class="px-3 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">Reset</a>
+        </div>
+    </form>
+</div>
 @endsection
 
 @section('content')
@@ -31,8 +36,14 @@
         <div class="bg-white rounded-lg shadow p-6 border-l-4 border-green-500">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-sm font-medium text-gray-600">Monthly Sales</p>
-                    <p class="text-3xl font-bold text-gray-900">₱{{ number_format($stats['monthly_sales'], 2) }}</p>
+                     <p class="text-sm font-medium text-gray-600">
+                         @if(request('start_date') && request('end_date'))
+                             Sales ({{ \Carbon\Carbon::parse(request('start_date'))->format('M d') }} - {{ \Carbon\Carbon::parse(request('end_date'))->format('M d, Y') }})
+                         @else
+                             Total Sales (All Time)
+                         @endif
+                     </p>
+                     <p class="text-3xl font-bold text-gray-900">₱{{ number_format($stats['monthly_sales'], 2) }}</p>
                 </div>
                 <div class="p-3 bg-green-500 bg-opacity-10 rounded-full">
                     <i class="fas fa-chart-line text-green-500 text-xl"></i>
@@ -84,8 +95,14 @@
         <!-- Monthly Sales Chart -->
         <div class="lg:col-span-2 bg-white rounded-lg shadow">
             <div class="px-6 py-4 border-b border-gray-200">
-                <h3 class="text-lg font-semibold text-gray-900">Monthly Sales Overview</h3>
-                <p class="text-sm text-gray-600">Sales performance for the last 6 months</p>
+                <h3 class="text-lg font-semibold text-gray-900">Sales Overview</h3>
+                <p class="text-sm text-gray-600">
+                    @if(request('start_date') && request('end_date'))
+                        Sales performance from {{ \Carbon\Carbon::parse(request('start_date'))->format('M d, Y') }} to {{ \Carbon\Carbon::parse(request('end_date'))->format('M d, Y') }}
+                    @else
+                        Sales performance for the last 6 months
+                    @endif
+                </p>
             </div>
             <div class="p-6">
                 <canvas id="salesChart" height="120"></canvas>
@@ -190,7 +207,7 @@
                             </div>
                         </div>
                         <div class="text-right">
-                            <p class="font-semibold text-gray-900">₱{{ number_format($order->total_amount, 2) }}</p>
+                            <p class="font-semibold text-gray-900">₱{{ number_format($order->final_total_amount, 2) }}</p>
                             <p class="text-sm text-gray-600">{{ $order->order_date->format('M d, Y') }}</p>
                             <p class="text-xs text-gray-500">Due: {{ $order->deadline_date->format('M d') }}</p>
                         </div>

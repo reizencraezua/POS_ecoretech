@@ -20,11 +20,15 @@ class QuotationDetail extends Model
         'unit',
         'price',
         'subtotal',
+        'layout',
+        'layout_price',
     ];
 
     protected $casts = [
         'price' => 'decimal:2',
         'subtotal' => 'decimal:2',
+        'layout' => 'boolean',
+        'layout_price' => 'decimal:2',
     ];
 
     /**

@@ -94,8 +94,6 @@
                                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Size</th>
                                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unit Price</th>
                                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Layout</th>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Discount</th>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Subtotal</th>
                                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
                             </tr>
                         </thead>
@@ -147,8 +145,8 @@
                                         </select>
                                     </td>
                                     <td class="px-4 py-4">
-                                        <input type="number" x-model="item.price" @input="calculateSubtotal(index)" :name="`items[${index}][price]`" 
-                                               step="0.01" min="0" required class="w-32 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon"
+                                        <input type="number" x-model="item.price" :name="`items[${index}][price]`" 
+                                               step="0.01" min="0" required readonly class="w-32 px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-700 cursor-not-allowed"
                                                placeholder="0.00">
                                     </td>
                                     <td class="px-4 py-4">
@@ -160,18 +158,7 @@
                                             <input type="hidden" x-model="item.layoutPrice" :name="`items[${index}][layoutPrice]`">
                                         </div>
                                     </td>
-                                    <td class="px-4 py-4">
-                                        <div class="text-center">
-                                            <span class="text-sm font-medium text-gray-900" x-text="item.discountAmount > 0 ? '₱' + item.discountAmount.toFixed(2) : '-'"></span>
-                                            <div class="text-xs text-gray-500" x-text="item.discountRule ? item.discountRule : ''"></div>
-                                            <!-- Hidden inputs for discount data -->
-                                            <input type="hidden" x-model="item.discountAmount" :name="`items[${index}][discountAmount]`">
-                                            <input type="hidden" x-model="item.discountRule" :name="`items[${index}][discountRule]`">
-                                        </div>
-                                    </td>
-                                    <td class="px-4 py-4">
-                                        <span class="font-medium text-gray-900" x-text="'₱' + item.subtotal.toFixed(2)"></span>
-                                    </td>
+                                   
                                     <td class="px-4 py-4">
                                         <button type="button" @click="removeItem(index)" class="text-red-600 hover:text-red-800 transition-colors">
                                             <i class="fas fa-trash"></i>
@@ -181,7 +168,7 @@
                             </template>
                             
                             <tr x-show="items.length === 0">
-                                        <td colspan="10" class="px-4 py-8 text-center text-gray-500">
+                                <td colspan="8" class="px-4 py-8 text-center text-gray-500">
                                     <i class="fas fa-box text-4xl mb-2"></i>
                                     <p>No items added yet. Click "Add Item" to start.</p>
                                 </td>
@@ -206,28 +193,41 @@
                         <!-- Items Summary -->
                         <div class="space-y-4">
                             <div class="flex justify-between items-center py-2 border-b border-gray-100">
-                                <span class="text-sm text-gray-600">Items Subtotal:</span>
-                                <span class="text-sm font-medium text-gray-900" x-text="'₱' + items.reduce((sum, item) => sum + (item.quantity * item.price), 0).toFixed(2)"></span>
+                                <span class="text-sm text-gray-600">Sub Total:</span>
+                                <span class="text-sm font-medium text-gray-900" x-text="'₱' + getSubTotal().toFixed(2)"></span>
+                            </div>
+                            
+                            <div class="flex justify-between items-center py-2 border-b border-gray-100">
+                                <span class="text-sm text-gray-600">VAT (12%):</span>
+                                <span class="text-sm font-medium text-gray-900" x-text="'₱' + getVATAmount().toFixed(2)"></span>
+                            </div>
+                            
+                            <div class="flex justify-between items-center py-2 border-b border-gray-100">
+                                <span class="text-sm text-gray-600">Base Amount:</span>
+                                <span class="text-sm font-medium text-gray-900" x-text="'₱' + getBaseAmount().toFixed(2)"></span>
+                            </div>
+                            
+                            <div class="flex justify-between items-center py-2 border-b border-gray-100">
+                                <span class="text-sm text-gray-600">Discount:</span>
+                                <div class="text-right">
+                                    <div class="text-sm font-medium text-green-600" x-text="'-₱' + getOrderDiscount().toFixed(2)"></div>
+                                    <div class="text-xs text-gray-500" x-text="getDiscountInfo()"></div>
+                                </div>
                             </div>
                             
                             <div class="flex justify-between items-center py-2 border-b border-gray-100">
                                 <span class="text-sm text-gray-600">Layout Fees:</span>
-                                <span class="text-sm font-medium text-gray-900" x-text="'₱' + items.reduce((sum, item) => sum + (item.layout ? item.layoutPrice : 0), 0).toFixed(2)"></span>
-                            </div>
-                            
-                            <div class="flex justify-between items-center py-2 border-b border-gray-100">
-                                <span class="text-sm text-gray-600">Total Discount:</span>
-                                <span class="text-sm font-medium text-green-600" x-text="'-₱' + items.reduce((sum, item) => sum + item.discountAmount, 0).toFixed(2)"></span>
+                                <span class="text-sm font-medium text-gray-900" x-text="'₱' + getLayoutFees().toFixed(2)"></span>
                             </div>
                             
                             <div class="flex justify-between items-center py-2 border-b border-gray-100">
                                 <span class="text-sm text-gray-600">Total Quantity:</span>
-                                <span class="text-sm font-medium text-gray-900" x-text="items.reduce((sum, item) => sum + (parseInt(item.quantity) || 0), 0) + ' quantity'"></span>
+                                <span class="text-sm font-medium text-gray-900" x-text="getTotalQuantity() + ' pcs'"></span>
                             </div>
                             
                             <div class="flex justify-between items-center py-3 border-t-2 border-maroon">
-                                <span class="text-lg font-semibold text-gray-900">TOTAL AMOUNT:</span>
-                                <span class="text-xl font-bold text-maroon" x-text="'₱' + totalAmount.toFixed(2)"></span>
+                                <span class="text-lg font-semibold text-gray-900">FINAL TOTAL:</span>
+                                <span class="text-xl font-bold text-maroon" x-text="'₱' + getFinalTotalAmount().toFixed(2)"></span>
                             </div>
                         </div>
 
@@ -355,54 +355,98 @@ function quotationForm() {
             // Step 1: Compute base price (Quantity × Unit Price)
             let baseAmount = quantity * price;
 
-            // Step 2: Compute discount from baseAmount only (not including layout fee)
-            item.discountAmount = this.calculateDiscount(baseAmount, quantity);
-            item.discountRule = this.getDiscountRule(quantity);
-
-            // Step 3: Apply discount
-            let subtotal = baseAmount - item.discountAmount;
-
-            // Step 4: Add layout fee if applicable
+            // Step 2: Add layout fee if applicable
+            let subtotal = baseAmount;
             if (item.layout && layoutPrice > 0) {
                 subtotal += layoutPrice;
             }
 
-            // Step 5: Ensure subtotal is never negative
+            // Step 3: Ensure subtotal is never negative
             item.subtotal = Math.max(0, subtotal);
 
-            // Step 6: Recalculate overall total
+            // Step 4: Recalculate overall total
             this.calculateTotal();
         },
         
         calculateTotal() {
-            this.totalAmount = this.items.reduce((sum, item) => sum + item.subtotal, 0);
+            // Update total amount using the new calculation method
+            this.totalAmount = this.getFinalTotalAmount();
         },
         
-        calculateDiscount(subtotal, quantity) {
+        // New calculation methods for the updated quotation summary
+        getTotalQuantity() {
+            return this.items.reduce((sum, item) => sum + (parseInt(item.quantity) || 0), 0);
+        },
+        
+        getLayoutFees() {
+            return this.items.reduce((sum, item) => sum + (item.layout ? (parseFloat(item.layoutPrice) || 0) : 0), 0);
+        },
+        
+        getSubTotal() {
+            // Sub Total = (Quantity × Unit Price)
+            return this.items.reduce((sum, item) => {
+                const quantity = parseInt(item.quantity) || 0;
+                const unitPrice = parseFloat(item.price) || 0;
+                return sum + (quantity * unitPrice);
+            }, 0);
+        },
+        
+        getVATAmount() {
+            // VAT Tax = Sub total × 0.12
+            const subTotal = this.getSubTotal();
+            return subTotal * 0.12;
+        },
+        
+        getBaseAmount() {
+            // Base Amount = Subtotal - VAT Tax
+            const subTotal = this.getSubTotal();
+            const vatAmount = this.getVATAmount();
+            return subTotal - vatAmount;
+        },
+        
+        getOrderDiscount() {
+            // Order Discount based on quantity
+            const totalQuantity = this.getTotalQuantity();
+            
+            // Find applicable discount rule based on quantity
             for (const rule of this.discountRules) {
-                if (quantity >= rule.min_quantity && (rule.max_quantity === null || quantity <= rule.max_quantity)) {
+                if (totalQuantity >= rule.min_quantity && (rule.max_quantity === null || totalQuantity <= rule.max_quantity)) {
                     if (rule.discount_type === 'percentage') {
-                        return subtotal * (rule.discount_percentage / 100);
+                        // For percentage discount, apply to subtotal
+                        const subTotal = this.getSubTotal();
+                        return subTotal * (rule.discount_percentage / 100);
                     } else {
+                        // For fixed amount discount, return the fixed amount
                         return rule.discount_amount;
                     }
                 }
             }
-            
             return 0;
         },
         
-        getDiscountRule(quantity) {
+        getFinalTotalAmount() {
+            // Final Total Amount = (Sub total - discount) + layout fee
+            const subTotal = this.getSubTotal();
+            const discountAmount = this.getOrderDiscount();
+            const layoutFees = this.getLayoutFees();
+            
+            return (subTotal - discountAmount) + layoutFees;
+        },
+
+        getDiscountInfo() {
+            // Get discount rule information for display
+            const totalQuantity = this.getTotalQuantity();
+            
+            // Find applicable discount rule based on quantity
             for (const rule of this.discountRules) {
-                if (quantity >= rule.min_quantity && (rule.max_quantity === null || quantity <= rule.max_quantity)) {
+                if (totalQuantity >= rule.min_quantity && (rule.max_quantity === null || totalQuantity <= rule.max_quantity)) {
                     if (rule.discount_type === 'percentage') {
-                        return rule.discount_percentage + '%';
+                        return `${rule.discount_percentage}% off${rule.rule_name ? ' (' + rule.rule_name + ')' : ''}`;
                     } else {
-                        return '₱' + rule.discount_amount.toFixed(2);
+                        return `₱${rule.discount_amount.toFixed(2)} off${rule.rule_name ? ' (' + rule.rule_name + ')' : ''}`;
                     }
                 }
             }
-            
             return '';
         },
         
@@ -412,7 +456,7 @@ function quotationForm() {
             console.log('Services available:', this.services.length);
             console.log('Customers available:', this.customers.length);
             
-            this.addItem(); // Add first item by default
+            // Note: No automatic item addition - admin must click "Add Item" button
         }
     }
 }
