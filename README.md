@@ -19,7 +19,7 @@ A comprehensive Point of Sale (POS) system built with Laravel 12 for printing an
 - PHP 8.2 or higher
 - Composer
 - Node.js 16+ and NPM
-- SQLite (included)
+- MySQL 5.7+ or MariaDB 10.3+
 
 ## Installation
 
@@ -47,11 +47,22 @@ A comprehensive Point of Sale (POS) system built with Laravel 12 for printing an
 
 5. **Database setup**
    ```bash
-   # Create SQLite database (if not exists)
-   touch database/database.sqlite
+   # Create MySQL database
+   mysql -u root -p -e "CREATE DATABASE pos_ecoretech CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+   
+   # Update .env file with your database credentials
+   # DB_DATABASE=pos_ecoretech
+   # DB_USERNAME=your_username
+   # DB_PASSWORD=your_password
    
    # Run migrations and seeders
    php artisan migrate --seed
+   ```
+
+   **Note**: If you encounter foreign key constraint errors, try running:
+   ```bash
+   # Reset database and reseed
+   php artisan migrate:fresh --seed
    ```
 
 6. **Build frontend assets**
@@ -74,7 +85,7 @@ A comprehensive Point of Sale (POS) system built with Laravel 12 for printing an
 
 ## Database
 
-The application uses SQLite for easy setup and portability. The database file (`database/database.sqlite`) will be created automatically during migration.
+The application uses MySQL for robust data management and better performance. Make sure to create the database before running migrations.
 
 ## Key Features
 
@@ -131,8 +142,7 @@ resources/
 
 database/
 ├── migrations/               # Database migrations
-├── seeders/                  # Database seeders
-└── database.sqlite          # SQLite database file
+└── seeders/                  # Database seeders
 ```
 
 ## Contributing

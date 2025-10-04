@@ -84,15 +84,20 @@ return new class extends Migration
      */
     private function foreignKeyExists(string $table, string $constraintName): bool
     {
-        $constraints = DB::select("
-            SELECT CONSTRAINT_NAME 
-            FROM information_schema.KEY_COLUMN_USAGE 
-            WHERE TABLE_SCHEMA = DATABASE() 
-            AND TABLE_NAME = ? 
-            AND CONSTRAINT_NAME = ?
-        ", [$table, $constraintName]);
+        try {
+            $constraints = DB::select("
+                SELECT CONSTRAINT_NAME 
+                FROM information_schema.KEY_COLUMN_USAGE 
+                WHERE TABLE_SCHEMA = DATABASE() 
+                AND TABLE_NAME = ? 
+                AND CONSTRAINT_NAME = ?
+            ", [$table, $constraintName]);
 
-        return count($constraints) > 0;
+            return count($constraints) > 0;
+        } catch (\Exception $e) {
+            // If there's an error checking constraints, assume they don't exist
+            return false;
+        }
     }
 
     /**
