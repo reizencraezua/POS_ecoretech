@@ -71,7 +71,9 @@
                     <label for="employee_contact" class="block text-sm font-medium text-gray-700 mb-1">Contact Number *</label>
                     <input type="text" name="employee_contact" id="employee_contact" value="{{ old('employee_contact', $employee->employee_contact) }}" required
                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon @error('employee_contact') border-red-500 @enderror"
-                           placeholder="09XX-XXX-XXXX">
+                           placeholder="09XX-XXX-XXXX"
+                           maxlength="11"
+                           pattern="[0-9]{11}">
                     @error('employee_contact')
                         <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
                     @enderror

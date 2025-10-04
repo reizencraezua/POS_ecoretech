@@ -45,11 +45,14 @@ class CustomerController extends Controller
             'customer_address' => 'required|string',
             'customer_email' => 'nullable|email|unique:customers,customer_email',
             'contact_person1' => 'required|string|max:255',
-            'contact_number1' => 'required|string|max:20',
+            'contact_number1' => 'required|string|regex:/^[0-9]{11}$/',
             'contact_person2' => 'nullable|string|max:255',
-            'contact_number2' => 'nullable|string|max:20',
+            'contact_number2' => 'nullable|string|regex:/^[0-9]{11}$/',
             'payment_terms' => 'nullable|string',
             'tin' => 'nullable|string|max:50',
+        ], [
+            'contact_number1.regex' => 'Primary contact number must be exactly 11 digits.',
+            'contact_number2.regex' => 'Secondary contact number must be exactly 11 digits.',
         ]);
 
         Customer::create($validated);
@@ -79,11 +82,14 @@ class CustomerController extends Controller
             'customer_address' => 'required|string',
             'customer_email' => 'nullable|email|unique:customers,customer_email,' . $customer->customer_id . ',customer_id',
             'contact_person1' => 'required|string|max:255',
-            'contact_number1' => 'required|string|max:20',
+            'contact_number1' => 'required|string|regex:/^[0-9]{11}$/',
             'contact_person2' => 'nullable|string|max:255',
-            'contact_number2' => 'nullable|string|max:20',
+            'contact_number2' => 'nullable|string|regex:/^[0-9]{11}$/',
             'payment_terms' => 'nullable|string',
             'tin' => 'nullable|string|max:50',
+        ], [
+            'contact_number1.regex' => 'Primary contact number must be exactly 11 digits.',
+            'contact_number2.regex' => 'Secondary contact number must be exactly 11 digits.',
         ]);
 
         $customer->update($validated);

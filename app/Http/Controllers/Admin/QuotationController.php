@@ -42,7 +42,7 @@ class QuotationController extends Controller
     {
         $customers = Customer::orderBy('customer_firstname')->get();
         $products = Product::with(['category.sizes'])->orderBy('product_name')->get();
-        $services = Service::orderBy('service_name')->get();
+        $services = Service::with(['category.sizes'])->orderBy('service_name')->get();
         $discountRules = DiscountRule::active()->validAt()->orderBy('min_quantity')->get();
 
         return view('admin.quotations.create', compact('customers', 'products', 'services', 'discountRules'));
@@ -155,7 +155,7 @@ class QuotationController extends Controller
     {
         $customers = Customer::orderBy('customer_firstname')->get();
         $products = Product::with(['category.sizes'])->orderBy('product_name')->get();
-        $services = Service::orderBy('service_name')->get();
+        $services = Service::with(['category.sizes'])->orderBy('service_name')->get();
         $discountRules = DiscountRule::active()->validAt()->orderBy('min_quantity')->get();
         $quotation->load(['details']);
 

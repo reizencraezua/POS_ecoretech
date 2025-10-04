@@ -38,9 +38,12 @@
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
                     @forelse($discountRules as $rule)
-                    <tr class="hover:bg-gray-50">
+                    <tr class="hover:bg-blue-50 hover:shadow-sm transition-all duration-200 cursor-pointer group" onclick="window.location.href='{{ route('admin.discount-rules.show', $rule) }}'">
                         <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="text-sm font-medium text-gray-900">{{ $rule->rule_name }}</div>
+                            <div class="flex items-center gap-2">
+                                <div class="text-sm font-medium text-gray-900 group-hover:text-blue-600">{{ $rule->rule_name }}</div>
+                                <i class="fas fa-external-link-alt text-xs text-gray-400 group-hover:text-blue-600 transition-colors"></i>
+                            </div>
                             @if($rule->description)
                                 <div class="text-sm text-gray-500">{{ Str::limit($rule->description, 50) }}</div>
                             @endif
@@ -81,22 +84,13 @@
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                             <div class="flex items-center space-x-2">
-                                <a href="{{ route('admin.discount-rules.show', $rule) }}" class="text-blue-600 hover:text-blue-900" title="View Details">
-                                    <i class="fas fa-eye"></i>
-                                </a>
-                                <a href="{{ route('admin.discount-rules.edit', $rule) }}" class="text-maroon hover:text-maroon-dark" title="Edit Rule">
+                                <a href="{{ route('admin.discount-rules.edit', $rule) }}" class="text-maroon hover:text-maroon-dark" title="Edit Rule" onclick="event.stopPropagation();">
                                     <i class="fas fa-edit"></i>
                                 </a>
-                                <form method="POST" action="{{ route('admin.discount-rules.toggle-status', $rule) }}" class="inline">
-                                    @csrf
-                                    <button type="submit" class="text-gray-600 hover:text-gray-900" title="{{ $rule->is_active ? 'Deactivate' : 'Activate' }}">
-                                        <i class="fas {{ $rule->is_active ? 'fa-pause' : 'fa-play' }}"></i>
-                                    </button>
-                                </form>
                                 <form method="POST" action="{{ route('admin.discount-rules.destroy', $rule) }}" class="inline" onsubmit="return confirm('Are you sure you want to archive this discount rule?')">
                                     @csrf
                                     @method('DELETE')
-                                    <button type="submit" class="text-red-600 hover:text-red-900" title="Archive Rule">
+                                    <button type="submit" class="text-red-600 hover:text-red-900" title="Archive Rule" onclick="event.stopPropagation();">
                                         <i class="fas fa-archive"></i>
                                     </button>
                                 </form>

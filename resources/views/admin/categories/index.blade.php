@@ -5,37 +5,43 @@
 @section('page-description', 'Manage product and service categories')
 
 @section('content')
-<div class="max-w-7xl mx-auto">
+<div class="space-y-6">
     
-    <div class="bg-white rounded-lg shadow-md">
-        <div class="px-6 py-4 border-b border-gray-200">
-            <div class="flex justify-between items-center">
-                <h2 class="text-xl font-semibold text-gray-900">Categories</h2>
-                @if(!$showArchived)
-                    <a href="{{ route('admin.categories.create') }}" 
-                       class="bg-maroon text-white px-4 py-2 rounded-md hover:bg-maroon-dark transition-colors">
-                        <i class="fas fa-plus mr-2"></i>Add Category
+    <!-- Header Actions -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div class="flex items-center space-x-4">
+            @if(!$showArchived)
+                <a href="{{ route('admin.categories.create') }}" class="bg-maroon hover:bg-maroon-dark text-white px-4 py-2 rounded-lg font-medium transition-colors inline-flex items-center">
+                    <i class="fas fa-plus mr-2"></i>
+                    Add Category
+                </a>
+            @endif
+        </div>
+        
+        <!-- Search -->
+        <div class="flex items-center space-x-4">
+            <form method="GET" class="flex items-center space-x-2">
+                <div class="relative">
+                    <input type="text" name="search" value="{{ request('search') }}" placeholder="Search categories..." 
+                           class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-maroon focus:border-maroon">
+                    <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                </div>
+                <button type="submit" class="bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-lg transition-colors">
+                    <i class="fas fa-search"></i>
+                </button>
+                @if(request('search'))
+                    <a href="{{ route('admin.categories.index') }}" class="bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-lg transition-colors">
+                        <i class="fas fa-times"></i>
                     </a>
                 @endif
-            </div>
-        </div>
-
-        <!-- Search and Filter -->
-        <div class="px-6 py-4 border-b border-gray-200">
-            <form method="GET" class="flex gap-4">
-                <div class="flex-1">
-                    <input type="text" name="search" value="{{ request('search') }}" 
-                           placeholder="Search categories..." 
-                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon">
-                </div>
-                <button type="submit" class="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700 transition-colors">
-                    <i class="fas fa-search mr-2"></i>Search
-                </button>
             </form>
         </div>
+    </div>
 
-        <!-- Categories Grid -->
+    <!-- Categories Grid -->
+    <div class="bg-white rounded-lg shadow overflow-hidden">
         <div class="p-6">
+
             @if($categories->count() > 0)
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     @foreach($categories as $category)
@@ -114,18 +120,24 @@
                 </div>
 
                 <!-- Pagination -->
-                <div class="mt-6">
-                    {{ $categories->links() }}
-                </div>
+                @if($categories->hasPages())
+                    <div class="mt-6">
+                        {{ $categories->links() }}
+                    </div>
+                @endif
             @else
                 <div class="text-center py-12">
-                    <i class="fas fa-tags text-6xl text-gray-300 mb-4"></i>
-                    <h3 class="text-lg font-medium text-gray-900 mb-2">No categories found</h3>
-                    <p class="text-gray-500 mb-6">Get started by creating your first category.</p>
-                    <a href="{{ route('admin.categories.create') }}" 
-                       class="bg-maroon text-white px-4 py-2 rounded-md hover:bg-maroon-dark transition-colors">
-                        <i class="fas fa-plus mr-2"></i>Add Category
-                    </a>
+                    <div class="text-gray-400">
+                        <i class="fas fa-tags text-6xl mb-4"></i>
+                        <p class="text-xl font-medium mb-2">No categories found</p>
+                        <p class="text-gray-500 mb-4">
+                            @if(request('search'))
+                                No categories match your search criteria.
+                            @else
+                                Get started by creating your first category.
+                            @endif
+                        </p>
+                    </div>
                 </div>
             @endif
         </div>

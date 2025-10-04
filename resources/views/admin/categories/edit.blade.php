@@ -86,10 +86,18 @@
                         
                         @foreach($sizesByGroup as $groupName => $groupSizes)
                             <div class="size-group mb-6" data-group="{{ $groupName }}">
-                                <h4 class="text-sm font-semibold text-gray-800 mb-3 flex items-center">
-                                    <i class="fas fa-tags mr-2 text-maroon"></i>
-                                    {{ ucfirst(str_replace('_', ' ', $groupName)) }}
-                                </h4>
+                                <div class="flex items-center justify-between mb-3">
+                                    <h4 class="text-sm font-semibold text-gray-800 flex items-center">
+                                        <i class="fas fa-tags mr-2 text-maroon"></i>
+                                        {{ ucfirst(str_replace('_', ' ', $groupName)) }}
+                                    </h4>
+                                    <label class="flex items-center space-x-2 cursor-pointer text-sm text-gray-600 hover:text-gray-800">
+                                        <input type="checkbox" 
+                                               class="select-all-sizes rounded border-gray-300 text-maroon focus:ring-maroon" 
+                                               data-group="{{ $groupName }}">
+                                        <span>Select All</span>
+                                    </label>
+                                </div>
                                 <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2">
                                     @foreach($groupSizes as $size)
                                     <label class="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-2 rounded border border-gray-100">
@@ -178,6 +186,67 @@ document.addEventListener('DOMContentLoaded', function() {
         sizeGroupSelect.value = currentSizeGroup;
         sizeGroupSelect.dispatchEvent(new Event('change'));
     }
+
+    // Select All functionality for size groups
+    const selectAllCheckboxes = document.querySelectorAll('.select-all-sizes');
+    selectAllCheckboxes.forEach(selectAllCheckbox => {
+        selectAllCheckbox.addEventListener('change', function() {
+            const groupName = this.getAttribute('data-group');
+            const groupContainer = document.querySelector(`[data-group="${groupName}"]`);
+            const sizeCheckboxes = groupContainer.querySelectorAll('input[name="size_ids[]"]');
+            
+            sizeCheckboxes.forEach(checkbox => {
+                checkbox.checked = this.checked;
+            });
+        });
+    });
+
+    // Update Select All checkbox when individual size checkboxes change
+    const sizeCheckboxes = document.querySelectorAll('input[name="size_ids[]"]');
+    sizeCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            const groupContainer = this.closest('.size-group');
+            const groupName = groupContainer.getAttribute('data-group');
+            const selectAllCheckbox = document.querySelector(`[data-group="${groupName}"].select-all-sizes`);
+            const groupSizeCheckboxes = groupContainer.querySelectorAll('input[name="size_ids[]"]');
+            const checkedCount = groupContainer.querySelectorAll('input[name="size_ids[]"]:checked').length;
+            
+            if (checkedCount === 0) {
+                selectAllCheckbox.checked = false;
+                selectAllCheckbox.indeterminate = false;
+            } else if (checkedCount === groupSizeCheckboxes.length) {
+                selectAllCheckbox.checked = true;
+                selectAllCheckbox.indeterminate = false;
+            } else {
+                selectAllCheckbox.checked = false;
+                selectAllCheckbox.indeterminate = true;
+            }
+        });
+    });
+
+    // Initialize Select All checkboxes based on current selections
+    function initializeSelectAllCheckboxes() {
+        selectAllCheckboxes.forEach(selectAllCheckbox => {
+            const groupName = selectAllCheckbox.getAttribute('data-group');
+            const groupContainer = document.querySelector(`[data-group="${groupName}"]`);
+            const groupSizeCheckboxes = groupContainer.querySelectorAll('input[name="size_ids[]"]');
+            const checkedCount = groupContainer.querySelectorAll('input[name="size_ids[]"]:checked').length;
+            
+            if (checkedCount === 0) {
+                selectAllCheckbox.checked = false;
+                selectAllCheckbox.indeterminate = false;
+            } else if (checkedCount === groupSizeCheckboxes.length) {
+                selectAllCheckbox.checked = true;
+                selectAllCheckbox.indeterminate = false;
+            } else {
+                selectAllCheckbox.checked = false;
+                selectAllCheckbox.indeterminate = true;
+            }
+        });
+    }
+
+    // Initialize on page load
+    initializeSelectAllCheckboxes();
 });
 </script>
 @endsection

@@ -181,8 +181,8 @@
                                         <select x-model="item.size" :name="`items[${index}][size]`" 
                                                 class="w-24 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon">
                                             <option value="">Select Size</option>
-                                            <template x-if="item.type === 'product' && item.id">
-                                                <template x-for="size in getAvailableSizes(item.id)">
+                                            <template x-if="(item.type === 'product' || item.type === 'service') && item.id">
+                                                <template x-for="size in getAvailableSizes(item.id, item.type)">
                                                     <option :value="size.size_name" x-text="size.size_name"></option>
                                                 </template>
                                             </template>
@@ -434,11 +434,17 @@ function orderForm() {
             this.calculateSubtotal(index);
         },
 
-        getAvailableSizes(productId) {
-            const product = this.products.find(p => p.product_id == productId);
-            if (!product || !product.category) return [];
-            
-            return product.category.sizes || [];
+        getAvailableSizes(itemId, itemType) {
+            if (itemType === 'product') {
+                const product = this.products.find(p => p.product_id == itemId);
+                if (!product || !product.category) return [];
+                return product.category.sizes || [];
+            } else if (itemType === 'service') {
+                const service = this.services.find(s => s.service_id == itemId);
+                if (!service || !service.category) return [];
+                return service.category.sizes || [];
+            }
+            return [];
         },
         
         updatePrice(index) {
@@ -481,6 +487,9 @@ function orderForm() {
 
             // Step 4: Recalculate overall total
             this.calculateTotal();
+            
+            // Step 5: Update graphics designer availability
+            this.updateGraphicsDesignerAvailability();
         },
         
         calculateTotal() {
@@ -682,6 +691,30 @@ function orderForm() {
         },
         
         
+        updateGraphicsDesignerAvailability() {
+            const graphicsDesignerSelect = document.getElementById('layout_employee_id');
+            if (!graphicsDesignerSelect) return;
+            
+            // Check if any layout checkbox is checked
+            const hasLayoutChecked = this.hasAnyLayoutChecked();
+            
+            if (hasLayoutChecked) {
+                graphicsDesignerSelect.disabled = false;
+                graphicsDesignerSelect.classList.remove('bg-gray-100', 'cursor-not-allowed');
+                graphicsDesignerSelect.classList.add('bg-white');
+            } else {
+                graphicsDesignerSelect.disabled = true;
+                graphicsDesignerSelect.value = ''; // Clear selection
+                graphicsDesignerSelect.classList.add('bg-gray-100', 'cursor-not-allowed');
+                graphicsDesignerSelect.classList.remove('bg-white');
+            }
+        },
+        
+        hasAnyLayoutChecked() {
+            // Check new item layout checkboxes (Alpine.js items)
+            return this.items.some(item => item.layout);
+        },
+        
         init() {
             console.log('Initializing order form...');
             console.log('Products available:', this.products.length);
@@ -691,6 +724,9 @@ function orderForm() {
             
             // Removed automatic item addition - users must click "Add Item" button
             // Removed automatic production employee assignment - users must select manually
+            
+            // Update graphics designer availability based on initial state
+            this.updateGraphicsDesignerAvailability();
         }
     }
 }

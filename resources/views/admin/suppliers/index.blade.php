@@ -1,111 +1,87 @@
 @extends('layouts.admin')
 
 @section('title', 'Suppliers')
+@section('page-title', 'Supplier Management')
+@section('page-description', 'Manage your suppliers and vendor information')
 
 @section('content')
-<div class="space-y-6">
-    <!-- Archive Toggle -->
-    <x-archive-toggle :showArchived="$showArchived" :route="route('admin.suppliers.index')" />
-    
-    <div class="bg-white rounded-lg shadow-sm">
-    <div class="p-6 border-b border-gray-200">
-        <div class="flex items-center justify-between">
-            <div>
-                <h1 class="text-2xl font-bold text-gray-900">Suppliers</h1>
-                <p class="text-sm text-gray-600 mt-1">Manage your suppliers and vendor information</p>
-            </div>
+<div class="space-y-6" x-data="{ supplierModal: false }">
+    <!-- Header Actions -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div class="flex items-center space-x-4">
             @if(!$showArchived)
-                <a href="{{ route('admin.suppliers.create') }}" class="bg-maroon text-white px-4 py-2 rounded-lg hover:bg-maroon-dark transition-colors">
-                    <i class="fas fa-plus mr-2"></i>Add Supplier
-                </a>
+                <button @click="supplierModal = true" class="bg-maroon hover:bg-maroon-dark text-white px-4 py-2 rounded-lg font-medium transition-colors inline-flex items-center">
+                    <i class="fas fa-plus mr-2"></i>
+                    Add Supplier
+                </button>
             @endif
         </div>
         
-        <!-- Search Bar -->
-        <div class="mt-4">
-            <form method="GET" action="{{ route('admin.suppliers.index') }}" class="flex items-center gap-4">
-                <div class="flex-1">
-                    <input type="text" name="search" value="{{ request('search') }}" 
-                           placeholder="Search suppliers by name, email, or contact..." 
-                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-maroon focus:border-transparent">
+        <!-- Search -->
+        <div class="flex items-center space-x-4">
+            <form method="GET" class="flex items-center space-x-2">
+                <div class="relative">
+                    <input type="text" name="search" value="{{ request('search') }}" placeholder="Search suppliers..." 
+                           class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-maroon focus:border-maroon">
+                    <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
                 </div>
-                <button type="submit" class="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors">
-                    <i class="fas fa-search"></i> Search
+                <button type="submit" class="bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-lg transition-colors">
+                    <i class="fas fa-search"></i>
                 </button>
                 @if(request('search'))
-                    <a href="{{ route('admin.suppliers.index') }}" class="bg-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-400 transition-colors">
-                        <i class="fas fa-times"></i> Clear
+                    <a href="{{ route('admin.suppliers.index') }}" class="bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-lg transition-colors">
+                        <i class="fas fa-times"></i>
                     </a>
                 @endif
             </form>
         </div>
     </div>
 
-    <div class="p-6">
-        @if(session('success'))
-            <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
-                <i class="fas fa-check-circle mr-2"></i>{{ session('success') }}
-            </div>
-        @endif
-
-        @if(session('error'))
-            <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-                <i class="fas fa-exclamation-circle mr-2"></i>{{ session('error') }}
-            </div>
-        @endif
-
-        @if($suppliers->count() > 0)
-            <div class="overflow-x-auto">
-                <table class="min-w-full table-auto">
-                    <thead class="bg-gray-50">
-                        <tr>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Supplier</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact Info</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Address</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Added</th>
-                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody class="bg-white divide-y divide-gray-200">
-                        @foreach($suppliers as $supplier)
-                            <tr class="hover:bg-gray-50">
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="flex items-center">
-                                        <div class="flex-shrink-0 h-10 w-10">
-                                            <div class="h-10 w-10 rounded-full bg-maroon flex items-center justify-center">
-                                                <span class="text-white font-medium text-sm">
-                                                    {{ strtoupper(substr($supplier->supplier_name, 0, 2)) }}
-                                                </span>
-                                            </div>
-                                        </div>
-                                        <div class="ml-4">
-                                            <div class="text-sm font-medium text-gray-900">{{ $supplier->supplier_name }}</div>
-                                        </div>
+    <!-- Suppliers Table -->
+    <div class="bg-white rounded-lg shadow overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Supplier</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact Info</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Address</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Added</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    @forelse($suppliers as $supplier)
+                        <tr class="hover:bg-blue-50 hover:shadow-sm transition-all duration-200 cursor-pointer group" onclick="window.location.href='{{ route('admin.suppliers.show', $supplier) }}'">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center">
+                                    <div class="w-10 h-10 bg-maroon text-white rounded-full flex items-center justify-center font-bold">
+                                        {{ strtoupper(substr($supplier->supplier_name, 0, 2)) }}
                                     </div>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="text-sm text-gray-900">
-                                        @if($supplier->supplier_email)
-                                            <div class="flex items-center mb-1">
-                                                <i class="fas fa-envelope text-gray-400 mr-2"></i>
-                                                {{ $supplier->supplier_email }}
-                                            </div>
-                                        @endif
-                                        <div class="flex items-center">
-                                            <i class="fas fa-phone text-gray-400 mr-2"></i>
-                                            {{ $supplier->supplier_contact }}
+                                    <div class="ml-4">
+                                        <div class="flex items-center gap-2">
+                                            <div class="text-sm font-medium text-gray-900 group-hover:text-blue-600">{{ $supplier->supplier_name }}</div>
+                                            <i class="fas fa-external-link-alt text-xs text-gray-400 group-hover:text-blue-600 transition-colors"></i>
                                         </div>
+                                        <div class="text-sm text-gray-500">#{{ str_pad($supplier->supplier_id, 4, '0', STR_PAD_LEFT) }}</div>
                                     </div>
-                                </td>
-                                <td class="px-6 py-4">
-                                    <div class="text-sm text-gray-900 max-w-xs truncate" title="{{ $supplier->supplier_address }}">
-                                        {{ $supplier->supplier_address }}
-                                    </div>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                    {{ $supplier->created_at->format('M d, Y') }}
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm text-gray-900">{{ $supplier->supplier_email ?? 'No email' }}</div>
+                                <div class="text-sm text-gray-500">{{ $supplier->supplier_contact }}</div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="text-sm text-gray-900 max-w-xs truncate" title="{{ $supplier->supplier_address }}">
+                                    {{ $supplier->supplier_address }}
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm text-gray-900">{{ $supplier->created_at->format('M d, Y') }}</div>
+                                <div class="text-sm text-gray-500">{{ $supplier->created_at->diffForHumans() }}</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+                                <div class="flex items-center space-x-2">
                                     @if($showArchived)
                                         <x-archive-actions 
                                             :item="$supplier" 
@@ -119,39 +95,156 @@
                                             :restoreRoute="'admin.suppliers.restore'" 
                                             :showRestore="false" />
                                     @endif
-                                </td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-            </div>
-
-            <!-- Pagination -->
-            <div class="mt-6">
+                                </div>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="5" class="px-6 py-12 text-center">
+                                <div class="text-gray-400">
+                                    <i class="fas fa-truck text-6xl mb-4"></i>
+                                    <p class="text-xl font-medium mb-2">No suppliers found</p>
+                                    <p class="text-gray-500 mb-6">
+                                        @if(request('search'))
+                                            No suppliers match your search criteria
+                                        @else
+                                            Add your first supplier to get started
+                                        @endif
+                                    </p>
+                                    @if(!request('search') && !$showArchived)
+                                        <button @click="supplierModal = true" class="bg-maroon text-white px-4 py-2 rounded-lg hover:bg-maroon-dark transition-colors inline-flex items-center">
+                                            <i class="fas fa-plus mr-2"></i>Add Supplier
+                                        </button>
+                                    @endif
+                                </div>
+                            </td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Pagination -->
+        @if($suppliers->hasPages())
+            <div class="bg-white px-6 py-3 border-t border-gray-200">
                 {{ $suppliers->links() }}
-            </div>
-        @else
-            <div class="text-center py-12">
-                <div class="text-gray-400 text-6xl mb-4">
-                    <i class="fas fa-truck"></i>
-                </div>
-                <h3 class="text-lg font-medium text-gray-900 mb-2">No suppliers found</h3>
-                <p class="text-gray-500 mb-4">
-                    @if(request('search'))
-                        No suppliers match your search criteria.
-                    @else
-                        Get started by adding your first supplier.
-                    @endif
-                </p>
-                @if(!request('search'))
-                    <a href="{{ route('admin.suppliers.create') }}" 
-                       class="bg-maroon text-white px-4 py-2 rounded-lg hover:bg-maroon-dark transition-colors">
-                        <i class="fas fa-plus mr-2"></i>Add First Supplier
-                    </a>
-                @endif
             </div>
         @endif
     </div>
+
+    <!-- Add Supplier Modal -->
+    <div x-show="supplierModal" x-cloak class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50" @click.self="supplierModal = false">
+        <div class="relative top-20 mx-auto p-5 border w-full max-w-2xl shadow-lg rounded-md bg-white">
+            <div class="flex items-center justify-between border-b border-gray-200 pb-4 mb-4">
+                <h3 class="text-xl font-semibold text-gray-900">Add New Supplier</h3>
+                <button @click="supplierModal = false" class="text-gray-400 hover:text-gray-600 transition-colors">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+
+            <form method="POST" action="{{ route('admin.suppliers.store') }}" class="space-y-6">
+                @csrf
+
+                <!-- Supplier Information -->
+                <div class="space-y-6">
+                    <!-- Supplier Name -->
+                    <div>
+                        <label for="supplier_name" class="block text-sm font-medium text-gray-700 mb-1">
+                            Supplier Name *
+                        </label>
+                        <input type="text" 
+                               name="supplier_name" 
+                               id="supplier_name" 
+                               value="{{ old('supplier_name') }}"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon @error('supplier_name') border-red-500 @enderror"
+                               placeholder="Enter supplier or company name"
+                               required>
+                        @error('supplier_name')
+                            <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Email -->
+                        <div>
+                            <label for="supplier_email" class="block text-sm font-medium text-gray-700 mb-1">
+                                Email Address
+                            </label>
+                            <input type="email" 
+                                   name="supplier_email" 
+                                   id="supplier_email" 
+                                   value="{{ old('supplier_email') }}"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon @error('supplier_email') border-red-500 @enderror"
+                                   placeholder="supplier@example.com">
+                            @error('supplier_email')
+                                <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                            @enderror
+                        </div>
+
+                        <!-- Contact -->
+                        <div>
+                            <label for="supplier_contact" class="block text-sm font-medium text-gray-700 mb-1">
+                                Contact Number *
+                            </label>
+                            <input type="text" 
+                                   name="supplier_contact" 
+                                   id="supplier_contact" 
+                                   value="{{ old('supplier_contact') }}"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon @error('supplier_contact') border-red-500 @enderror"
+                                   placeholder="09XX-XXX-XXXX"
+                                   maxlength="11"
+                                   pattern="[0-9]{11}"
+                                   required>
+                            @error('supplier_contact')
+                                <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                            @enderror
+                        </div>
+                    </div>
+
+                    <!-- Address -->
+                    <div>
+                        <label for="supplier_address" class="block text-sm font-medium text-gray-700 mb-1">
+                            Address *
+                        </label>
+                        <textarea name="supplier_address" 
+                                  id="supplier_address" 
+                                  rows="3"
+                                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon @error('supplier_address') border-red-500 @enderror"
+                                  placeholder="Enter complete business address"
+                                  required>{{ old('supplier_address') }}</textarea>
+                        @error('supplier_address')
+                            <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                        @enderror
+                    </div>
+                </div>
+
+                <!-- Form Actions -->
+                <div class="flex items-center justify-end space-x-4 border-t border-gray-200 pt-6">
+                    <button type="button" @click="supplierModal = false" 
+                            class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors">
+                        Cancel
+                    </button>
+                    <button type="submit" 
+                            class="bg-maroon hover:bg-maroon-dark text-white px-6 py-2 rounded-md transition-colors">
+                        <i class="fas fa-save mr-2"></i>
+                        Save Supplier
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
+
+    @if($errors->any())
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Reopen modal if there are validation errors
+            Alpine.store('supplierModal', true);
+        });
+    </script>
+    @endif
 </div>
+
+<style>
+[x-cloak] { display: none !important; }
+</style>
 @endsection

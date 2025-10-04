@@ -96,7 +96,7 @@
                                     <div class="flex-shrink-0">
                                         <a href="{{ route('admin.employees.show', $employee) }}" 
                                            class="text-blue-600 hover:text-blue-800 transition-colors">
-                                            <i class="fas fa-eye"></i>
+                                            <i class="fas fa-external-link-alt"></i>
                                         </a>
                                     </div>
                                 </div>

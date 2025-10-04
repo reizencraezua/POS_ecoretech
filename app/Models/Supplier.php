@@ -28,4 +28,14 @@ class Supplier extends Model
     {
         return $this->hasMany(Order::class, 'supplier_id');
     }
+
+    public function inventories()
+    {
+        return $this->hasMany(Inventory::class, 'supplier_id');
+    }
+
+    public function getCompanyNameAttribute()
+    {
+        return $this->supplier_name;
+    }
 }

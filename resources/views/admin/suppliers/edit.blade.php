@@ -12,7 +12,7 @@
             </div>
             <div class="flex items-center space-x-2">
                 <a href="{{ route('admin.suppliers.show', $supplier) }}" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
-                    <i class="fas fa-eye mr-2"></i>View
+                    <i class="fas fa-external-link-alt mr-2"></i>View
                 </a>
                 <a href="{{ route('admin.suppliers.index') }}" class="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors">
                     <i class="fas fa-arrow-left mr-2"></i>Back
@@ -70,8 +70,9 @@
                            id="supplier_contact" 
                            value="{{ old('supplier_contact', $supplier->supplier_contact) }}"
                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-maroon focus:border-transparent @error('supplier_contact') border-red-500 @enderror"
-                           placeholder="Enter contact number"
-                           maxlength="20"
+                           placeholder="09XX-XXX-XXXX"
+                           maxlength="11"
+                           pattern="[0-9]{11}"
                            required>
                     @error('supplier_contact')
                         <p class="text-red-500 text-sm mt-1">{{ $message }}</p>

@@ -46,7 +46,6 @@
         
         <!-- Search and Archive Toggle -->
         <div class="flex items-center space-x-4">
-            
             <form method="GET" class="flex items-center space-x-2">
                 <div class="relative">
                     <input type="text" name="search" value="{{ request('search') }}" placeholder="Search services..." 
@@ -66,11 +65,14 @@
     </div>
 
     <!-- Services Grid -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         @forelse($services as $service)
-            <div class="bg-white rounded-lg shadow hover:shadow-lg transition-shadow border border-gray-200">
+            <div class="bg-white rounded-lg shadow hover:shadow-lg transition-all duration-200 border border-gray-200 group cursor-pointer relative">
+                <!-- Clickable overlay for the entire card -->
+                <a href="{{ route('admin.services.show', $service) }}" class="absolute inset-0 z-10"></a>
+                
                 <!-- Service Content -->
-                <div class="p-6">
+                <div class="p-4 relative">
                     <div class="mb-3">
                         <div class="flex items-center justify-between mb-2">
                             <span class="text-sm text-gray-500">#{{ str_pad($service->service_id, 3, '0', STR_PAD_LEFT) }}</span>
@@ -81,22 +83,24 @@
                                 </span>
                             @endif
                         </div>
-                        <h3 class="text-lg font-semibold text-gray-900 mb-1">{{ $service->service_name }}</h3>
+                        <h3 class="text-lg font-semibold text-gray-900 mb-1 group-hover:text-maroon transition-colors">{{ $service->service_name }}</h3>
                         @if($service->description)
-                            <p class="text-sm text-gray-600 line-clamp-2">{{ Str::limit($service->description, 80) }}</p>
+                            <p class="text-sm text-gray-600 truncate w-full max-w-xs">
+                                {{ $service->description }}
+                            </p>
                         @endif
                     </div>
 
                     <!-- Price -->
                     <div class="flex items-center justify-between mb-4">
                         <div>
-                            <span class="text-xs text-gray-500">Base Fee</span>
+                            <span class="text-xs text-gray-500">Fixed Price</span>
                             <div class="text-2xl font-bold text-maroon">₱{{ number_format($service->base_fee, 2) }}</div>
                         </div>
                     </div>
 
                     <!-- Actions -->
-                    <div class="flex items-center justify-between border-t border-gray-200 pt-4">
+                    <div class="flex items-center justify-between border-t border-gray-200 pt-4 relative z-20">
                         <div class="flex items-center space-x-2">
                             @if($showArchived)
                                 <x-archive-actions 
@@ -124,9 +128,6 @@
                     <i class="fas fa-cogs text-6xl mb-4"></i>
                     <p class="text-xl font-medium mb-2">No services found</p>
                     <p class="text-gray-500 mb-4">Add your first service offering</p>
-                    <button @click="serviceModal = true" class="inline-flex items-center px-4 py-2 bg-maroon text-white rounded-lg hover:bg-maroon-dark transition-colors">
-                        <i class="fas fa-plus mr-2"></i>Add Service
-                    </button>
                 </div>
             </div>
         @endforelse
@@ -184,7 +185,7 @@
                         </div>
                         
                         <div>
-                            <label for="base_fee" class="block text-sm font-medium text-gray-700 mb-1">Base Fee (₱) *</label>
+                            <label for="base_fee" class="block text-sm font-medium text-gray-700 mb-1">Fixed Price (₱) *</label>
                             <div class="relative">
                                 <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                     <span class="text-gray-500 sm:text-sm">₱</span>
@@ -230,20 +231,10 @@
                             @enderror
                             <p class="text-xs text-gray-500 mt-1">Additional cost for layout design services</p>
                         </div>
-
-                        <div class="md:col-span-2">
-                            <label for="layout_description" class="block text-sm font-medium text-gray-700 mb-1">Layout Description</label>
-                            <textarea name="layout_description" id="layout_description" rows="2" 
-                                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon @error('layout_description') border-red-500 @enderror"
-                                      placeholder="Describe the layout design requirements...">{{ old('layout_description') }}</textarea>
-                            @error('layout_description')
-                                <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
-                            @enderror
-                        </div>
                         
                         <div class="md:col-span-2">
                             <label for="description" class="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                            <textarea name="description" id="description" rows="4" 
+                            <textarea name="description" id="description" rows="3" 
                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon @error('description') border-red-500 @enderror"
                                       placeholder="Detailed description of the service, what's included, delivery time, etc...">{{ old('description') }}</textarea>
                             @error('description')
@@ -253,34 +244,11 @@
                     </div>
                 </div>
 
-                <!-- Service Guidelines -->
-                <div class="mb-8 bg-blue-50 rounded-lg p-4">
-                    <h4 class="text-sm font-medium text-blue-900 mb-2">Service Guidelines</h4>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-blue-700">
-                        <div class="flex items-center space-x-2">
-                            <i class="fas fa-palette"></i>
-                            <span>Design services: Layout fee ~₱400</span>
-                        </div>
-                        <div class="flex items-center space-x-2">
-                            <i class="fas fa-clock"></i>
-                            <span>Rush jobs: +50% of total order</span>
-                        </div>
-                        <div class="flex items-center space-x-2">
-                            <i class="fas fa-tools"></i>
-                            <span>Consider complexity and time required</span>
-                        </div>
-                        <div class="flex items-center space-x-2">
-                            <i class="fas fa-handshake"></i>
-                            <span>Include consultation if applicable</span>
-                        </div>
-                    </div>
-                </div>
-
                 <!-- Form Actions -->
                 <div class="flex items-center justify-end space-x-4 border-t border-gray-200 pt-6">
-                    <a href="{{ route('admin.services.index') }}" class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors">
+                    <button type="button" @click="serviceModal = false" class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors">
                         Cancel
-                    </a>
+                    </button>
                     <button type="submit" class="bg-maroon hover:bg-maroon-dark text-white px-6 py-2 rounded-md transition-colors">
                         <i class="fas fa-save mr-2"></i>
                         Save Service
@@ -295,8 +263,8 @@
         <div class="relative top-20 mx-auto p-5 border w-full max-w-3xl shadow-lg rounded-md bg-white">
             <div class="flex items-center justify-between border-b border-gray-200 pb-4 mb-4">
                 <h3 class="text-xl font-semibold text-gray-900">Edit Service</h3>
-                <button @click="editModal = false" class="bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-lg transition-colors">
-                    <i class="fas fa-times"></i>
+                <button @click="editModal = false" class="text-gray-400 hover:text-gray-600 transition-colors">
+                    <i class="fas fa-times text-xl"></i>
                 </button>
             </div>
             
@@ -308,7 +276,8 @@
                     <div class="md:col-span-2">
                         <label for="edit_service_name" class="block text-sm font-medium text-gray-700 mb-1">Service Name *</label>
                         <input type="text" name="service_name" id="edit_service_name" x-model="editingService ? editingService.service_name : ''" required
-                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon">
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon"
+                               placeholder="Enter service name">
                     </div>
 
                     <!-- Category Selection -->
@@ -328,7 +297,7 @@
                     </div>
 
                     <div>
-                        <label for="edit_base_fee" class="block text-sm font-medium text-gray-700 mb-1">Base Fee (₱) *</label>
+                        <label for="edit_base_fee" class="block text-sm font-medium text-gray-700 mb-1">Fixed Price (₱) *</label>
                         <div class="relative">
                             <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                 <span class="text-gray-500 sm:text-sm">₱</span>
@@ -390,29 +359,6 @@
             </form>
         </div>
     </div>
-
-    <!-- Delete Confirmation Modal -->
-    <div id="deleteModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
-        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-            <div class="mt-3 text-center">
-                <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
-                    <i class="fas fa-exclamation-triangle text-red-600"></i>
-                </div>
-                <h3 class="text-lg font-medium text-gray-900 mt-2">Delete Service</h3>
-                <div class="mt-2 px-7 py-3">
-                    <p class="text-sm text-gray-500">Are you sure you want to delete this service? This action cannot be undone.</p>
-                </div>
-                <div class="items-center px-4 py-3">
-                    <button id="confirmDeleteBtn" class="px-4 py-2 bg-red-500 text-white text-base font-medium rounded-md shadow-sm hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-300 mr-2">
-                        Delete
-                    </button>
-                    <button onclick="closeDeleteModal()" class="px-4 py-2 bg-gray-300 text-gray-800 text-base font-medium rounded-md shadow-sm hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-300">
-                        Cancel
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
 </div>
 
 <script>
@@ -420,49 +366,6 @@ function editService(service) {
     this.editingService = service;
     this.editModal = true;
 }
-
-// Delete confirmation functionality
-let serviceToDelete = null;
-
-function confirmDelete(serviceId) {
-    serviceToDelete = serviceId;
-    document.getElementById('deleteModal').classList.remove('hidden');
-}
-
-function closeDeleteModal() {
-    document.getElementById('deleteModal').classList.add('hidden');
-    serviceToDelete = null;
-}
-
-document.getElementById('confirmDeleteBtn').addEventListener('click', function() {
-    if (serviceToDelete) {
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = `/admin/services/${serviceToDelete}`;
-        
-        const csrfToken = document.createElement('input');
-        csrfToken.type = 'hidden';
-        csrfToken.name = '_token';
-        csrfToken.value = '{{ csrf_token() }}';
-        form.appendChild(csrfToken);
-        
-        const methodField = document.createElement('input');
-        methodField.type = 'hidden';
-        methodField.name = '_method';
-        methodField.value = 'DELETE';
-        form.appendChild(methodField);
-        
-        document.body.appendChild(form);
-        form.submit();
-    }
-});
-
-// Close modal when clicking outside
-document.getElementById('deleteModal').addEventListener('click', function(e) {
-    if (e.target === this) {
-        closeDeleteModal();
-    }
-});
 </script>
 
 <style>

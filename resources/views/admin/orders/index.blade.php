@@ -95,7 +95,7 @@
 
     <!-- Order Statistics -->
     @if(!isset($showArchived) || !$showArchived)
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4 mb-6">
             <div class="bg-white rounded-lg shadow p-4">
                 <div class="flex items-center">
                     <div class="p-2 bg-blue-100 rounded-lg">
@@ -128,6 +128,18 @@
                     <div class="ml-4">
                         <p class="text-sm font-medium text-gray-600">Designing</p>
                         <p class="text-2xl font-bold text-gray-900">{{ $orders->where('order_status', 'Designing')->count() }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow p-4">
+                <div class="flex items-center">
+                    <div class="p-2 bg-purple-100 rounded-lg">
+                    <i class="fas fa-upload text-orange-600"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">For Releasing</p>
+                        <p class="text-2xl font-bold text-gray-900">{{ $orders->where('order_status', 'For Releasing')->count() }}</p>
                     </div>
                 </div>
             </div>

@@ -39,8 +39,10 @@ class SupplierController extends Controller
         $validated = $request->validate([
             'supplier_name' => 'required|string|max:255',
             'supplier_email' => 'nullable|email|unique:suppliers,supplier_email',
-            'supplier_contact' => 'required|string|max:20',
+            'supplier_contact' => 'required|string|regex:/^[0-9]{11}$/',
             'supplier_address' => 'required|string',
+        ], [
+            'supplier_contact.regex' => 'Contact number must be exactly 11 digits.',
         ]);
 
         Supplier::create($validated);
@@ -64,8 +66,10 @@ class SupplierController extends Controller
         $validated = $request->validate([
             'supplier_name' => 'required|string|max:255',
             'supplier_email' => 'nullable|email|unique:suppliers,supplier_email,' . $supplier->supplier_id . ',supplier_id',
-            'supplier_contact' => 'required|string|max:20',
+            'supplier_contact' => 'required|string|regex:/^[0-9]{11}$/',
             'supplier_address' => 'required|string',
+        ], [
+            'supplier_contact.regex' => 'Contact number must be exactly 11 digits.',
         ]);
 
         $supplier->update($validated);
@@ -74,13 +78,6 @@ class SupplierController extends Controller
                         ->with('success', 'Supplier updated successfully.');
     }
 
-    public function destroy(Supplier $supplier)
-    {
-        $supplier->delete();
-
-        return redirect()->route('admin.suppliers.index')
-                        ->with('success', 'Supplier archived successfully.');
-    }
 
     public function archive(Supplier $supplier)
     {

@@ -137,8 +137,8 @@
                                         <select x-model="item.size" :name="`items[${index}][size]`" 
                                                 class="w-24 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon">
                                             <option value="">Select Size</option>
-                                            <template x-if="item.type === 'product' && item.id">
-                                                <template x-for="size in getAvailableSizes(item.id)">
+                                            <template x-if="(item.type === 'product' || item.type === 'service') && item.id">
+                                                <template x-for="size in getAvailableSizes(item.id, item.type)">
                                                     <option :value="size.size_name" x-text="size.size_name"></option>
                                                 </template>
                                             </template>
@@ -192,6 +192,12 @@
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
                         <!-- Items Summary -->
                         <div class="space-y-4">
+
+                            <div class="flex justify-between items-center py-2 border-b border-gray-100">
+                                <span class="text-sm text-gray-600">Total Quantity:</span>
+                                <span class="text-sm font-medium text-gray-900" x-text="getTotalQuantity() + ' pcs'"></span>
+                            </div>
+
                             <div class="flex justify-between items-center py-2 border-b border-gray-100">
                                 <span class="text-sm text-gray-600">Sub Total:</span>
                                 <span class="text-sm font-medium text-gray-900" x-text="'₱' + getSubTotal().toFixed(2)"></span>
@@ -218,11 +224,6 @@
                             <div class="flex justify-between items-center py-2 border-b border-gray-100">
                                 <span class="text-sm text-gray-600">Layout Fees:</span>
                                 <span class="text-sm font-medium text-gray-900" x-text="'₱' + getLayoutFees().toFixed(2)"></span>
-                            </div>
-                            
-                            <div class="flex justify-between items-center py-2 border-b border-gray-100">
-                                <span class="text-sm text-gray-600">Total Quantity:</span>
-                                <span class="text-sm font-medium text-gray-900" x-text="getTotalQuantity() + ' pcs'"></span>
                             </div>
                             
                             <div class="flex justify-between items-center py-3 border-t-2 border-maroon">
@@ -319,11 +320,17 @@ function quotationForm() {
             this.calculateSubtotal(index);
         },
 
-        getAvailableSizes(productId) {
-            const product = this.products.find(p => p.product_id == productId);
-            if (!product || !product.category) return [];
-            
-            return product.category.sizes || [];
+        getAvailableSizes(itemId, itemType) {
+            if (itemType === 'product') {
+                const product = this.products.find(p => p.product_id == itemId);
+                if (!product || !product.category) return [];
+                return product.category.sizes || [];
+            } else if (itemType === 'service') {
+                const service = this.services.find(s => s.service_id == itemId);
+                if (!service || !service.category) return [];
+                return service.category.sizes || [];
+            }
+            return [];
         },
         
         updatePrice(index) {

@@ -96,7 +96,7 @@
 					<!-- Price -->
 					<div class="flex items-center justify-between mb-4">
 						<div>
-							<span class="text-xs text-gray-500">Base Price</span>
+							<span class="text-xs text-gray-500">Fixed Price</span>
 							<div class="text-2xl font-bold text-maroon">₱{{ number_format($product->base_price, 2) }}</div>
 						</div>
 					</div>
@@ -130,9 +130,6 @@
 					<i class="fas fa-box-open text-6xl mb-4"></i>
 					<p class="text-xl font-medium mb-2">No products found</p>
 					<p class="text-gray-500 mb-4">Start building your product catalog</p>
-					<button @click="productModal = true" class="inline-flex items-center px-4 py-2 bg-maroon text-white rounded-lg hover:bg-maroon-dark transition-colors">
-						<i class="fas fa-plus mr-2"></i>Add Product
-					</button>
 				</div>
 			</div>
 		@endforelse
@@ -190,9 +187,9 @@
                         <p class="text-xs text-gray-500 mt-1">Choose the product category</p>
                     </div>
 
-                    <!-- Base Price -->
+					<!-- Fixed Price -->
                     <div>
-                        <label for="base_price" class="block text-sm font-medium text-gray-700 mb-1">Base Price (₱) *</label>
+                        <label for="base_price" class="block text-sm font-medium text-gray-700 mb-1">Fixed Price (₱) *</label>
                         <div class="relative">
                             <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                 <span class="text-gray-500 sm:text-sm">₱</span>
@@ -313,7 +310,7 @@
 					</div>
 					
 					<div>
-						<label for="edit_base_price" class="block text-sm font-medium text-gray-700 mb-1">Base Price (₱) *</label>
+						<label for="edit_base_price" class="block text-sm font-medium text-gray-700 mb-1">Fixed Price (₱) *</label>
 						<div class="relative">
 							<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
 								<span class="text-gray-500 sm:text-sm">₱</span>

@@ -48,7 +48,6 @@
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact Info</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Business/TIN</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payment Terms</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Orders</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                     </tr>
@@ -114,9 +113,7 @@
                                     <i class="fas fa-users text-6xl mb-4"></i>
                                     <p class="text-xl font-medium mb-2">No customers found</p>
                                     <p class="text-gray-500 mb-4">Start by adding your first customer</p>
-                                    <button @click="customerModal = true" class="inline-flex items-center px-4 py-2 bg-maroon text-white rounded-lg hover:bg-maroon-dark transition-colors">
-                                        <i class="fas fa-plus mr-2"></i>Add Customer
-                                    </button>
+                                 
                                 </div>
                             </td>
                         </tr>
@@ -214,7 +211,9 @@
                                 <label for="contact_number1" class="block text-sm font-medium text-gray-700 mb-1">Primary Contact Number *</label>
                                 <input type="text" name="contact_number1" id="contact_number1" required
                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon"
-                                       placeholder="09XX-XXX-XXXX">
+                                       placeholder="09XX-XXX-XXXX"
+                                       maxlength="11"
+                                       pattern="[0-9]{11}">
                             </div>
                         </div>
                         
@@ -228,26 +227,11 @@
                                 <label for="contact_number2" class="block text-sm font-medium text-gray-700 mb-1">Secondary Contact Number</label>
                                 <input type="text" name="contact_number2" id="contact_number2"
                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon"
-                                       placeholder="09XX-XXX-XXXX">
+                                       placeholder="09XX-XXX-XXXX"
+                                       maxlength="11"
+                                       pattern="[0-9]{11}">
                             </div>
                         </div>
-                    </div>
-                </div>
-
-                <!-- Payment Terms -->
-                <div>
-                    <h4 class="text-lg font-medium text-gray-900 mb-3">Payment Information</h4>
-                    <div>
-                        <label for="payment_terms" class="block text-sm font-medium text-gray-700 mb-1">Payment Terms</label>
-                        <select name="payment_terms" id="payment_terms" 
-                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon">
-                            <option value="">Select payment terms</option>
-                            <option value="50% down payment, balance upon completion">50% down payment, balance upon completion</option>
-                            <option value="Cash on delivery">Cash on delivery</option>
-                            <option value="Net 15 days">Net 15 days</option>
-                            <option value="Net 30 days">Net 30 days</option>
-                            <option value="Full payment upfront">Full payment upfront</option>
-                        </select>
                     </div>
                 </div>
 

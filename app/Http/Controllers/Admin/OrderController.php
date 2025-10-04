@@ -53,7 +53,7 @@ class OrderController extends Controller
         $customers = Customer::orderBy('customer_firstname')->get();
         $employees = Employee::with('job')->orderBy('employee_firstname')->get();
         $products = Product::with(['category.sizes'])->orderBy('product_name')->get();
-        $services = Service::orderBy('service_name')->get();
+        $services = Service::with(['category.sizes'])->orderBy('service_name')->get();
         $discountRules = DiscountRule::active()->validAt()->orderBy('min_quantity')->get();
 
         return view('admin.orders.create', compact('customers', 'employees', 'products', 'services', 'discountRules'));
@@ -242,8 +242,8 @@ class OrderController extends Controller
     {
         $customers = Customer::orderBy('customer_firstname')->get();
         $employees = Employee::with('job')->orderBy('employee_firstname')->get();
-        $products = Product::orderBy('product_name')->get();
-        $services = Service::orderBy('service_name')->get();
+        $products = Product::with(['category.sizes'])->orderBy('product_name')->get();
+        $services = Service::with(['category.sizes'])->orderBy('service_name')->get();
         $discountRules = DiscountRule::active()->validAt()->orderBy('min_quantity')->get();
         $order->load(['details']);
 
@@ -268,6 +268,13 @@ class OrderController extends Controller
             'items.*.price' => 'required|numeric|min:0',
             'items.*.layout' => 'nullable|in:on,1,true,false,0',
             'items.*.layoutPrice' => 'nullable|numeric|min:0',
+            // Optional additional payment
+            'payment.payment_date' => 'nullable|date',
+            'payment.payment_method' => 'nullable|in:Cash,GCash,Bank Transfer,Check,Credit Card',
+            'payment.payment_term' => 'nullable|in:Downpayment,Initial,Full',
+            'payment.amount_paid' => 'nullable|numeric|min:0',
+            'payment.reference_number' => 'nullable|string|max:255',
+            'payment.remarks' => 'nullable|string',
         ]);
 
         // Check if trying to set status to Completed but order is not fully paid
@@ -371,9 +378,64 @@ class OrderController extends Controller
         
         // Update order with final total amount
         $order->update(['total_amount' => $finalTotalAmount]);
+        
+        // Refresh the order to ensure relationships are loaded
+        $order->refresh();
+
+        // Update existing payment balances based on new total amount
+        $this->updatePaymentBalances($order, $finalTotalAmount);
+
+        // Optional additional payment at edit
+        if (!empty($validated['payment']['amount_paid'])) {
+            $payment = $validated['payment'];
+            $totalPaid = (float) $payment['amount_paid'];
+            $remaining = max(0, $finalTotalAmount - $totalPaid);
+            $change = $totalPaid > $finalTotalAmount ? ($totalPaid - $finalTotalAmount) : 0;
+
+            \App\Models\Payment::create([
+                'receipt_number' => 'RCPT-' . now()->format('YmdHis') . '-' . $order->order_id,
+                'payment_date' => $payment['payment_date'] ?? now()->format('Y-m-d'),
+                'payment_method' => $payment['payment_method'] ?? 'Cash',
+                'payment_term' => $payment['payment_term'] ?? 'Initial',
+                'amount_paid' => $payment['amount_paid'],
+                'change' => $change,
+                'balance' => $remaining,
+                'reference_number' => $payment['reference_number'] ?? null,
+                'remarks' => $payment['remarks'] ?? null,
+                'order_id' => $order->order_id,
+            ]);
+        }
 
         return redirect()->route('admin.orders.index')
             ->with('success', 'Order updated successfully.');
+    }
+
+    /**
+     * Update payment balances when order total changes
+     */
+    private function updatePaymentBalances(Order $order, $newTotalAmount)
+    {
+        $payments = $order->payments()->orderBy('payment_date')->get();
+        $runningTotal = 0;
+
+        foreach ($payments as $payment) {
+            $runningTotal += $payment->amount_paid;
+            $remainingBalance = max(0, $newTotalAmount - $runningTotal);
+            $change = $runningTotal > $newTotalAmount ? ($runningTotal - $newTotalAmount) : 0;
+
+            $payment->update([
+                'balance' => $remainingBalance,
+                'change' => $change,
+            ]);
+        }
+
+        // Log the payment balance update for debugging
+        \Log::info('Payment balances updated for order ' . $order->order_id, [
+            'new_total_amount' => $newTotalAmount,
+            'total_paid' => $runningTotal,
+            'remaining_balance' => max(0, $newTotalAmount - $runningTotal),
+            'payments_updated' => $payments->count()
+        ]);
     }
 
     public function updateStatus(Request $request, Order $order)

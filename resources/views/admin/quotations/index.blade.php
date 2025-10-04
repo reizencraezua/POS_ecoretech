@@ -164,9 +164,6 @@
                 <i class="fas fa-file-alt text-6xl mb-4"></i>
                 <p class="text-xl font-medium mb-2">No quotations found</p>
                 <p class="text-gray-500 mb-4">Create your first quotation to get started</p>
-                <a href="{{ route('admin.quotations.create') }}" class="inline-flex items-center px-4 py-2 bg-maroon text-white rounded-lg hover:bg-maroon-dark transition-colors">
-                    <i class="fas fa-plus mr-2"></i>Create Quotation
-                </a>
             </div>
         </div>
         @endforelse

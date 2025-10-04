@@ -126,7 +126,10 @@
                     <div>
                         <label for="contact_number1" class="block text-sm font-medium text-gray-700 mb-1">Primary Contact Number *</label>
                         <input type="text" name="contact_number1" id="contact_number1" value="{{ old('contact_number1', $customer->contact_number1) }}" required
-                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon @error('contact_number1') border-red-500 @enderror">
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon @error('contact_number1') border-red-500 @enderror"
+                               placeholder="09XX-XXX-XXXX"
+                               maxlength="11"
+                               pattern="[0-9]{11}">
                         @error('contact_number1')
                             <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
                         @enderror
@@ -144,7 +147,10 @@
                     <div>
                         <label for="contact_number2" class="block text-sm font-medium text-gray-700 mb-1">Secondary Contact Number</label>
                         <input type="text" name="contact_number2" id="contact_number2" value="{{ old('contact_number2', $customer->contact_number2) }}"
-                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon @error('contact_number2') border-red-500 @enderror">
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon @error('contact_number2') border-red-500 @enderror"
+                               placeholder="09XX-XXX-XXXX"
+                               maxlength="11"
+                               pattern="[0-9]{11}">
                         @error('contact_number2')
                             <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
                         @enderror

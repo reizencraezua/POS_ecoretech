@@ -294,10 +294,6 @@
                     <i class="fas fa-plus-circle text-2xl text-green-500 mb-2 group-hover:scale-110 transition-transform"></i>
                     <span class="text-sm font-medium text-gray-700">Create Order</span>
                 </a>
-                <a href="{{ route('admin.reports.index') }}" class="flex flex-col items-center p-4 border-2 border-dashed border-gray-200 rounded-lg hover:bg-gray-50 hover:border-purple-500 transition-all group">
-                    <i class="fas fa-chart-bar text-2xl text-purple-500 mb-2 group-hover:scale-110 transition-transform"></i>
-                    <span class="text-sm font-medium text-gray-700">View Reports</span>
-                </a>
             </div>
         </div> -->
 

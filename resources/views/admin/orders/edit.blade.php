@@ -215,9 +215,7 @@
                                 </td>
                                 
                                 <td class="px-4 py-4">
-                                    <button type="button" onclick="removeExistingItem(this)" class="text-red-600 hover:text-red-800 transition-colors">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
+                                    <span class="text-gray-400 text-sm">Cannot delete</span>
                                 </td>
                             </tr>
                             @endforeach
@@ -274,18 +272,16 @@
                                                step="0.01" min="0" required class="w-32 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon"
                                                placeholder="0.00">
                                     </td>
-                                      <td class="px-4 py-4">
-                                          <div class="flex items-center space-x-2">
-                                              <input type="checkbox" x-model="item.layout" @change="calculateSubtotal(index)" :name="`items[${index + {{ $order->details->count() }} }][layout]`" 
-                                                     class="h-4 w-4 text-maroon focus:ring-maroon border-gray-300 rounded">
-                                              <span class="text-xs text-gray-600" x-text="item.layoutPrice > 0 ? '₱' + item.layoutPrice.toFixed(2) : ''"></span>
-                                              <!-- Hidden input for layout price -->
-                                              <input type="hidden" x-model="item.layoutPrice" :name="`items[${index + {{ $order->details->count() }} }][layoutPrice]`">
-                                          </div>
-                                      </td>
-                                      <td class="px-4 py-4">
-                                          <span class="font-medium text-gray-900" x-text="'₱' + item.subtotal.toFixed(2)"></span>
-                                      </td>
+                                    <td class="px-4 py-4">
+                                        <div class="flex items-center space-x-2">
+                                            <input type="checkbox" x-model="item.layout" @change="calculateSubtotal(index)" :name="`items[${index}][layout]`" 
+                                                   class="h-4 w-4 text-maroon focus:ring-maroon border-gray-300 rounded">
+                                            <span class="text-xs text-gray-600" x-text="item.layoutPrice > 0 ? '₱' + item.layoutPrice.toFixed(2) : ''"></span>
+                                            <!-- Hidden input for layout price -->
+                                            <input type="hidden" x-model="item.layoutPrice" :name="`items[${index}][layoutPrice]`">
+                                        </div>
+                                    </td>
+                                    
                                       <td class="px-4 py-4">
                                           <button type="button" @click="removeItem(index)" class="text-red-600 hover:text-red-800 transition-colors">
                                               <i class="fas fa-trash"></i>
@@ -321,31 +317,26 @@
                         <div class="space-y-4">
                             <!-- No. of Items -->
                             <div class="flex justify-between items-center py-2 border-b border-gray-100">
-                                <span class="text-sm text-gray-600">No. of items: (quantity)</span>
+                                <span class="text-sm text-gray-600">No. of items: </span>
                                 <span class="text-sm font-medium text-gray-900" x-text="getTotalQuantity()"></span>
                             </div>
 
-                            <!-- Layout Fees -->
-                            <div class="flex justify-between items-center py-2 border-b border-gray-100">
-                                <span class="text-sm text-gray-600">Layout Fees: (layout fee)</span>
-                                <span class="text-sm font-medium text-gray-900" x-text="'₱' + getLayoutFees().toFixed(2)"></span>
-                            </div>
 
                             <!-- Base Amount -->
                             <div class="flex justify-between items-center py-2 border-b border-gray-100">
-                                <span class="text-sm text-gray-600">Base Amount: (Subtotal - VAT Tax)</span>
+                                <span class="text-sm text-gray-600">Base Amount: </span>
                                 <span class="text-sm font-medium text-gray-900" x-text="'₱' + getBaseAmount().toFixed(2)"></span>
                             </div>
 
                             <!-- VAT Tax -->
                             <div class="flex justify-between items-center py-2 border-b border-gray-100">
-                                <span class="text-sm text-gray-600">VAT Tax: (Sub total * .12)</span>
+                                <span class="text-sm text-gray-600">VAT Tax (12%): </span>
                                 <span class="text-sm font-medium text-gray-900" x-text="'₱' + getVATAmount().toFixed(2)"></span>
                             </div>
 
                             <!-- Sub Total -->
                             <div class="flex justify-between items-center py-2 border-b border-gray-100">
-                                <span class="text-sm text-gray-600">Sub Total: (Quantity * Unit Price)</span>
+                                <span class="text-sm text-gray-600">Sub Total: </span>
                                 <span class="text-sm font-medium text-gray-900" x-text="'₱' + getSubTotal().toFixed(2)"></span>
                             </div>
                             
@@ -357,16 +348,161 @@
                                     <div class="text-xs text-gray-500" x-text="getDiscountInfo()"></div>
                                 </div>
                             </div>
+                            
+                            
+                            <!-- Layout Fees -->
+                            <div class="flex justify-between items-center py-2 border-b border-gray-100">
+                                <span class="text-sm text-gray-600">Layout Fees: </span>
+                                <span class="text-sm font-medium text-gray-900" x-text="'₱' + getLayoutFees().toFixed(2)"></span>
+                            </div>
 
                             <!-- Final Total Amount -->
                             <div class="flex justify-between items-center py-3 border-t-2 border-maroon">
-                                <span class="text-lg font-semibold text-gray-900">FINAL TOTAL AMOUNT: (Sub total - discount) + layout fee</span>
+                                <span class="text-lg font-semibold text-gray-900">TOTAL AMOUNT: </span>
                                 <span class="text-xl font-bold text-maroon" x-text="'₱' + getFinalTotalAmount().toFixed(2)"></span>
-                            </div>
-                                </div>
                             </div>
                         </div>
                     </div>
+                </div>
+
+                 <!-- Payment Information -->
+                 <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+                    <div class="px-6 py-4 border-b border-gray-200">
+                        <h3 class="text-lg font-semibold text-gray-900 flex items-center">
+                            <i class="fas fa-credit-card mr-2 text-maroon"></i>
+                            Payment Information
+                        </h3>
+                        <p class="text-sm text-gray-600 mt-1">Add additional payment to this order</p>
+                    </div>
+                    <div class="p-6">
+                        <!-- Existing Payments Section -->
+                        @if($order->payments->count() > 0)
+                        <div class="mb-6">
+                            <h4 class="text-md font-semibold text-gray-800 mb-3 flex items-center">
+                                <i class="fas fa-history mr-2 text-maroon"></i>
+                                Existing Payments
+                            </h4>
+                            <div class="space-y-3">
+                                @foreach($order->payments as $payment)
+                                <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                                    <div class="flex justify-between items-start mb-2">
+                                        <div class="flex items-center space-x-3">
+                                            <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                                                <i class="fas fa-check text-green-600 text-sm"></i>
+                                            </div>
+                                            <div>
+                                                <p class="text-lg font-bold text-maroon">₱{{ number_format($payment->amount_paid, 2) }}</p>
+                                                <p class="text-xs text-gray-500">{{ $payment->payment_date->format('M d, Y g:i A') }}</p>
+                                            </div>
+                                        </div>
+                                        <div class="text-right">
+                                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                                {{ $payment->payment_term }}
+                                            </span>
+                                            <p class="text-xs text-gray-500 mt-1">{{ $payment->payment_method }}</p>
+                                        </div>
+                                    </div>
+                                    
+                                    @if($payment->reference_number)
+                                    <div class="flex items-center space-x-2 text-xs text-gray-600 mb-2">
+                                        <i class="fas fa-hashtag"></i>
+                                        <span>Reference: {{ $payment->reference_number }}</span>
+                                    </div>
+                                    @endif
+                                    
+                                    @if($payment->remarks)
+                                    <div class="text-xs text-gray-600 bg-white rounded p-2 border">
+                                        <i class="fas fa-comment mr-1"></i>
+                                        {{ $payment->remarks }}
+                                    </div>
+                                    @endif
+                                </div>
+                                @endforeach
+                                
+                                <!-- Payment Summary -->
+                                <div class="bg-maroon text-white rounded-lg p-4">
+                                    <div class="flex justify-between items-center">
+                                        <span class="font-semibold">Total Paid:</span>
+                                        <span class="text-xl font-bold">₱{{ number_format($order->payments->sum('amount_paid'), 2) }}</span>
+                                    </div>
+                                    <div class="flex justify-between items-center mt-1">
+                                        <span class="text-sm opacity-90">Remaining Balance:</span>
+                                        <span class="text-lg font-semibold">₱{{ number_format($order->remaining_balance, 2) }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        @endif
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <input type="hidden" name="payment[payment_date]" value="{{ now()->format('Y-m-d') }}">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Payment Method</label>
+                        <select name="payment[payment_method]" id="payment_method"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon">
+                            <option value="">Select Method</option>
+                            <option value="Cash">Cash</option>
+                            <option value="GCash">GCash</option>
+                            <option value="Bank Transfer">Bank Transfer</option>
+                            <option value="Check">Check</option>
+                            <option value="Credit Card">Credit Card</option>
+                        </select>
+                    </div>
+                    
+                    <div id="reference_number_field" style="display: none;">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Reference Number</label>
+                        <input type="text" name="payment[reference_number]" id="reference_number"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon"
+                               placeholder="Enter reference number">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Payment Term</label>
+                        <select name="payment[payment_term]" id="payment_term" @change="toggleDownpaymentInfo()"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon">
+                            <option value="">Select Term</option>
+                            <option value="Downpayment">Downpayment</option>
+                            <option value="Initial">Initial</option>
+                            <option value="Full">Full</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Downpayment Information -->
+                    <div id="downpayment_info" class="md:col-span-2 mt-2 p-3 bg-blue-50 border border-blue-200 rounded-md text-sm" style="display: none;">
+                        <div class="flex items-center text-blue-700 mb-2">
+                            <i class="fas fa-info-circle mr-2"></i>
+                            <span class="font-medium">Downpayment Information</span>
+                        </div>
+                        <div class="text-blue-800">
+                            <div class="flex justify-between items-center">
+                                <span>Total Amount:</span>
+                                <span id="final_total_amount" class="font-semibold">₱0.00</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span>Required Downpayment (50%):</span>
+                                <span id="downpayment_amount_display" class="font-bold text-lg">₱0.00</span>
+                            </div>
+                            <div id="existing_payments_info" class="mt-2 pt-2 border-t border-blue-300">
+                                <!-- Existing payments info will be populated by JavaScript -->
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Amount</label>
+                        <input type="number" step="0.01" min="0" name="payment[amount_paid]"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon"
+                               placeholder="0.00">
+                    </div>
+                            <div class="md:col-span-2">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Remarks</label>
+                                <textarea name="payment[remarks]" rows="2"
+                                          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon"
+                                          placeholder="Optional notes for this payment..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Form Actions -->
             <div class="bg-white rounded-lg shadow-sm border border-gray-200">
                 <div class="px-6 py-4">
@@ -482,11 +618,17 @@ function orderForm() {
 
             // Step 4: Recalculate overall total
             this.calculateTotal();
+            
+            // Step 5: Update graphics designer availability
+            this.updateGraphicsDesignerAvailability();
         },
         
         calculateTotal() {
             // Update total amount using the new calculation method
             this.totalAmount = this.getFinalTotalAmount();
+            
+            // Update downpayment information if payment term is set to downpayment
+            this.updateDownpaymentInfo();
         },
         
         groupItemsByProduct() {
@@ -567,13 +709,32 @@ function orderForm() {
 
         getLayoutFees() {
             // Calculate layout fees from existing items + new items
-            const existingLayoutFees = {{ $order->details->sum('layout_price') }};
+            // For existing items, we need to check if layout checkbox is checked
+            let existingLayoutFees = 0;
+            
+            // Only target checkboxes that are NOT part of the Alpine.js items (existing items only)
+            // These are the checkboxes that don't have x-model attribute
+            const allLayoutCheckboxes = document.querySelectorAll('input[name*="items["][name*="][layout]"]');
+            const existingLayoutCheckboxes = Array.from(allLayoutCheckboxes).filter(checkbox => !checkbox.hasAttribute('x-model'));
+            
+            existingLayoutCheckboxes.forEach((checkbox, index) => {
+                if (checkbox.checked) {
+                    // Look for the layout price input in the same parent container
+                    const layoutPriceInput = checkbox.parentElement.querySelector('input[name*="layoutPrice"]');
+                    if (layoutPriceInput) {
+                        const price = parseFloat(layoutPriceInput.value) || 0;
+                        existingLayoutFees += price;
+                    }
+                }
+            });
+            
+            // For new items, only include if layout is checked
             const newLayoutFees = this.items.reduce((sum, item) => sum + (item.layout ? (parseFloat(item.layoutPrice) || 0) : 0), 0);
             return existingLayoutFees + newLayoutFees;
         },
         
         getSubTotal() {
-            // Sub Total = (Quantity × Unit Price)
+            // Sub Total = (Quantity × Unit Price) - does NOT include layout fees
             // Include existing items + new items
             const existingTotal = {{ $order->details->sum(function($detail) { return $detail->quantity * $detail->price; }) }};
             const newTotal = this.items.reduce((sum, item) => {
@@ -635,7 +796,7 @@ function orderForm() {
         },
         
         getFinalTotalAmount() {
-            // Final Total Amount = (Sub total - discount) + layout fee
+            // Final Total Amount = (Sub total - discount) + layout fees (only if checkboxes are checked)
             const subTotal = this.getSubTotal();
             const discountAmount = this.getOrderDiscount();
             const layoutFees = this.getLayoutFees();
@@ -643,7 +804,7 @@ function orderForm() {
             return (subTotal - discountAmount) + layoutFees;
         },
         
-        toggleDownpaymentInfo() {
+        updateDownpaymentInfo() {
             const paymentTermSelect = document.getElementById('payment_term');
             const downpaymentInfo = document.getElementById('downpayment_info');
             
@@ -652,11 +813,29 @@ function orderForm() {
                 
                 if (selectedTerm === 'Downpayment') {
                     const finalTotalAmount = this.getFinalTotalAmount();
+                    const existingPayments = {{ $order->payments->sum('amount_paid') }};
+                    const remainingBalance = finalTotalAmount - existingPayments;
                     const expectedDownpayment = finalTotalAmount * 0.5;
+                    const remainingDownpayment = Math.max(0, expectedDownpayment - existingPayments);
                     
                     // Update display elements
                     document.getElementById('final_total_amount').textContent = `₱${finalTotalAmount.toFixed(2)}`;
-                    document.getElementById('downpayment_amount_display').textContent = `₱${expectedDownpayment.toFixed(2)}`;
+                    document.getElementById('downpayment_amount_display').textContent = `₱${remainingDownpayment.toFixed(2)}`;
+                    
+                    // Add additional info about existing payments
+                    const existingPaymentsInfo = document.getElementById('existing_payments_info');
+                    if (existingPaymentsInfo) {
+                        existingPaymentsInfo.innerHTML = `
+                            <div class="flex justify-between items-center text-xs text-blue-600 mb-1">
+                                <span>Already Paid:</span>
+                                <span>₱${existingPayments.toFixed(2)}</span>
+                            </div>
+                            <div class="flex justify-between items-center text-xs text-blue-600">
+                                <span>Remaining Balance:</span>
+                                <span>₱${remainingBalance.toFixed(2)}</span>
+                            </div>
+                        `;
+                    }
                     
                     downpaymentInfo.style.display = 'block';
                 } else {
@@ -665,26 +844,34 @@ function orderForm() {
             }
         },
 
+        toggleDownpaymentInfo() {
+            this.updateDownpaymentInfo();
+        },
+
         validateDownpayment() {
             const paymentTermSelect = document.getElementById('payment_term');
             const amountPaidInput = document.querySelector('input[name="payment[amount_paid]"]');
             
             if (amountPaidInput) {
                 const finalTotalAmount = this.getFinalTotalAmount();
+                const existingPayments = {{ $order->payments->sum('amount_paid') }};
+                const remainingBalance = finalTotalAmount - existingPayments;
                 const amountPaid = parseFloat(amountPaidInput.value) || 0;
                 
-                // Check if payment amount exceeds total amount
-                if (amountPaid > finalTotalAmount) {
-                    alert(`Payment amount cannot exceed the total amount of ₱${finalTotalAmount.toFixed(2)}. Current amount: ₱${amountPaid.toFixed(2)}`);
+                // Check if payment amount exceeds remaining balance
+                if (amountPaid > remainingBalance) {
+                    alert(`Payment amount cannot exceed the remaining balance of ₱${remainingBalance.toFixed(2)}. Current amount: ₱${amountPaid.toFixed(2)}`);
                     return false;
                 }
                 
                 // Check downpayment validation
                 if (paymentTermSelect && paymentTermSelect.value === 'Downpayment') {
-                    const requiredDownpayment = finalTotalAmount * 0.5;
+                    const expectedDownpayment = finalTotalAmount * 0.5;
+                    const remainingDownpayment = Math.max(0, expectedDownpayment - existingPayments);
+                    const totalAfterPayment = existingPayments + amountPaid;
                     
-                    if (amountPaid < requiredDownpayment) {
-                        alert(`Downpayment must be at least 50% of the total amount (₱${requiredDownpayment.toFixed(2)}). Current amount: ₱${amountPaid.toFixed(2)}`);
+                    if (totalAfterPayment < expectedDownpayment) {
+                        alert(`Downpayment must be at least 50% of the total amount (₱${expectedDownpayment.toFixed(2)}). You need to pay at least ₱${remainingDownpayment.toFixed(2)} more. Current amount: ₱${amountPaid.toFixed(2)}`);
                         return false;
                     }
                 }
@@ -702,28 +889,69 @@ function orderForm() {
             // Initialize empty items array for new items only
             this.items = [];
             
-            // Calculate initial totals
+            // Set up event listeners for existing item inputs first
+            this.setupExistingItemListeners();
+            
+            // Calculate initial totals after listeners are set up
             this.calculateTotal();
+            
+            // Update graphics designer availability based on initial state
+            this.updateGraphicsDesignerAvailability();
+        },
+        
+        setupExistingItemListeners() {
+            // Add change listeners to existing item inputs for real-time calculation
+            const existingItemInputs = document.querySelectorAll('input[name*="items["][name*="][quantity]"], input[name*="items["][name*="][price]"]');
+            existingItemInputs.forEach(input => {
+                input.addEventListener('input', () => {
+                    this.calculateTotal();
+                    this.updateDownpaymentInfo();
+                });
+            });
+            
+            // Add change listeners to existing item checkboxes
+            const existingItemCheckboxes = document.querySelectorAll('input[name*="items["][name*="][layout]"]');
+            existingItemCheckboxes.forEach((checkbox, index) => {
+                checkbox.addEventListener('change', () => {
+                    this.calculateTotal();
+                    this.updateDownpaymentInfo();
+                    this.updateGraphicsDesignerAvailability();
+                });
+            });
+        },
+        
+        updateGraphicsDesignerAvailability() {
+            const graphicsDesignerSelect = document.getElementById('layout_employee_id');
+            if (!graphicsDesignerSelect) return;
+            
+            // Check if any layout checkbox is checked
+            const hasLayoutChecked = this.hasAnyLayoutChecked();
+            
+            if (hasLayoutChecked) {
+                graphicsDesignerSelect.disabled = false;
+                graphicsDesignerSelect.classList.remove('bg-gray-100', 'cursor-not-allowed');
+                graphicsDesignerSelect.classList.add('bg-white');
+            } else {
+                graphicsDesignerSelect.disabled = true;
+                graphicsDesignerSelect.value = ''; // Clear selection
+                graphicsDesignerSelect.classList.add('bg-gray-100', 'cursor-not-allowed');
+                graphicsDesignerSelect.classList.remove('bg-white');
+            }
+        },
+        
+        hasAnyLayoutChecked() {
+            // Check existing item layout checkboxes
+            const existingLayoutCheckboxes = document.querySelectorAll('input[name*="items["][name*="][layout]"]');
+            for (let checkbox of existingLayoutCheckboxes) {
+                if (checkbox.checked) return true;
+            }
+            
+            // Check new item layout checkboxes (Alpine.js items)
+            return this.items.some(item => item.layout);
         }
     }
 }
 
-// Function to remove existing items
-function removeExistingItem(button) {
-    if (confirm('Are you sure you want to remove this item?')) {
-        const row = button.closest('tr');
-        row.remove();
-        
-        // Recalculate totals after removing item
-        if (window.Alpine && window.Alpine.store) {
-            // Trigger recalculation if Alpine.js is available
-            const orderForm = document.querySelector('[x-data*="orderForm"]');
-            if (orderForm && orderForm._x_dataStack && orderForm._x_dataStack[0]) {
-                orderForm._x_dataStack[0].calculateTotal();
-            }
-        }
-    }
-}
 
 // Handle reference number field visibility
 document.addEventListener('DOMContentLoaded', function() {
@@ -744,29 +972,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
-    // Add change listeners to existing item inputs for real-time calculation
-    const existingItemInputs = document.querySelectorAll('input[name*="items["][name*="][quantity]"], input[name*="items["][name*="][price]"]');
-    existingItemInputs.forEach(input => {
-        input.addEventListener('input', function() {
-            // Recalculate totals when existing items change
-            const orderForm = document.querySelector('[x-data*="orderForm"]');
-            if (orderForm && orderForm._x_dataStack && orderForm._x_dataStack[0]) {
-                orderForm._x_dataStack[0].calculateTotal();
-            }
-        });
-    });
-    
-    // Add change listeners to existing item checkboxes
-    const existingItemCheckboxes = document.querySelectorAll('input[name*="items["][name*="][layout]"]');
-    existingItemCheckboxes.forEach(checkbox => {
-        checkbox.addEventListener('change', function() {
-            // Recalculate totals when layout checkbox changes
-            const orderForm = document.querySelector('[x-data*="orderForm"]');
-            if (orderForm && orderForm._x_dataStack && orderForm._x_dataStack[0]) {
-                orderForm._x_dataStack[0].calculateTotal();
-            }
-        });
-    });
 });
 </script>
 @endsection

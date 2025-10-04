@@ -23,13 +23,13 @@ use App\Http\Controllers\Admin\EmployeeController;
 use App\Http\Controllers\Admin\SupplierController;
 use App\Http\Controllers\Admin\PaymentController;
 use App\Http\Controllers\Admin\DeliveryController;
-use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\JobController as AdminJobController;
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\SizeController;
 use App\Http\Controllers\Admin\UnitController;
 use App\Http\Controllers\Admin\LayoutFeeController;
 use App\Http\Controllers\Admin\DiscountRuleController;
+use App\Http\Controllers\Admin\InventoryController;
 
 // Authentication Routes
 Route::prefix('admin')->name('admin.')->group(function () {
@@ -116,10 +116,11 @@ Route::prefix('admin')->name('admin.')->group(function () {
 		Route::post('deliveries/{delivery}/archive', [DeliveryController::class, 'archive'])->name('deliveries.archive');
 		Route::post('deliveries/{delivery}/restore', [DeliveryController::class, 'restore'])->name('deliveries.restore');
 
-		// Reports
-		Route::get('reports', [ReportController::class, 'index'])->name('reports.index');
-		Route::get('reports/sales', [ReportController::class, 'salesReport'])->name('reports.sales');
-		Route::get('reports/income', [ReportController::class, 'incomeStatement'])->name('reports.income');
-		Route::get('reports/aging', [ReportController::class, 'agingReport'])->name('reports.aging');
+		// Inventory
+		Route::resource('inventory', InventoryController::class);
+		Route::post('inventory/{inventory}/add-stock', [InventoryController::class, 'addStock'])->name('inventory.add-stock');
+		Route::post('inventory/{inventory}/use-stock', [InventoryController::class, 'useStock'])->name('inventory.use-stock');
+		Route::get('inventory/critical/level', [InventoryController::class, 'critical'])->name('inventory.critical');
+
 	});
 });

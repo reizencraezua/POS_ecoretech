@@ -155,6 +155,13 @@
                                     </a>
                                     <span x-show="!sidebarOpen" class="sidebar-tooltip">Categories</span>
                                 </li>
+                                <li class="relative sidebar-item">
+                                    <a href="{{ route('admin.inventory.index') }}" class="sidebar-link {{ request()->routeIs('admin.inventory.*') ? 'sidebar-active' : '' }}">
+                                        <i class="fas fa-warehouse sidebar-icon"></i>
+                                        <span x-show="sidebarOpen">Inventory</span>
+                                    </a>
+                                    <span x-show="!sidebarOpen" class="sidebar-tooltip">Inventory</span>
+                                </li>
                             </ul>
                         </div>
 
@@ -185,7 +192,7 @@
                                 </li>
                                 <li class="relative sidebar-item">
                                     <a href="{{ route('admin.suppliers.index') }}" class="sidebar-link {{ request()->routeIs('admin.suppliers.*') ? 'sidebar-active' : '' }}">
-                                        <i class="fas fa-truck-field sidebar-icon"></i>
+                                        <i class="fas fa-handshake sidebar-icon"></i>
                                         <span x-show="sidebarOpen">Suppliers</span>
                                     </a>
                                     <span x-show="!sidebarOpen" class="sidebar-tooltip">Suppliers</span>
@@ -203,13 +210,6 @@
                                         <span x-show="sidebarOpen">Discount Rules</span>
                                     </a>
                                     <span x-show="!sidebarOpen" class="sidebar-tooltip">Discount Rules</span>
-                                </li>
-                                <li class="relative sidebar-item">
-                                    <a href="{{ route('admin.reports.index') }}" class="sidebar-link {{ request()->routeIs('admin.reports.*') ? 'sidebar-active' : '' }}">
-                                        <i class="fas fa-chart-line sidebar-icon"></i>
-                                        <span x-show="sidebarOpen">Reports</span>
-                                    </a>
-                                    <span x-show="!sidebarOpen" class="sidebar-tooltip">Reports</span>
                                 </li>
                             </ul>
                         </div>
@@ -278,15 +278,23 @@
                         x-data="{ show: true }"
                         x-init="setTimeout(() => show = false, 5000)"
                         x-show="show"
-                        x-transition
-                        class="mb-4 rounded relative px-4 py-3 border {{ $flashType==='success' ? 'bg-green-100 border-green-400 text-green-700' : 'bg-red-100 border-red-400 text-red-700' }}"
+                        x-transition:enter="transition ease-out duration-300"
+                        x-transition:enter-start="opacity-0 transform scale-95"
+                        x-transition:enter-end="opacity-100 transform scale-100"
+                        x-transition:leave="transition ease-in duration-200"
+                        x-transition:leave-start="opacity-100 transform scale-100"
+                        x-transition:leave-end="opacity-0 transform scale-95"
+                        class="mb-4 rounded-lg relative px-4 py-3 border shadow-lg {{ $flashType==='success' ? 'bg-green-50 border-green-200 text-green-800' : 'bg-red-50 border-red-200 text-red-800' }}"
                         role="alert"
                     >
-                        <div class="flex items-start">
-                            <div class="flex-1">
-                                <span class="block sm:inline">{{ $flashMessage }}</span>
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0">
+                                <i class="fas {{ $flashType==='success' ? 'fa-check-circle text-green-400' : 'fa-exclamation-circle text-red-400' }}"></i>
                             </div>
-                            <button type="button" @click="show = false" class="ml-4 text-sm opacity-70 hover:opacity-100">
+                            <div class="ml-3 flex-1">
+                                <span class="block sm:inline font-medium">{{ $flashMessage }}</span>
+                            </div>
+                            <button type="button" @click="show = false" class="ml-4 text-sm opacity-70 hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-current">
                                 <i class="fas fa-times"></i>
                             </button>
                         </div>

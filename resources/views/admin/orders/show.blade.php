@@ -752,9 +752,13 @@ document.getElementById('paymentForm').addEventListener('submit', function(e) {
 
 // Function to show notifications
 function showNotification(message, type = 'info') {
+    // Remove any existing notifications first
+    const existingNotifications = document.querySelectorAll('.notification-toast');
+    existingNotifications.forEach(notification => notification.remove());
+    
     // Create notification element
     const notification = document.createElement('div');
-    notification.className = `fixed top-4 right-4 z-50 px-6 py-3 rounded-md shadow-lg text-white ${
+    notification.className = `notification-toast fixed top-4 right-4 z-50 px-6 py-3 rounded-md shadow-lg text-white ${
         type === 'success' ? 'bg-green-500' : 
         type === 'error' ? 'bg-red-500' : 
         'bg-blue-500'
@@ -763,15 +767,20 @@ function showNotification(message, type = 'info') {
         <div class="flex items-center">
             <i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle'} mr-2"></i>
             <span>${message}</span>
+            <button onclick="this.parentElement.parentElement.remove()" class="ml-3 text-white hover:text-gray-200">
+                <i class="fas fa-times"></i>
+            </button>
         </div>
     `;
     
     document.body.appendChild(notification);
     
-    // Remove notification after 3 seconds
+    // Remove notification after 5 seconds
     setTimeout(() => {
-        notification.remove();
-    }, 3000);
+        if (notification.parentElement) {
+            notification.remove();
+        }
+    }, 5000);
 }
 </script>
 @endsection
