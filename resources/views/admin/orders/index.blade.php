@@ -26,75 +26,9 @@
 
 @section('content')
 <div class="space-y-6">
-    <!-- Header Actions -->
-    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div class="flex items-center space-x-4">
-            <a href="{{ route('admin.orders.create') }}" class="bg-maroon hover:bg-maroon-dark text-white px-4 py-2 rounded-lg font-medium transition-colors inline-flex items-center">
-                <i class="fas fa-plus mr-2"></i>
-                Create Job Order
-            </a>
-            <a href="{{ route('admin.orders.index', array_merge(request()->query(), ['archived' => isset($showArchived) && $showArchived ? 0 : 1])) }}"
-               class="px-4 py-2 rounded-lg font-medium transition-colors inline-flex items-center border {{ (isset($showArchived) && $showArchived) ? 'border-green-600 text-green-700 hover:bg-green-50' : 'border-gray-300 text-gray-700 hover:bg-gray-50' }}">
-                <i class="fas fa-box-archive mr-2"></i>
-                {{ (isset($showArchived) && $showArchived) ? 'Show Active' : 'View Archives' }}
-            </a>
-        </div>
-        
-        <!-- Search and Filters -->
-        <div class="flex items-center space-x-4">
-            <form method="GET" class="flex items-center space-x-2">
-                <select name="status" class="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-maroon focus:border-maroon">
-                    <option value="">All Status</option>
-                    <option value="On-Process" {{ request('status') == 'On-Process' ? 'selected' : '' }}>On-Process</option>
-                    <option value="Designing" {{ request('status') == 'Designing' ? 'selected' : '' }}>Designing</option>
-                    <option value="Production" {{ request('status') == 'Production' ? 'selected' : '' }}>Production</option>
-                    <option value="For Releasing" {{ request('status') == 'For Releasing' ? 'selected' : '' }}>For Releasing</option>
-                    <option value="Completed" {{ request('status') == 'Completed' ? 'selected' : '' }}>Completed</option>
-                    <option value="Cancelled" {{ request('status') == 'Cancelled' ? 'selected' : '' }}>Cancelled</option>
-                </select>
-                <div class="relative">
-                    <input type="text" name="search" value="{{ request('search') }}" placeholder="Search orders..." 
-                           class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-maroon focus:border-maroon">
-                    <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-                </div>
-                <input type="hidden" name="archived" value="{{ (isset($showArchived) && $showArchived) ? 1 : 0 }}">
-                <input type="hidden" name="start_date" value="{{ request('start_date') }}">
-                <input type="hidden" name="end_date" value="{{ request('end_date') }}">
-                <button type="submit" class="bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-lg transition-colors">
-                    <i class="fas fa-search"></i>
-                </button>
-                @if(request('search') || request('status') || request('start_date') || request('end_date') || request('archived'))
-                    <a href="{{ route('admin.orders.index', ['archived' => (isset($showArchived) && $showArchived) ? 1 : 0]) }}" class="bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-lg transition-colors">
-                        <i class="fas fa-times"></i>
-                    </a>
-                @endif
-            </form>
-            
-            <!-- Quick Status Actions -->
-            <!-- @if(!isset($showArchived) || !$showArchived)
-                <div class="flex items-center space-x-2">
-                    <span class="text-sm text-gray-500">Quick Actions:</span>
-                    <div class="flex items-center space-x-1">
-                        <a href="{{ route('admin.orders.index', ['status' => 'On-Process']) }}" 
-                           class="px-3 py-1 text-xs bg-blue-100 text-blue-800 rounded-full hover:bg-blue-200 transition-colors">
-                            On-Process
-                        </a>
-                        <a href="{{ route('admin.orders.index', ['status' => 'Production']) }}" 
-                           class="px-3 py-1 text-xs bg-yellow-100 text-yellow-800 rounded-full hover:bg-yellow-200 transition-colors">
-                            Production
-                        </a>
-                        <a href="{{ route('admin.orders.index', ['status' => 'Completed']) }}" 
-                           class="px-3 py-1 text-xs bg-green-100 text-green-800 rounded-full hover:bg-green-200 transition-colors">
-                            Completed
-                        </a>
-                    </div>
-                </div>
-            @endif -->
-        </div>
-    </div>
 
-    <!-- Order Statistics -->
-    @if(!isset($showArchived) || !$showArchived)
+     <!-- Order Statistics -->
+     @if(!isset($showArchived) || !$showArchived)
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4 mb-6">
             <div class="bg-white rounded-lg shadow p-4">
                 <div class="flex items-center">
@@ -169,6 +103,55 @@
             </div>
         </div>
     @endif
+
+    <!-- Header Actions -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div class="flex items-center space-x-4">
+            <a href="{{ route('admin.orders.create') }}" class="bg-maroon hover:bg-maroon-dark text-white px-4 py-2 rounded-lg font-medium transition-colors inline-flex items-center">
+                <i class="fas fa-plus mr-2"></i>
+                Create Job Order
+            </a>
+        </div>
+        
+        <!-- Search and Filters -->
+        <div class="flex items-center space-x-4">
+            <a href="{{ route('admin.orders.index', array_merge(request()->query(), ['archived' => isset($showArchived) && $showArchived ? 0 : 1])) }}"
+               class="px-4 py-2 rounded-lg font-medium transition-colors inline-flex items-center border {{ (isset($showArchived) && $showArchived) ? 'border-green-600 text-green-700 hover:bg-green-50' : 'border-gray-300 text-gray-700 hover:bg-gray-50' }}">
+                <i class="fas fa-box-archive mr-2"></i>
+                {{ (isset($showArchived) && $showArchived) ? 'Show Active' : 'View Archives' }}
+            </a>
+            
+            <form method="GET" class="flex items-center space-x-2">
+                <select name="status" class="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-maroon focus:border-maroon">
+                    <option value="">All Status</option>
+                    <option value="On-Process" {{ request('status') == 'On-Process' ? 'selected' : '' }}>On-Process</option>
+                    <option value="Designing" {{ request('status') == 'Designing' ? 'selected' : '' }}>Designing</option>
+                    <option value="Production" {{ request('status') == 'Production' ? 'selected' : '' }}>Production</option>
+                    <option value="For Releasing" {{ request('status') == 'For Releasing' ? 'selected' : '' }}>For Releasing</option>
+                    <option value="Completed" {{ request('status') == 'Completed' ? 'selected' : '' }}>Completed</option>
+                    <option value="Cancelled" {{ request('status') == 'Cancelled' ? 'selected' : '' }}>Cancelled</option>
+                </select>
+                <div class="relative">
+                    <input type="text" name="search" value="{{ request('search') }}" placeholder="Search orders..." 
+                           class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-maroon focus:border-maroon">
+                    <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                </div>
+                <input type="hidden" name="archived" value="{{ (isset($showArchived) && $showArchived) ? 1 : 0 }}">
+                <input type="hidden" name="start_date" value="{{ request('start_date') }}">
+                <input type="hidden" name="end_date" value="{{ request('end_date') }}">
+                <button type="submit" class="bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-lg transition-colors">
+                    <i class="fas fa-search"></i>
+                </button>
+                @if(request('search') || request('status') || request('start_date') || request('end_date') || request('archived'))
+                    <a href="{{ route('admin.orders.index', ['archived' => (isset($showArchived) && $showArchived) ? 1 : 0]) }}" class="bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-lg transition-colors">
+                        <i class="fas fa-times"></i>
+                    </a>
+                @endif
+            </form>
+        </div>
+    </div>
+
+   
 
     <!-- Active Filters Summary -->
     @if(request('search') || request('status') || request('start_date') || request('end_date'))

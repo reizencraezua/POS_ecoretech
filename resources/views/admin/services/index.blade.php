@@ -46,6 +46,12 @@
         
         <!-- Search and Archive Toggle -->
         <div class="flex items-center space-x-4">
+            <a href="{{ route('admin.services.index', array_merge(request()->query(), ['archived' => isset($showArchived) && $showArchived ? 0 : 1])) }}"
+               class="px-4 py-2 rounded-lg font-medium transition-colors inline-flex items-center border {{ (isset($showArchived) && $showArchived) ? 'border-green-600 text-green-700 hover:bg-green-50' : 'border-gray-300 text-gray-700 hover:bg-gray-50' }}">
+                <i class="fas fa-box-archive mr-2"></i>
+                {{ (isset($showArchived) && $showArchived) ? 'Show Active' : 'View Archives' }}
+            </a>
+            
             <form method="GET" class="flex items-center space-x-2">
                 <div class="relative">
                     <input type="text" name="search" value="{{ request('search') }}" placeholder="Search services..." 

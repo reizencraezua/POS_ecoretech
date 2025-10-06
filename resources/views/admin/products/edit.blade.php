@@ -58,7 +58,7 @@
                     </div>
                     
                     <div>
-                        <label for="base_price" class="block text-sm font-medium text-gray-700 mb-1">Base Price (₱) *</label>
+                        <label for="base_price" class="block text-sm font-medium text-gray-700 mb-1">Fixed Price (₱) *</label>
                         <div class="relative">
                             <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                 <span class="text-gray-500 sm:text-sm">₱</span>
@@ -70,6 +70,19 @@
                         @error('base_price')
                             <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
                         @enderror
+                    </div>
+
+                    <div class="space-y-6">
+                        <div class="flex items-center space-x-3 p-4 bg-gray-50 rounded-lg">
+                            <input type="checkbox" name="requires_layout" id="requires_layout" value="1" {{ old('requires_layout', $product->requires_layout) ? 'checked' : '' }}
+                                class="h-4 w-4 text-maroon focus:ring-maroon border-gray-300 rounded">
+                            <div>
+                                <label for="requires_layout" class="text-sm font-medium text-gray-900 cursor-pointer">
+                                    Requires Layout Design
+                                </label>
+                                <p class="text-xs text-gray-500 mt-1">Check if this product needs layout design services</p>
+                            </div>
+                        </div>
                     </div>
                     
                     <div>
@@ -100,31 +113,9 @@
             </div>
 
             <!-- Layout Information -->
-            <div class="mb-8">
-                <h3 class="text-lg font-medium text-gray-900 mb-4 border-b border-gray-200 pb-2">Layout Information</h3>
-                <div class="space-y-6">
-                    <div class="flex items-center space-x-3 p-4 bg-gray-50 rounded-lg">
-                        <input type="checkbox" name="requires_layout" id="requires_layout" value="1" {{ old('requires_layout', $product->requires_layout) ? 'checked' : '' }}
-                               class="h-4 w-4 text-maroon focus:ring-maroon border-gray-300 rounded">
-                        <div>
-                            <label for="requires_layout" class="text-sm font-medium text-gray-900 cursor-pointer">
-                                Requires Layout Design
-                            </label>
-                            <p class="text-xs text-gray-500 mt-1">Check if this product needs layout design services</p>
-                        </div>
-                    </div>
+               
                     
-                    <div>
-                        <label for="layout_description" class="block text-sm font-medium text-gray-700 mb-1">Layout Description</label>
-                        <textarea name="layout_description" id="layout_description" rows="3"
-                                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon @error('layout_description') border-red-500 @enderror"
-                                  placeholder="Describe the layout design requirements...">{{ old('layout_description', $product->layout_description) }}</textarea>
-                        @error('layout_description')
-                            <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
-                        @enderror
-                    </div>
-                </div>
-            </div>
+                  
 
            
             <!-- Form Actions -->

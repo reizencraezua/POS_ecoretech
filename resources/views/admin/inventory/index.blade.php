@@ -4,9 +4,6 @@
 @section('page-title', 'Inventory Management')
 @section('page-description', 'Manage your inventory items and track stock levels')
 
-@section('header-actions')
-
-@endsection
 
 @section('content')
 <div class="space-y-6">
@@ -50,17 +47,35 @@
 
     </div>
 
-    <div class="flex items-center gap-4">
-    
-    <button onclick="openCreateModal()" class="bg-maroon hover:bg-maroon-dark text-white px-4 py-2 rounded-md transition-colors">
-        <i class="fas fa-plus mr-2"></i>Add New Item
-    </button>
+    <div class="flex items-center justify-between">
+        <!-- Action Buttons (Left Side) -->
+        <div class="flex items-center space-x-4">
+            <button onclick="openCreateModal()" class="bg-maroon hover:bg-maroon-dark text-white px-4 py-2 rounded-md transition-colors">
+                <i class="fas fa-plus mr-2"></i>Add New Item
+            </button>
 
-    <a href="{{ route('admin.inventory.critical') }}" class="flex items-center gap-2 px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors">
-        <i class="fas fa-exclamation-triangle"></i>
-        <span>Critical Level ({{ $criticalInventories }})</span>
-    </a>
-  
+            <a href="{{ route('admin.inventory.critical') }}" class="flex items-center gap-2 px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors">
+                <i class="fas fa-exclamation-triangle"></i>
+                <span>Critical Level ({{ $criticalInventories }})</span>
+            </a>
+        </div>
+
+        <!-- Search Form (Right Side) -->
+        <form method="GET" class="flex items-center space-x-2">
+            <div class="relative">
+                <input type="text" name="search" value="{{ request('search') }}" placeholder="Search inventory items..." 
+                       class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-maroon focus:border-maroon">
+                <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+            </div>
+            <button type="submit" class="bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-lg transition-colors">
+                <i class="fas fa-search"></i>
+            </button>
+            @if(request('search'))
+                <a href="{{ route('admin.inventory.index') }}" class="bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-lg transition-colors">
+                    <i class="fas fa-times"></i>
+                </a>
+            @endif
+        </form>
     </div>
 
 
@@ -113,7 +128,7 @@
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
                             <div class="text-sm text-gray-900">
-                                {{ $inventory->supplier ? $inventory->supplier->company_name : 'N/A' }}
+                                {{ $inventory->supplier ? $inventory->supplier->supplier_name : 'N/A' }}
                             </div>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
@@ -133,14 +148,6 @@
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                             <div class="flex items-center space-x-2">
-                                <button onclick="event.stopPropagation(); openAddStockModal({{ $inventory->id }}, '{{ $inventory->name }}')" 
-                                        class="text-blue-600 hover:text-blue-900" title="Add Stock">
-                                    <i class="fas fa-plus"></i>
-                                </button>
-                                <button onclick="event.stopPropagation(); openUseStockModal({{ $inventory->id }}, '{{ $inventory->name }}', {{ $inventory->stocks }})" 
-                                        class="text-orange-600 hover:text-orange-900" title="Use Stock">
-                                    <i class="fas fa-minus"></i>
-                                </button>
                                 <a href="{{ route('admin.inventory.edit', $inventory) }}" 
                                    class="text-indigo-600 hover:text-indigo-900" title="Edit" onclick="event.stopPropagation();">
                                     <i class="fas fa-edit"></i>
@@ -159,9 +166,15 @@
                     @empty
                     <tr>
                         <td colspan="8" class="px-6 py-12 text-center text-gray-500">
-                            <i class="fas fa-boxes text-4xl mb-4 text-gray-300"></i>
-                            <p class="text-lg font-medium">No inventory items found</p>
-                            <p class="text-sm">Start by adding your first inventory item</p>
+                            @if(request('search'))
+                                <i class="fas fa-search text-4xl mb-4 text-gray-300"></i>
+                                <p class="text-lg font-medium">No inventory items found</p>
+                                <p class="text-sm">No items match your search for "{{ request('search') }}"</p>
+                            @else
+                                <i class="fas fa-boxes text-4xl mb-4 text-gray-300"></i>
+                                <p class="text-lg font-medium">No inventory items found</p>
+                                <p class="text-sm">Start by adding your first inventory item</p>
+                            @endif
                         </td>
                     </tr>
                     @endforelse
@@ -215,7 +228,7 @@
                                 class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-maroon focus:border-maroon">
                             <option value="">Select Supplier</option>
                             @foreach(\App\Models\Supplier::all() as $supplier)
-                                <option value="{{ $supplier->supplier_id }}">{{ $supplier->company_name }}</option>
+                                <option value="{{ $supplier->supplier_id }}">{{ $supplier->supplier_name }}</option>
                             @endforeach
                         </select>
                     </div>
@@ -242,80 +255,6 @@
     </div>
 </div>
 
-<!-- Add Stock Modal -->
-<div id="addStockModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50">
-    <div class="flex items-center justify-center min-h-screen p-4">
-        <div class="bg-white rounded-lg shadow-xl max-w-md w-full">
-            <div class="px-6 py-4 border-b border-gray-200">
-                <h3 class="text-lg font-semibold text-gray-900">Add Stock</h3>
-                <p class="text-sm text-gray-600" id="addStockItemName"></p>
-            </div>
-            <form method="POST" id="addStockForm">
-                @csrf
-                <div class="px-6 py-4">
-                    <div>
-                        <label for="addQuantity" class="block text-sm font-medium text-gray-700">Quantity to Add *</label>
-                        <input type="number" name="quantity" id="addQuantity" required min="1"
-                               class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-maroon focus:border-maroon">
-                    </div>
-                </div>
-                <div class="px-6 py-4 bg-gray-50 flex justify-end space-x-3">
-                    <button type="button" onclick="closeAddStockModal()" 
-                            class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">
-                        Cancel
-                    </button>
-                    <button type="submit" 
-                            class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
-                        Add Stock
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-<!-- Use Stock Modal -->
-<div id="useStockModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50">
-    <div class="flex items-center justify-center min-h-screen p-4">
-        <div class="bg-white rounded-lg shadow-xl max-w-md w-full">
-            <div class="px-6 py-4 border-b border-gray-200">
-                <h3 class="text-lg font-semibold text-gray-900">Use Stock</h3>
-                <p class="text-sm text-gray-600" id="useStockItemName"></p>
-                <p class="text-sm text-gray-500">Available: <span id="useStockAvailable"></span></p>
-            </div>
-            <form method="POST" id="useStockForm">
-                @csrf
-                <div class="px-6 py-4 space-y-4">
-                    <div>
-                        <label for="useQuantity" class="block text-sm font-medium text-gray-700">Quantity to Use *</label>
-                        <input type="number" name="quantity_used" id="useQuantity" required min="1"
-                               class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-maroon focus:border-maroon">
-                    </div>
-                    <div>
-                        <label for="purpose" class="block text-sm font-medium text-gray-700">Purpose</label>
-                        <input type="text" name="purpose" id="purpose" placeholder="What is this used for?"
-                               class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-maroon focus:border-maroon">
-                    </div>
-                    <div>
-                        <label for="used_by" class="block text-sm font-medium text-gray-700">Used By</label>
-                        <input type="text" name="used_by" id="used_by" placeholder="Who used this?"
-                               class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-maroon focus:border-maroon">
-                    </div>
-                </div>
-                <div class="px-6 py-4 bg-gray-50 flex justify-end space-x-3">
-                    <button type="button" onclick="closeUseStockModal()" 
-                            class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">
-                        Cancel
-                    </button>
-                    <button type="submit" 
-                            class="px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700">
-                        Use Stock
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
 
 <script>
 function openCreateModal() {
@@ -326,34 +265,11 @@ function closeCreateModal() {
     document.getElementById('createModal').classList.add('hidden');
 }
 
-function openAddStockModal(inventoryId, itemName) {
-    document.getElementById('addStockItemName').textContent = itemName;
-    document.getElementById('addStockForm').action = `/admin/inventory/${inventoryId}/add-stock`;
-    document.getElementById('addStockModal').classList.remove('hidden');
-}
-
-function closeAddStockModal() {
-    document.getElementById('addStockModal').classList.add('hidden');
-}
-
-function openUseStockModal(inventoryId, itemName, available) {
-    document.getElementById('useStockItemName').textContent = itemName;
-    document.getElementById('useStockAvailable').textContent = available;
-    document.getElementById('useQuantity').max = available;
-    document.getElementById('useStockForm').action = `/admin/inventory/${inventoryId}/use-stock`;
-    document.getElementById('useStockModal').classList.remove('hidden');
-}
-
-function closeUseStockModal() {
-    document.getElementById('useStockModal').classList.add('hidden');
-}
 
 // Close modals when clicking outside
 document.addEventListener('click', function(event) {
     if (event.target.classList.contains('bg-gray-600')) {
         closeCreateModal();
-        closeAddStockModal();
-        closeUseStockModal();
     }
 });
 </script>

@@ -100,14 +100,7 @@
                     </div>
                 </div>
                 
-                <div class="mt-6">
-                    <label for="payment_terms" class="block text-sm font-medium text-gray-700 mb-1">Payment Terms</label>
-                    <textarea name="payment_terms" id="payment_terms" rows="2"
-                              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon @error('payment_terms') border-red-500 @enderror">{{ old('payment_terms', $customer->payment_terms) }}</textarea>
-                    @error('payment_terms')
-                        <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
-                    @enderror
-                </div>
+                
             </div>
 
             <!-- Contact Information -->

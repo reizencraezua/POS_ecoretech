@@ -18,8 +18,8 @@ class JobController extends Controller
 
         if ($request->has('search')) {
             $search = $request->search;
-            $query->where('job_title', 'like', "%{$search}%")
-                ->orWhere('job_description', 'like', "%{$search}%");
+            $query->where('job_title', 'like', "%{$search_query}%")
+                ->orWhere('job_description', 'like', "%{$search_query}%");
         }
 
         $jobs = $query->orderBy('job_title')->paginate(15);

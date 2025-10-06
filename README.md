@@ -81,7 +81,9 @@ A comprehensive Point of Sale (POS) system built with Laravel 12 for printing an
 
 8. **Access the application**
    - Open your browser and go to `http://localhost:8000`
-   - Default admin credentials will be seeded automatically
+   - Default admin credentials:
+     - **Super Admin**: admin@ecoretech.com / admin123
+     - **Admin**: admin@pos.com / password123
 
 ## Database
 

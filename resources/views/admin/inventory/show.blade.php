@@ -10,10 +10,6 @@
         <i class="fas fa-arrow-left"></i>
         <span>Back to Inventory</span>
     </a>
-    <a href="{{ route('admin.inventory.edit', $inventory) }}" class="flex items-center gap-2 px-4 py-2 bg-maroon text-white rounded-lg hover:bg-maroon-dark transition-colors">
-        <i class="fas fa-edit"></i>
-        <span>Edit Item</span>
-    </a>
 </div>
 @endsection
 
@@ -156,20 +152,20 @@
         </div>
     </div>
 
-    <!-- Quick Actions -->
+    <!-- Quick Actions (Right Side) -->
     <div class="bg-white rounded-lg shadow">
         <div class="px-6 py-4 border-b border-gray-200">
             <h3 class="text-lg font-semibold text-gray-900">Quick Actions</h3>
         </div>
-        <div class="px-6 py-4">
+        <div class="px-6 py-4 justify-end flex">
             <div class="flex flex-wrap gap-4">
                 <button onclick="openAddStockModal({{ $inventory->id }}, '{{ $inventory->name }}')" 
-                        class="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                        class="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
                     <i class="fas fa-plus"></i>
                     <span>Add Stock</span>
                 </button>
                 <button onclick="openUseStockModal({{ $inventory->id }}, '{{ $inventory->name }}', {{ $inventory->stocks }})" 
-                        class="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors">
+                        class="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
                     <i class="fas fa-minus"></i>
                     <span>Use Stock</span>
                 </button>
@@ -206,7 +202,7 @@
                         Cancel
                     </button>
                     <button type="submit" 
-                            class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+                            class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-blue-700">
                         Add Stock
                     </button>
                 </div>
@@ -249,7 +245,7 @@
                         Cancel
                     </button>
                     <button type="submit" 
-                            class="px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700">
+                            class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-orange-700">
                         Use Stock
                     </button>
                 </div>

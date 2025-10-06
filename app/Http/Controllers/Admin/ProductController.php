@@ -18,8 +18,8 @@ class ProductController extends Controller
         if ($request->has('search')) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
-                $q->where('product_name', 'like', "%{$search}%")
-                    ->orWhere('product_description', 'like', "%{$search}%");
+                $q->where('product_name', 'like', "%{$search_query}%")
+                    ->orWhere('product_description', 'like', "%{$search_query}%");
             });
         }
 

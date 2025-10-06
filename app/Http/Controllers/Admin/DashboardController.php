@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Customer;
 use App\Models\Order;
 use App\Models\Payment;
+use App\Models\Inventory;
 use Illuminate\Http\Request;
 use App\Models\Quotation;
 use Carbon\Carbon;
@@ -28,12 +29,25 @@ class DashboardController extends Controller
             $periodSales = Payment::whereBetween('payment_date', [$startDate, $endDate])->sum('amount_paid');
         }
 
+        // Inventory statistics
+        $totalInventoryItems = Inventory::where('is_active', true)->count();
+        $criticalInventoryItems = Inventory::where('is_active', true)
+            ->whereRaw('stocks <= critical_level')
+            ->count();
+        $lowStockItems = Inventory::where('is_active', true)
+            ->whereRaw('stocks <= critical_level * 1.5')
+            ->whereRaw('stocks > critical_level')
+            ->count();
+
         $stats = [
             'total_customers' => Customer::count(),
             'pending_quotations' => Quotation::where('status', Quotation::STATUS_PENDING)->count(),
             'active_orders' => Order::whereNotIn('order_status', [Order::STATUS_COMPLETED, Order::STATUS_CANCELLED])->count(),
             'monthly_sales' => $periodSales,
             'total_sales' => $totalSales,
+            'total_inventory_items' => $totalInventoryItems,
+            'critical_inventory_items' => $criticalInventoryItems,
+            'low_stock_items' => $lowStockItems,
         ];
 
         // Job order distribution by status (active orders only)

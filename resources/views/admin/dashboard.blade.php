@@ -31,9 +31,9 @@
 @section('content')
 <div class="space-y-6">
     <!-- Stats Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
 
-        <div class="bg-white rounded-lg shadow p-6 border-l-4 border-green-500">
+        <a href="{{ route('admin.orders.index') }}" class="bg-white rounded-lg shadow p-6 border-l-4 border-green-500 hover:shadow-lg transition-shadow">
             <div class="flex items-center justify-between">
                 <div>
                      <p class="text-sm font-medium text-gray-600">
@@ -49,9 +49,9 @@
                     <i class="fas fa-chart-line text-green-500 text-xl"></i>
                 </div>
             </div>
-        </div>
+        </a>
 
-        <div class="bg-white rounded-lg shadow p-6 border-l-4 border-maroon">
+        <a href="{{ route('admin.customers.index') }}" class="bg-white rounded-lg shadow p-6 border-l-4 border-maroon hover:shadow-lg transition-shadow">
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-sm font-medium text-gray-600">Total Customers</p>
@@ -61,9 +61,9 @@
                     <i class="fas fa-users text-maroon text-xl"></i>
                 </div>
             </div>
-        </div>
+        </a>
 
-        <div class="bg-white rounded-lg shadow p-6 border-l-4 border-yellow-500">
+        <a href="{{ route('admin.quotations.index') }}" class="bg-white rounded-lg shadow p-6 border-l-4 border-yellow-500 hover:shadow-lg transition-shadow">
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-sm font-medium text-gray-600">Pending Quotations</p>
@@ -73,9 +73,9 @@
                     <i class="fas fa-file-alt text-yellow-500 text-xl"></i>
                 </div>
             </div>
-        </div>
+        </a>
 
-        <div class="bg-white rounded-lg shadow p-6 border-l-4 border-blue-500">
+        <a href="{{ route('admin.orders.index') }}" class="bg-white rounded-lg shadow p-6 border-l-4 border-blue-500 hover:shadow-lg transition-shadow">
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-sm font-medium text-gray-600">Active Orders</p>
@@ -85,7 +85,35 @@
                     <i class="fas fa-shopping-cart text-blue-500 text-xl"></i>
                 </div>
             </div>
-        </div>
+        </a>
+
+        <a href="{{ route('admin.inventory.index') }}" class="bg-white rounded-lg shadow p-6 border-l-4 border-purple-500 hover:shadow-lg transition-shadow">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-600">Inventory Items</p>
+                    <p class="text-3xl font-bold text-gray-900">{{ number_format($stats['total_inventory_items']) }}</p>
+                    @if($stats['critical_inventory_items'] > 0)
+                        <p class="text-xs text-red-600 mt-1">
+                            <i class="fas fa-exclamation-triangle mr-1"></i>
+                            {{ $stats['critical_inventory_items'] }} critical
+                        </p>
+                    @elseif($stats['low_stock_items'] > 0)
+                        <p class="text-xs text-yellow-600 mt-1">
+                            <i class="fas fa-exclamation-circle mr-1"></i>
+                            {{ $stats['low_stock_items'] }} low stock
+                        </p>
+                    @else
+                        <p class="text-xs text-green-600 mt-1">
+                            <i class="fas fa-check-circle mr-1"></i>
+                            All items in stock
+                        </p>
+                    @endif
+                </div>
+                <div class="p-3 bg-purple-500 bg-opacity-10 rounded-full">
+                    <i class="fas fa-boxes text-purple-500 text-xl"></i>
+                </div>
+            </div>
+        </a>
 
        
     </div>
