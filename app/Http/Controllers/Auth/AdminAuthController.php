@@ -22,9 +22,22 @@ class AdminAuthController extends Controller
             'password' => 'required',
         ]);
 
-        if (Auth::guard('admin')->attempt($request->only('email', 'password'), $request->boolean('remember'))) {
+        // Check if user exists and is admin/cashier role
+        $user = \App\Models\User::where('email', $request->email)
+            ->where('is_active', true)
+            ->whereIn('role', ['admin', 'super_admin', 'cashier'])
+            ->first();
+
+        if ($user && \Illuminate\Support\Facades\Hash::check($request->password, $user->password)) {
+            Auth::guard('admin')->login($user, $request->boolean('remember'));
             $request->session()->regenerate();
-            return redirect()->intended(route('admin.dashboard'));
+            
+            // Redirect based on user role
+            if ($user->isCashier()) {
+                return redirect()->intended(route('cashier.dashboard'));
+            } else {
+                return redirect()->intended(route('admin.dashboard'));
+            }
         }
 
         throw ValidationException::withMessages([

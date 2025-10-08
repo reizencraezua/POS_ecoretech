@@ -4,34 +4,48 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
-use App\Models\Admin;
+use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 
-class AdminSeeder extends Seeder
+class UserSeeder extends Seeder
 {
     /**
      * Run the database seeds.
      */
     public function run(): void
     {
-        // Create default admin account
-        Admin::updateOrCreate(
+        // Create default super admin account
+        User::updateOrCreate(
             ['email' => 'admin@ecoretech.com'],
             [
                 'name' => 'System Administrator',
                 'password' => Hash::make('admin123'),
                 'role' => 'super_admin',
+                'is_active' => true,
                 'email_verified_at' => now(),
             ]
         );
 
-        // Create additional admin account
-        Admin::updateOrCreate(
+        // Create default admin account
+        User::updateOrCreate(
             ['email' => 'admin@pos.com'],
             [
                 'name' => 'Admin User',
                 'password' => Hash::make('password123'),
                 'role' => 'admin',
+                'is_active' => true,
+                'email_verified_at' => now(),
+            ]
+        );
+
+        // Create default cashier account
+        User::updateOrCreate(
+            ['email' => 'cashier@ecoretech.com'],
+            [
+                'name' => 'Cashier User',
+                'password' => Hash::make('cashier123'),
+                'role' => 'cashier',
+                'is_active' => true,
                 'email_verified_at' => now(),
             ]
         );

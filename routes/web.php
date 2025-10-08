@@ -4,13 +4,19 @@
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 
-// Root route - redirect based on admin auth state to avoid redirect loops
+// Root route - redirect based on user role
 Route::get('/', function () {
 	if (Auth::guard('admin')->check()) {
-		return redirect()->route('admin.dashboard');
+		$user = Auth::guard('admin')->user();
+		if ($user->isCashier()) {
+			return redirect()->route('cashier.dashboard');
+		} else {
+			return redirect()->route('admin.dashboard');
+		}
 	}
 	return redirect()->route('admin.login');
 });
+
 
 use App\Http\Controllers\Auth\AdminAuthController;
 use App\Http\Controllers\Admin\DashboardController;
@@ -30,6 +36,13 @@ use App\Http\Controllers\Admin\UnitController;
 use App\Http\Controllers\Admin\LayoutFeeController;
 use App\Http\Controllers\Admin\DiscountRuleController;
 use App\Http\Controllers\Admin\InventoryController;
+
+// Cashier Controllers
+use App\Http\Controllers\Cashier\DashboardController as CashierDashboardController;
+use App\Http\Controllers\Cashier\QuotationController as CashierQuotationController;
+use App\Http\Controllers\Cashier\JobOrderController as CashierJobOrderController;
+use App\Http\Controllers\Cashier\DeliveryController as CashierDeliveryController;
+use App\Http\Controllers\Cashier\PaymentController as CashierPaymentController;
 
 // Authentication Routes
 Route::prefix('admin')->name('admin.')->group(function () {
@@ -59,6 +72,9 @@ Route::prefix('admin')->name('admin.')->group(function () {
 		Route::patch('quotations/{quotation}/status', [QuotationController::class, 'updateStatus'])->name('quotations.status');
 		Route::post('quotations/{quotation}/archive', [QuotationController::class, 'archive'])->name('quotations.archive');
 		Route::post('quotations/{quotation}/restore', [QuotationController::class, 'restore'])->name('quotations.restore');
+		Route::get('quotations/{quotation}/check-layout', [QuotationController::class, 'checkLayout'])->name('quotations.check-layout');
+		Route::get('quotations/{quotation}/data', [QuotationController::class, 'getQuotationData'])->name('quotations.data');
+		Route::post('quotations/convert-to-job', [QuotationController::class, 'convertToJob'])->name('quotations.convert-to-job');
 
 		// Orders (Job Orders)
 		Route::resource('orders', OrderController::class);
@@ -110,6 +126,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
 		Route::post('payments/{payment}/archive', [PaymentController::class, 'archive'])->name('payments.archive');
 		Route::post('payments/{payment}/restore', [PaymentController::class, 'restore'])->name('payments.restore');
 		Route::get('orders/{order}/payments', [PaymentController::class, 'orderPayments'])->name('orders.payments');
+		Route::get('payments/{payment}/print', [PaymentController::class, 'print'])->name('payments.print');
+		Route::get('payments/summary', [PaymentController::class, 'summary'])->name('payments.summary');
 
 		// Delivery
 		Route::resource('deliveries', DeliveryController::class);
@@ -123,4 +141,32 @@ Route::prefix('admin')->name('admin.')->group(function () {
 		Route::get('inventory/critical/level', [InventoryController::class, 'critical'])->name('inventory.critical');
 
 	});
+});
+
+// Cashier Routes
+Route::prefix('cashier')->name('cashier.')->middleware(['auth:admin'])->group(function () {
+	// Dashboard
+	Route::get('dashboard', [CashierDashboardController::class, 'index'])->name('dashboard');
+
+	// Quotations
+	Route::resource('quotations', CashierQuotationController::class);
+	Route::patch('quotations/{quotation}/status', [CashierQuotationController::class, 'updateStatus'])->name('quotations.update-status');
+	Route::get('quotations/{quotation}/check-layout', [CashierQuotationController::class, 'checkLayout'])->name('quotations.check-layout');
+	Route::post('quotations/convert-to-job', [CashierQuotationController::class, 'convertToJob'])->name('quotations.convert-to-job');
+
+	// Job Orders
+	Route::resource('orders', CashierJobOrderController::class);
+	Route::patch('orders/{order}/status', [CashierJobOrderController::class, 'updateStatus'])->name('orders.update-status');
+
+	// Deliveries
+	Route::resource('deliveries', CashierDeliveryController::class);
+	Route::patch('deliveries/{delivery}/status', [CashierDeliveryController::class, 'updateStatus'])->name('deliveries.update-status');
+
+	// Payments
+	Route::resource('payments', CashierPaymentController::class);
+	Route::get('payments/{payment}/print', [CashierPaymentController::class, 'print'])->name('payments.print');
+	Route::get('payments/summary', [CashierPaymentController::class, 'summary'])->name('payments.summary');
+
+	// Cashier logout
+	Route::post('logout', [AdminAuthController::class, 'logout'])->name('logout');
 });

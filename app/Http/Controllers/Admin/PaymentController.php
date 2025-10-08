@@ -16,13 +16,63 @@ class PaymentController extends Controller
             ? Payment::onlyTrashed()->with(['order.customer'])
             : Payment::with(['order.customer']);
 
-        if ($request->has('search')) {
+        // Search functionality
+        if ($request->has('search') && $request->search) {
             $search = $request->search;
             $query->whereHas('order.customer', function ($q) use ($search) {
                 $q->where('customer_firstname', 'like', "%{$search}%")
                     ->orWhere('customer_lastname', 'like', "%{$search}%")
                     ->orWhere('business_name', 'like', "%{$search}%");
             });
+        }
+
+        // Date range filters
+        if ($request->has('date_range') && $request->date_range) {
+            $dateRange = $request->date_range;
+            $today = now();
+            
+            switch ($dateRange) {
+                case 'today':
+                    $query->whereDate('payment_date', $today->toDateString());
+                    break;
+                case 'yesterday':
+                    $query->whereDate('payment_date', $today->subDay()->toDateString());
+                    break;
+                case 'last_7_days':
+                    $query->whereDate('payment_date', '>=', $today->subDays(7)->toDateString());
+                    break;
+                case 'last_30_days':
+                    $query->whereDate('payment_date', '>=', $today->subDays(30)->toDateString());
+                    break;
+                case 'last_3_months':
+                    $query->whereDate('payment_date', '>=', $today->subMonths(3)->toDateString());
+                    break;
+                case 'this_year':
+                    $query->whereYear('payment_date', $today->year);
+                    break;
+            }
+        } else {
+            // Fallback to custom date range
+            if ($request->has('start_date') && $request->start_date) {
+                $query->whereDate('payment_date', '>=', $request->start_date);
+            }
+            if ($request->has('end_date') && $request->end_date) {
+                $query->whereDate('payment_date', '<=', $request->end_date);
+            }
+        }
+
+        // Payment method filter
+        if ($request->has('payment_method') && $request->payment_method) {
+            $query->where('payment_method', $request->payment_method);
+        }
+
+        // Payment status filter
+        if ($request->has('payment_status') && $request->payment_status) {
+            if ($request->payment_status === 'complete') {
+                $query->where('balance', 0);
+            } elseif ($request->payment_status === 'partial') {
+                $query->where('balance', '>', 0);
+            }
         }
 
         $payments = $query->latest('payment_date')->paginate(15)->appends($request->query());
@@ -206,5 +256,84 @@ class PaymentController extends Controller
     {
         $payments = $order->payments()->latest('payment_date')->get();
         return view('admin.payments.order', compact('order', 'payments'));
+    }
+
+    /**
+     * Print receipt for a payment
+     */
+    public function print(Payment $payment)
+    {
+        $payment->load(['order.customer', 'order.details.product', 'order.details.service']);
+        return view('admin.payments.print', compact('payment'));
+    }
+
+    /**
+     * Get payment summary data
+     */
+    public function summary(Request $request)
+    {
+        $query = Payment::with(['order.customer']);
+
+        // Apply same filters as index method
+        if ($request->has('start_date') && $request->start_date) {
+            $query->whereDate('payment_date', '>=', $request->start_date);
+        }
+        if ($request->has('end_date') && $request->end_date) {
+            $query->whereDate('payment_date', '<=', $request->end_date);
+        }
+        if ($request->has('payment_method') && $request->payment_method) {
+            $query->where('payment_method', $request->payment_method);
+        }
+        if ($request->has('payment_status') && $request->payment_status) {
+            if ($request->payment_status === 'complete') {
+                $query->where('balance', 0);
+            } elseif ($request->payment_status === 'partial') {
+                $query->where('balance', '>', 0);
+            }
+        }
+
+        $payments = $query->get();
+
+        // Calculate summary data
+        $totalAmount = $payments->sum('amount_paid');
+        $paymentCount = $payments->count();
+        $averagePayment = $paymentCount > 0 ? $totalAmount / $paymentCount : 0;
+
+        // Payment methods breakdown
+        $paymentMethods = $payments->groupBy('payment_method')->map(function ($group, $method) use ($totalAmount) {
+            $amount = $group->sum('amount_paid');
+            $count = $group->count();
+            $percentage = $totalAmount > 0 ? round(($amount / $totalAmount) * 100, 1) : 0;
+            
+            // Assign colors for each payment method
+            $colors = [
+                'Cash' => '#10B981',
+                'GCash' => '#3B82F6',
+                'Bank Transfer' => '#8B5CF6',
+                'Check' => '#F59E0B',
+                'Credit Card' => '#6B7280'
+            ];
+            
+            return [
+                'method' => $method,
+                'amount' => $amount,
+                'count' => $count,
+                'percentage' => $percentage,
+                'color' => $colors[$method] ?? '#6B7280'
+            ];
+        })->values();
+
+        // Payment status counts
+        $completePayments = $payments->where('balance', 0)->count();
+        $partialPayments = $payments->where('balance', '>', 0)->count();
+
+        return response()->json([
+            'total_amount' => $totalAmount,
+            'payment_count' => $paymentCount,
+            'average_payment' => $averagePayment,
+            'payment_methods' => $paymentMethods,
+            'complete_payments' => $completePayments,
+            'partial_payments' => $partialPayments
+        ]);
     }
 }

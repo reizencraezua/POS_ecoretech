@@ -21,8 +21,30 @@ class OrderController extends Controller
             ? Order::onlyTrashed()->with(['customer', 'employee', 'details', 'payments'])
             : Order::with(['customer', 'employee', 'details', 'payments']);
 
-        if ($request->has('status')) {
-            $query->where('order_status', $request->status);
+        if ($request->has('status') && $request->status !== '') {
+            $status = $request->status;
+            
+            // Handle due date filters
+            if ($status === 'due_today') {
+                $query->whereNotNull('deadline_date')
+                      ->whereDate('deadline_date', now()->toDateString())
+                      ->whereNotIn('order_status', ['Completed', 'Cancelled']);
+            } elseif ($status === 'due_tomorrow') {
+                $query->whereNotNull('deadline_date')
+                      ->whereDate('deadline_date', now()->addDay()->toDateString())
+                      ->whereNotIn('order_status', ['Completed', 'Cancelled']);
+            } elseif ($status === 'due_3_days') {
+                $query->whereNotNull('deadline_date')
+                      ->whereBetween('deadline_date', [now()->addDay(), now()->addDays(3)])
+                      ->whereNotIn('order_status', ['Completed', 'Cancelled']);
+            } elseif ($status === 'overdue') {
+                $query->whereNotNull('deadline_date')
+                      ->whereDate('deadline_date', '<', now()->toDateString())
+                      ->whereNotIn('order_status', ['Completed', 'Cancelled']);
+            } else {
+                // Regular status filter
+                $query->where('order_status', $status);
+            }
         }
 
         if ($request->has('search')) {
@@ -35,11 +57,11 @@ class OrderController extends Controller
         }
 
         // Date filtering
-        if ($request->has('start_date')) {
+        if ($request->has('start_date') && $request->start_date) {
             $query->whereDate('order_date', '>=', $request->start_date);
         }
 
-        if ($request->has('end_date')) {
+        if ($request->has('end_date') && $request->end_date) {
             $query->whereDate('order_date', '<=', $request->end_date);
         }
 
@@ -76,7 +98,7 @@ class OrderController extends Controller
                 'items.*.type' => 'required|in:product,service',
                 'items.*.id' => 'required|integer',
                 'items.*.quantity' => 'required|integer|min:1',
-                'items.*.unit' => 'nullable|string',
+                'items.*.unit' => 'required|string',
                 'items.*.size' => 'nullable|string',
                 'items.*.price' => 'required|numeric|min:0',
                 'items.*.layout' => 'nullable|in:on,1,true,false,0',

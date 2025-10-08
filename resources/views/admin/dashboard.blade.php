@@ -31,7 +31,7 @@
 @section('content')
 <div class="space-y-6">
     <!-- Stats Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 
         <a href="{{ route('admin.orders.index') }}" class="bg-white rounded-lg shadow p-6 border-l-4 border-green-500 hover:shadow-lg transition-shadow">
             <div class="flex items-center justify-between">
@@ -51,41 +51,6 @@
             </div>
         </a>
 
-        <a href="{{ route('admin.customers.index') }}" class="bg-white rounded-lg shadow p-6 border-l-4 border-maroon hover:shadow-lg transition-shadow">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm font-medium text-gray-600">Total Customers</p>
-                    <p class="text-3xl font-bold text-gray-900">{{ number_format($stats['total_customers']) }}</p>
-                </div>
-                <div class="p-3 bg-maroon bg-opacity-10 rounded-full">
-                    <i class="fas fa-users text-maroon text-xl"></i>
-                </div>
-            </div>
-        </a>
-
-        <a href="{{ route('admin.quotations.index') }}" class="bg-white rounded-lg shadow p-6 border-l-4 border-yellow-500 hover:shadow-lg transition-shadow">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm font-medium text-gray-600">Pending Quotations</p>
-                    <p class="text-3xl font-bold text-gray-900">{{ number_format($stats['pending_quotations']) }}</p>
-                </div>
-                <div class="p-3 bg-yellow-500 bg-opacity-10 rounded-full">
-                    <i class="fas fa-file-alt text-yellow-500 text-xl"></i>
-                </div>
-            </div>
-        </a>
-
-        <a href="{{ route('admin.orders.index') }}" class="bg-white rounded-lg shadow p-6 border-l-4 border-blue-500 hover:shadow-lg transition-shadow">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm font-medium text-gray-600">Active Orders</p>
-                    <p class="text-3xl font-bold text-gray-900">{{ number_format($stats['active_orders']) }}</p>
-                </div>
-                <div class="p-3 bg-blue-500 bg-opacity-10 rounded-full">
-                    <i class="fas fa-shopping-cart text-blue-500 text-xl"></i>
-                </div>
-            </div>
-        </a>
 
         <a href="{{ route('admin.inventory.index') }}" class="bg-white rounded-lg shadow p-6 border-l-4 border-purple-500 hover:shadow-lg transition-shadow">
             <div class="flex items-center justify-between">
@@ -115,7 +80,29 @@
             </div>
         </a>
 
-       
+        <!-- Due Today Card -->
+        <a href="{{ route('admin.orders.index', ['status' => 'due_today']) }}" class="bg-white rounded-lg shadow p-6 border-l-4 border-orange-500 hover:shadow-lg transition-shadow">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-600">Due Today</p>
+                    <p class="text-3xl font-bold text-gray-900">{{ $due_today_orders->count() }}</p>
+                    @if($due_today_orders->count() > 0)
+                        <p class="text-xs text-orange-600 mt-1">
+                            <i class="fas fa-clock mr-1"></i>
+                            {{ $due_today_orders->count() }} orders due today
+                        </p>
+                    @else
+                        <p class="text-xs text-green-600 mt-1">
+                            <i class="fas fa-check-circle mr-1"></i>
+                            No orders due today
+                        </p>
+                    @endif
+                </div>
+                <div class="p-3 bg-orange-500 bg-opacity-10 rounded-full">
+                    <i class="fas fa-calendar-day text-orange-500 text-xl"></i>
+                </div>
+            </div>
+        </a>
     </div>
 
     <!-- Charts and Analytics Row -->
@@ -302,6 +289,75 @@
                 @endif
             </div>
         </div>
+
+        <!-- Due Orders (1-3 days) -->
+        @if($due_orders->count() > 0)
+        <div class="bg-white rounded-lg shadow">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-lg font-semibold text-gray-900">Orders Due Soon (1-3 days)</h3>
+                    <a href="{{ route('admin.orders.index') }}" class="text-maroon hover:text-maroon-dark text-sm font-medium transition-colors">
+                        View All Orders
+                    </a>
+                </div>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order ID</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Due Date</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        @foreach($due_orders as $order)
+                        <tr>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                {{ $order->order_id }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {{ $order->customer->customer_firstname }} {{ $order->customer->customer_lastname }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                                    @if($order->deadline_date->isToday()) bg-red-100 text-red-800
+                                    @elseif($order->deadline_date->isTomorrow()) bg-yellow-100 text-yellow-800
+                                    @else bg-orange-100 text-orange-800 @endif">
+                                    {{ $order->deadline_date->format('M d, Y') }}
+                                    @if($order->deadline_date->isToday())
+                                        (Today)
+                                    @elseif($order->deadline_date->isTomorrow())
+                                        (Tomorrow)
+                                    @else
+                                        ({{ $order->deadline_date->diffInDays(now()) }} days)
+                                    @endif
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                                    @if($order->order_status === 'On-Process') bg-blue-100 text-blue-800
+                                    @elseif($order->order_status === 'Designing') bg-purple-100 text-purple-800
+                                    @elseif($order->order_status === 'Production') bg-yellow-100 text-yellow-800
+                                    @elseif($order->order_status === 'For Releasing') bg-green-100 text-green-800
+                                    @else bg-gray-100 text-gray-800 @endif">
+                                    {{ $order->order_status }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                <a href="{{ route('admin.orders.show', $order) }}" class="text-maroon hover:text-maroon-dark">
+                                    View Details
+                                </a>
+                            </td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        @endif
     </div>
 
     <!-- Quick Actions and Recent Activity -->

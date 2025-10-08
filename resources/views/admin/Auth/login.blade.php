@@ -28,7 +28,7 @@
                     <span class="text-white text-3xl font-bold">E</span>
                 </div>
                 <h1 class="text-2xl font-bold text-maroon mb-2">Ecoretech Printing Shop</h1>
-                <p class="text-gray-600 text-sm">Administrator Login Panel</p>
+                <p class="text-gray-600 text-sm">Admin & Cashier Login Panel</p>
             </div>
 
             <!-- Login Form -->

@@ -171,4 +171,29 @@ class Order extends Model
         
         return ($subTotal - $discountAmount) + $layoutFees;
     }
+
+    /**
+     * Generate a unique order ID
+     */
+    public static function generateOrderId()
+    {
+        $prefix = 'ORD';
+        $year = date('Y');
+        $month = date('m');
+        
+        // Get the last order for this year and month
+        $lastOrder = self::where('order_id', 'like', $prefix . $year . $month . '%')
+            ->orderBy('order_id', 'desc')
+            ->first();
+        
+        if ($lastOrder) {
+            // Extract the number part and increment
+            $lastNumber = (int) substr($lastOrder->order_id, -4);
+            $newNumber = $lastNumber + 1;
+        } else {
+            $newNumber = 1;
+        }
+        
+        return $prefix . $year . $month . str_pad($newNumber, 4, '0', STR_PAD_LEFT);
+    }
 }

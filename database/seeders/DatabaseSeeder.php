@@ -13,10 +13,10 @@ class DatabaseSeeder extends Seeder
     {
         // Seed data for printing shop
         $this->call([
+            UserSeeder::class,
             UnitSeeder::class,
             SizeSeeder::class,
             SampleDataSeeder::class,
-            AdminSeeder::class,
         ]);
     }
 }

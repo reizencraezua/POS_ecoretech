@@ -18,19 +18,26 @@
             @endif
         </div>
         
-        <!-- Search -->
+        <!-- Search and Archive Toggle -->
         <div class="flex items-center space-x-4">
+            <a href="{{ route('admin.categories.index', array_merge(request()->query(), ['archived' => isset($showArchived) && $showArchived ? 0 : 1])) }}"
+               class="px-4 py-2 rounded-lg font-medium transition-colors inline-flex items-center border {{ (isset($showArchived) && $showArchived) ? 'border-green-600 text-green-700 hover:bg-green-50' : 'border-gray-300 text-gray-700 hover:bg-gray-50' }}">
+                <i class="fas fa-box-archive mr-2"></i>
+                {{ (isset($showArchived) && $showArchived) ? 'Show Active' : 'View Archives' }}
+            </a>
+            
             <form method="GET" class="flex items-center space-x-2">
                 <div class="relative">
                     <input type="text" name="search" value="{{ request('search') }}" placeholder="Search categories..." 
                            class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-maroon focus:border-maroon">
                     <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
                 </div>
+                <input type="hidden" name="archived" value="{{ (isset($showArchived) && $showArchived) ? 1 : 0 }}">
                 <button type="submit" class="bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-lg transition-colors">
                     <i class="fas fa-search"></i>
                 </button>
                 @if(request('search'))
-                    <a href="{{ route('admin.categories.index') }}" class="bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-lg transition-colors">
+                    <a href="{{ route('admin.categories.index', ['archived' => (isset($showArchived) && $showArchived) ? 1 : 0]) }}" class="bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-lg transition-colors">
                         <i class="fas fa-times"></i>
                     </a>
                 @endif

@@ -130,6 +130,12 @@
                     <option value="For Releasing" {{ request('status') == 'For Releasing' ? 'selected' : '' }}>For Releasing</option>
                     <option value="Completed" {{ request('status') == 'Completed' ? 'selected' : '' }}>Completed</option>
                     <option value="Cancelled" {{ request('status') == 'Cancelled' ? 'selected' : '' }}>Cancelled</option>
+                    <optgroup label="Due Dates">
+                        <option value="due_today" {{ request('status') == 'due_today' ? 'selected' : '' }}>Due Today</option>
+                        <option value="due_tomorrow" {{ request('status') == 'due_tomorrow' ? 'selected' : '' }}>Due Tomorrow</option>
+                        <option value="due_3_days" {{ request('status') == 'due_3_days' ? 'selected' : '' }}>Due in 3 Days</option>
+                        <option value="overdue" {{ request('status') == 'overdue' ? 'selected' : '' }}>Overdue</option>
+                    </optgroup>
                 </select>
                 <div class="relative">
                     <input type="text" name="search" value="{{ request('search') }}" placeholder="Search orders..." 
@@ -153,59 +159,6 @@
 
    
 
-    <!-- Active Filters Summary -->
-    @if(request('search') || request('status') || request('start_date') || request('end_date'))
-    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <div class="flex items-center justify-between">
-            <div class="flex items-center space-x-4">
-                <i class="fas fa-filter text-blue-600"></i>
-                <span class="text-sm font-medium text-blue-800">Active Filters:</span>
-                <div class="flex flex-wrap gap-2">
-                    @if(request('search'))
-                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                            Search: "{{ request('search') }}"
-                            <a href="{{ route('admin.orders.index', array_merge(request()->except('search'), ['archived' => (isset($showArchived) && $showArchived) ? 1 : 0])) }}" 
-                               class="ml-1 text-blue-600 hover:text-blue-800">
-                                <i class="fas fa-times"></i>
-                            </a>
-                        </span>
-                    @endif
-                    @if(request('status'))
-                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                            Status: {{ request('status') }}
-                            <a href="{{ route('admin.orders.index', array_merge(request()->except('status'), ['archived' => (isset($showArchived) && $showArchived) ? 1 : 0])) }}" 
-                               class="ml-1 text-blue-600 hover:text-blue-800">
-                                <i class="fas fa-times"></i>
-                            </a>
-                        </span>
-                    @endif
-                    @if(request('start_date'))
-                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                            From: {{ \Carbon\Carbon::parse(request('start_date'))->format('M d, Y') }}
-                            <a href="{{ route('admin.orders.index', array_merge(request()->except('start_date'), ['archived' => (isset($showArchived) && $showArchived) ? 1 : 0])) }}" 
-                               class="ml-1 text-blue-600 hover:text-blue-800">
-                                <i class="fas fa-times"></i>
-                            </a>
-                        </span>
-                    @endif
-                    @if(request('end_date'))
-                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                            To: {{ \Carbon\Carbon::parse(request('end_date'))->format('M d, Y') }}
-                            <a href="{{ route('admin.orders.index', array_merge(request()->except('end_date'), ['archived' => (isset($showArchived) && $showArchived) ? 1 : 0])) }}" 
-                               class="ml-1 text-blue-600 hover:text-blue-800">
-                                <i class="fas fa-times"></i>
-                            </a>
-                        </span>
-                    @endif
-                </div>
-            </div>
-            <a href="{{ route('admin.orders.index', ['archived' => (isset($showArchived) && $showArchived) ? 1 : 0]) }}" 
-               class="text-sm text-blue-600 hover:text-blue-800 font-medium">
-                Clear All Filters
-            </a>
-        </div>
-    </div>
-    @endif
 
     <!-- Orders Table -->
     <div class="bg-white rounded-lg shadow overflow-hidden">

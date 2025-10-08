@@ -87,6 +87,22 @@ class DashboardController extends Controller
             })
             ->take(5);
 
+        // Orders due today
+        $due_today_orders = Order::with(['customer', 'employee'])
+            ->whereNotNull('deadline_date')
+            ->whereNotIn('order_status', [Order::STATUS_COMPLETED, Order::STATUS_CANCELLED])
+            ->whereDate('deadline_date', now()->toDateString())
+            ->orderBy('deadline_date', 'asc')
+            ->get();
+
+        // Orders due in 1-3 days (excluding today)
+        $due_orders = Order::with(['customer', 'employee'])
+            ->whereNotNull('deadline_date')
+            ->whereNotIn('order_status', [Order::STATUS_COMPLETED, Order::STATUS_CANCELLED])
+            ->whereBetween('deadline_date', [now()->addDay(), now()->addDays(3)])
+            ->orderBy('deadline_date', 'asc')
+            ->get();
+
         // Monthly sales overview data for chart
         // Determine the period: either provided date range or last 6 months
         if ($startDate && $endDate && $startDate->lte($endDate)) {
@@ -130,6 +146,8 @@ class DashboardController extends Controller
             'stats',
             'recent_orders',
             'pending_payments',
+            'due_today_orders',
+            'due_orders',
             'order_status_counts',
             'total_orders',
             'chartLabels',
