@@ -55,12 +55,12 @@
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact Info</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Business/TIN</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Orders</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                     </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
                     @forelse($customers as $customer)
-                        <tr class="hover:bg-gray-50 transition-colors">
+                        <tr class="hover:bg-gray-50 transition-colors cursor-pointer" onclick="window.location.href='{{ route('admin.customers.show', $customer) }}'">
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <div class="flex items-center">
                                     <div class="w-10 h-10 bg-maroon text-white rounded-full flex items-center justify-center font-bold">
@@ -90,36 +90,36 @@
                                 @endif
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm text-gray-900">{{ $customer->payment_terms ?: 'Standard Terms' }}</div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
                                 <div class="text-sm text-gray-900">{{ $customer->orders_count ?? 0 }} orders</div>
                                 <div class="text-sm text-gray-500">{{ $customer->quotations_count ?? 0 }} quotes</div>
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                                @if($showArchived)
-                                    <x-archive-actions 
-                                        :item="$customer" 
-                                        :archiveRoute="'admin.customers.archive'" 
-                                        :restoreRoute="'admin.customers.restore'" 
-                                        :showRestore="true" />
-                                @else
-                                    <x-archive-actions 
-                                        :item="$customer" 
-                                        :archiveRoute="'admin.customers.archive'" 
-                                        :restoreRoute="'admin.customers.restore'" 
-                                        :showRestore="false" />
-                                @endif
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-center" onclick="event.stopPropagation()">
+                                <div class="flex items-center justify-center space-x-3">
+                                    @if($showArchived)
+                                        <x-archive-actions 
+                                            :item="$customer" 
+                                            :archiveRoute="'admin.customers.archive'" 
+                                            :restoreRoute="'admin.customers.restore'" 
+                                            :editRoute="'admin.customers.edit'"
+                                            :showRestore="true" />
+                                    @else
+                                        <x-archive-actions 
+                                            :item="$customer" 
+                                            :archiveRoute="'admin.customers.archive'" 
+                                            :restoreRoute="'admin.customers.restore'" 
+                                            :editRoute="'admin.customers.edit'"
+                                            :showRestore="false" />
+                                    @endif
+                                </div>
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="px-6 py-12 text-center">
+                            <td colspan="5" class="px-6 py-12 text-center">
                                 <div class="text-gray-400">
                                     <i class="fas fa-users text-6xl mb-4"></i>
                                     <p class="text-xl font-medium mb-2">No customers found</p>
                                     <p class="text-gray-500 mb-4">Start by adding your first customer</p>
-                                 
                                 </div>
                             </td>
                         </tr>
@@ -312,13 +312,6 @@ function editCustomer(customer) {
     this.editModal = true;
 }
 
-// Delete confirmation functionality (unchanged)
-let customerToDelete = null;
-
-function confirmDelete(customerId) {
-    customerToDelete = customerId;
-    document.getElementById('deleteModal').classList.remove('hidden');
-}
 </script>
 
 <style>

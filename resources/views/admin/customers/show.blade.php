@@ -27,16 +27,15 @@
                     </div>
                 </div>
                 <div class="flex items-center space-x-4">
-                    <a href="{{ route('admin.customers.edit', $customer) }}" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md transition-colors">
+                    <a href="{{ route('admin.customers.edit', $customer) }}" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md transition-colors">
                         <i class="fas fa-edit mr-2"></i>
                         Edit Customer
                     </a>
-                    <form method="POST" action="{{ route('admin.customers.destroy', $customer) }}" class="inline" onsubmit="return confirm('Are you sure you want to delete this customer?')">
+                    <form method="POST" action="{{ route('admin.customers.archive', $customer) }}" class="inline" onsubmit="return confirm('Are you sure you want to archive this customer?')">
                         @csrf
-                        @method('DELETE')
-                        <button type="submit" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md transition-colors">
-                            <i class="fas fa-trash mr-2"></i>
-                            Delete
+                        <button type="submit" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md transition-colors">
+                            <i class="fas fa-archive mr-2"></i>
+                            Archive
                         </button>
                     </form>
                 </div>
@@ -100,12 +99,6 @@
                         <div>
                             <label class="text-sm font-medium text-gray-500">TIN</label>
                             <p class="text-gray-900 font-medium">{{ $customer->tin }}</p>
-                        </div>
-                        @endif
-                        @if($customer->payment_terms)
-                        <div class="md:col-span-2">
-                            <label class="text-sm font-medium text-gray-500">Payment Terms</label>
-                            <p class="text-gray-900 font-medium">{{ $customer->payment_terms }}</p>
                         </div>
                         @endif
                     </div>

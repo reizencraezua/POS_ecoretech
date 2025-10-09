@@ -99,8 +99,15 @@ class PaymentController extends Controller
                 'remarks' => 'nullable|string',
             ]);
 
-            // Get order for validation
-            $order = Order::findOrFail($validated['order_id']);
+            // Get order for validation (including soft-deleted to check if it exists)
+            $order = Order::withTrashed()->findOrFail($validated['order_id']);
+            
+            // Check if order is soft-deleted
+            if ($order->trashed()) {
+                return redirect()->back()
+                    ->withErrors(['order_id' => 'Cannot create payment for a deleted order.'])
+                    ->withInput();
+            }
             
             // Validate downpayment amount (must be exactly 50% of total amount)
             if ($validated['payment_term'] === 'Downpayment') {
@@ -176,8 +183,16 @@ class PaymentController extends Controller
 
     public function edit(Payment $payment)
     {
-        $orders = Order::with('customer')->where('order_status', '!=', 'Cancelled')->get();
-        return view('admin.payments.edit', compact('payment', 'orders'));
+        $orders = Order::with(['customer', 'payments'])->where('order_status', '!=', 'Cancelled')->get();
+        
+        // Calculate existing payments for each order (including current payment for display)
+        $orderPayments = [];
+        foreach ($orders as $order) {
+            $totalPayments = $order->payments->sum('amount_paid');
+            $orderPayments[$order->order_id] = $totalPayments;
+        }
+        
+        return view('admin.payments.edit', compact('payment', 'orders', 'orderPayments'));
     }
 
     public function update(Request $request, Payment $payment)
@@ -192,8 +207,27 @@ class PaymentController extends Controller
             'remarks' => 'nullable|string',
         ]);
 
-        // Get order for validation
-        $order = Order::findOrFail($validated['order_id']);
+        // Get order for validation (including soft-deleted to check if it exists)
+        $order = Order::withTrashed()->findOrFail($validated['order_id']);
+        
+        // Check if order is soft-deleted
+        if ($order->trashed()) {
+            return redirect()->back()
+                ->withErrors(['order_id' => 'Cannot update payment for a deleted order.'])
+                ->withInput();
+        }
+        
+        // Validate that payment amount doesn't exceed remaining balance
+        $totalPayments = $order->payments->sum('amount_paid');
+        $currentPaymentAmount = $payment->amount_paid;
+        $existingPaymentsExcludingCurrent = $totalPayments - $currentPaymentAmount;
+        $remainingBalance = $order->final_total_amount - $existingPaymentsExcludingCurrent;
+        
+        if ($validated['amount_paid'] > $remainingBalance) {
+            return redirect()->back()
+                ->withErrors(['amount_paid' => "Payment amount cannot exceed remaining balance of ₱" . number_format($remainingBalance, 2)])
+                ->withInput();
+        }
         
         // Validate downpayment amount (must be exactly 50% of total amount)
         if ($validated['payment_term'] === 'Downpayment') {

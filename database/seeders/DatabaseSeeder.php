@@ -14,9 +14,16 @@ class DatabaseSeeder extends Seeder
         // Seed data for printing shop
         $this->call([
             UserSeeder::class,
+            JobPositionSeeder::class,
+            EmployeeSeeder::class,
+            CustomerSeeder::class,
             UnitSeeder::class,
+            CategorySeeder::class,
             SizeSeeder::class,
-            SampleDataSeeder::class,
+            SupplierSeeder::class,
+            ProductSeeder::class,
+            ServiceSeeder::class,
+            InventorySeeder::class,
         ]);
     }
 }

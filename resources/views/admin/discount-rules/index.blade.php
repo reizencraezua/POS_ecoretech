@@ -14,10 +14,19 @@
                     <h2 class="text-xl font-semibold text-gray-900">Discount Rules</h2>
                     <p class="text-sm text-gray-600 mt-1">Manage quantity-based discounts for orders</p>
                 </div>
-                <a href="{{ route('admin.discount-rules.create') }}" class="bg-maroon hover:bg-maroon-dark text-white px-4 py-2 rounded-lg transition-colors inline-flex items-center">
-                    <i class="fas fa-plus mr-2"></i>
-                    Add Discount Rule
-                </a>
+                <div class="flex items-center space-x-4">
+                    @if(!$showArchived)
+                        <a href="{{ route('admin.discount-rules.create') }}" class="bg-maroon hover:bg-maroon-dark text-white px-4 py-2 rounded-lg transition-colors inline-flex items-center">
+                            <i class="fas fa-plus mr-2"></i>
+                            Add Discount Rule
+                        </a>
+                    @endif
+                    <a href="{{ route('admin.discount-rules.index', array_merge(request()->query(), ['archived' => isset($showArchived) && $showArchived ? 0 : 1])) }}"
+                       class="px-4 py-2 rounded-lg font-medium transition-colors inline-flex items-center border {{ (isset($showArchived) && $showArchived) ? 'border-green-600 text-green-700 hover:bg-green-50' : 'border-gray-300 text-gray-700 hover:bg-gray-50' }}">
+                        <i class="fas fa-box-archive mr-2"></i>
+                        {{ (isset($showArchived) && $showArchived) ? 'Show Active' : 'View Archives' }}
+                    </a>
+                </div>
             </div>
         </div>
     </div>
@@ -84,16 +93,35 @@
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                             <div class="flex items-center space-x-2">
-                                <a href="{{ route('admin.discount-rules.edit', $rule) }}" class="text-maroon hover:text-maroon-dark" title="Edit Rule" onclick="event.stopPropagation();">
-                                    <i class="fas fa-edit"></i>
-                                </a>
-                                <form method="POST" action="{{ route('admin.discount-rules.destroy', $rule) }}" class="inline" onsubmit="return confirm('Are you sure you want to archive this discount rule?')">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="text-red-600 hover:text-red-900" title="Archive Rule" onclick="event.stopPropagation();">
-                                        <i class="fas fa-archive"></i>
-                                    </button>
-                                </form>
+                                @if(!$showArchived)
+                                    <a href="{{ route('admin.discount-rules.edit', $rule) }}" class="text-maroon hover:text-maroon-dark" title="Edit Rule" onclick="event.stopPropagation();">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                @endif
+                                
+                                @if($showArchived)
+                                    <!-- Restore Button -->
+                                    <form method="POST" action="{{ route('admin.discount-rules.restore', $rule) }}" class="inline">
+                                        @csrf
+                                        <button type="submit" 
+                                                class="text-green-600 hover:text-green-900 transition-colors" 
+                                                title="Restore Rule"
+                                                onclick="event.stopPropagation(); return confirm('Are you sure you want to restore this discount rule?')">
+                                            <i class="fas fa-undo"></i>
+                                        </button>
+                                    </form>
+                                @else
+                                    <!-- Archive Button -->
+                                    <form method="POST" action="{{ route('admin.discount-rules.archive', $rule) }}" class="inline">
+                                        @csrf
+                                        <button type="submit" 
+                                                class="text-orange-600 hover:text-orange-900 transition-colors" 
+                                                title="Archive Rule"
+                                                onclick="event.stopPropagation(); return confirm('Are you sure you want to archive this discount rule?')">
+                                            <i class="fas fa-archive"></i>
+                                        </button>
+                                    </form>
+                                @endif
                             </div>
                         </td>
                     </tr>

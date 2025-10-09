@@ -107,24 +107,27 @@
 
                     <!-- Actions -->
                     <div class="flex items-center justify-between border-t border-gray-200 pt-4 relative z-20">
+                        <span class="text-xs text-gray-500">
+                            Updated {{ $service->updated_at->diffForHumans() }}
+                        </span>
+                        
                         <div class="flex items-center space-x-2">
                             @if($showArchived)
                                 <x-archive-actions 
                                     :item="$service" 
                                     :archiveRoute="'admin.services.archive'" 
                                     :restoreRoute="'admin.services.restore'" 
+                                    :editRoute="'admin.services.edit'"
                                     :showRestore="true" />
                             @else
                                 <x-archive-actions 
                                     :item="$service" 
                                     :archiveRoute="'admin.services.archive'" 
                                     :restoreRoute="'admin.services.restore'" 
+                                    :editRoute="'admin.services.edit'"
                                     :showRestore="false" />
                             @endif
                         </div>
-                        <span class="text-xs text-gray-500">
-                            Updated {{ $service->updated_at->diffForHumans() }}
-                        </span>
                     </div>
                 </div>
             </div>

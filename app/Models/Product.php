@@ -18,7 +18,6 @@ class Product extends Model
         'base_price',
         'layout_price',
         'requires_layout',
-        'layout_description',
         'product_description',
         'category_id',
         'size_id',

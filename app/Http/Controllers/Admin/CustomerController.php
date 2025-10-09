@@ -25,7 +25,10 @@ class CustomerController extends Controller
             });
         }
 
-        $customers = $query->orderBy('customer_id', 'desc')->paginate(15)->appends($request->query());
+        $customers = $query->withCount(['orders', 'quotations'])
+            ->orderBy('customer_id', 'desc')
+            ->paginate(15)
+            ->appends($request->query());
 
         return view('admin.customers.index', compact('customers', 'showArchived'));
     }
@@ -37,25 +40,63 @@ class CustomerController extends Controller
 
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'customer_firstname' => 'required|string|max:255',
-            'customer_middlename' => 'nullable|string|max:255',
-            'customer_lastname' => 'required|string|max:255',
-            'business_name' => 'nullable|string|max:255',
-            'customer_address' => 'required|string',
-            'customer_email' => 'nullable|email|unique:customers,customer_email',
-            'contact_person1' => 'required|string|max:255',
-            'contact_number1' => 'required|string|regex:/^[0-9]{11}$/',
-            'contact_person2' => 'nullable|string|max:255',
-            'contact_number2' => 'nullable|string|regex:/^[0-9]{11}$/',
-            'payment_terms' => 'nullable|string',
-            'tin' => 'nullable|string|max:50',
-        ], [
-            'contact_number1.regex' => 'Primary contact number must be exactly 11 digits.',
-            'contact_number2.regex' => 'Secondary contact number must be exactly 11 digits.',
+        // Debug: Log the request details
+        \Log::info('Customer store request', [
+            'is_ajax' => $request->ajax(),
+            'wants_json' => $request->wantsJson(),
+            'content_type' => $request->header('Content-Type'),
+            'accept' => $request->header('Accept'),
+            'data' => $request->all()
         ]);
+        
+        try {
+            $validated = $request->validate([
+                'customer_firstname' => 'required|string|max:255',
+                'customer_middlename' => 'nullable|string|max:255',
+                'customer_lastname' => 'required|string|max:255',
+                'business_name' => 'nullable|string|max:255',
+                'customer_address' => 'required|string',
+                'customer_email' => 'nullable|email|unique:customers,customer_email',
+                'contact_person1' => 'required|string|max:255',
+                'contact_number1' => 'required|string|regex:/^[0-9]{11}$/',
+                'contact_person2' => 'nullable|string|max:255',
+                'contact_number2' => 'nullable|string|regex:/^[0-9]{11}$/',
+                'tin' => 'nullable|string|max:50',
+            ], [
+                'contact_number1.regex' => 'Primary contact number must be exactly 11 digits.',
+                'contact_number2.regex' => 'Secondary contact number must be exactly 11 digits.',
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            // Handle validation errors for AJAX requests
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validation failed',
+                    'errors' => $e->errors()
+                ], 422);
+            }
+            throw $e;
+        }
 
-        Customer::create($validated);
+        $customer = Customer::create($validated);
+
+        // Check if this is an AJAX request (from modal)
+        if ($request->ajax() || $request->wantsJson()) {
+            $response = [
+                'success' => true,
+                'customer' => [
+                    'customer_id' => $customer->customer_id,
+                    'display_name' => $customer->display_name,
+                    'customer_firstname' => $customer->customer_firstname,
+                    'customer_lastname' => $customer->customer_lastname,
+                    'business_name' => $customer->business_name,
+                ],
+                'message' => 'Customer created successfully.'
+            ];
+            
+            \Log::info('Customer store AJAX response', $response);
+            return response()->json($response);
+        }
 
         return redirect()->route('admin.customers.index')
             ->with('success', 'Customer created successfully.');
@@ -85,7 +126,6 @@ class CustomerController extends Controller
             'contact_number1' => 'required|string|regex:/^[0-9]{11}$/',
             'contact_person2' => 'nullable|string|max:255',
             'contact_number2' => 'nullable|string|regex:/^[0-9]{11}$/',
-            'payment_terms' => 'nullable|string',
             'tin' => 'nullable|string|max:50',
         ], [
             'contact_number1.regex' => 'Primary contact number must be exactly 11 digits.',

@@ -24,16 +24,15 @@
                     </div>
                 </div>
                 <div class="flex items-center space-x-4">
-                    <a href="{{ route('admin.employees.edit', $employee) }}" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md transition-colors">
+                    <a href="{{ route('admin.employees.edit', $employee) }}" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md transition-colors">
                         <i class="fas fa-edit mr-2"></i>
                         Edit Employee
                     </a>
-                    <form method="POST" action="{{ route('admin.employees.destroy', $employee) }}" class="inline" onsubmit="return confirm('Are you sure you want to delete this employee?')">
+                    <form method="POST" action="{{ route('admin.employees.archive', $employee) }}" class="inline" onsubmit="return confirm('Are you sure you want to archive this employee?')">
                         @csrf
-                        @method('DELETE')
-                        <button type="submit" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md transition-colors">
-                            <i class="fas fa-trash mr-2"></i>
-                            Delete
+                        <button type="submit" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md transition-colors">
+                            <i class="fas fa-archive mr-2"></i>
+                            Archive
                         </button>
                     </form>
                 </div>

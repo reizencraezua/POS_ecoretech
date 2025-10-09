@@ -276,11 +276,10 @@
                         </button>
                     </form>
                     @endif
-                    <form method="POST" action="{{ route('admin.quotations.destroy', $quotation) }}" 
+                    <form method="POST" action="{{ route('admin.quotations.archive', $quotation) }}" 
                           onsubmit="return confirm('Are you sure you want to archive this quotation?')" class="w-full">
                         @csrf
-                        @method('DELETE')
-                        <button type="submit" class="w-full bg-red-100 hover:bg-red-200 text-red-900 px-3 py-2 rounded text-sm transition-colors inline-flex items-center justify-center">
+                        <button type="submit" class="w-full bg-gray-100 hover:bg-gray-200 text-gray-900 px-3 py-2 rounded text-sm transition-colors inline-flex items-center justify-center">
                             Archive Quotation
                         </button>
                     </form>

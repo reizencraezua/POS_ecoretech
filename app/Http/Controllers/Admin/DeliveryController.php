@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Delivery;
 use App\Models\Order;
+use App\Models\Employee;
 use Illuminate\Http\Request;
 
 class DeliveryController extends Controller
@@ -13,8 +14,8 @@ class DeliveryController extends Controller
     {
         $showArchived = $request->boolean('archived');
         $query = $showArchived
-            ? Delivery::with(['order.customer'])->onlyTrashed()
-            : Delivery::with(['order.customer']);
+            ? Delivery::with(['order.customer', 'employee'])->onlyTrashed()
+            : Delivery::with(['order.customer', 'employee']);
 
         if ($request->has('status')) {
             $query->where('status', $request->status);
@@ -35,16 +36,25 @@ class DeliveryController extends Controller
         return view('admin.deliveries.index', compact('deliveries', 'showArchived'));
     }
 
-    public function create()
+    public function create(Request $request)
     {
         $orders = Order::with('customer')->where('order_status', '!=', 'Cancelled')->get();
-        return view('admin.deliveries.create', compact('orders'));
+        $employees = Employee::with('job')->get();
+        
+        // Get the pre-selected order if order_id is provided
+        $selectedOrder = null;
+        if ($request->has('order_id')) {
+            $selectedOrder = Order::with('customer')->find($request->order_id);
+        }
+
+        return view('admin.deliveries.create', compact('orders', 'employees', 'selectedOrder'));
     }
 
     public function store(Request $request)
     {
         $validated = $request->validate([
             'order_id' => 'required|exists:orders,order_id',
+            'employee_id' => 'nullable|exists:employees,employee_id',
             'delivery_date' => 'required|date|after_or_equal:today',
             'delivery_address' => 'required|string|max:500',
             'driver_name' => 'nullable|string|max:255',
@@ -69,13 +79,15 @@ class DeliveryController extends Controller
     public function edit(Delivery $delivery)
     {
         $orders = Order::with('customer')->where('order_status', '!=', 'Cancelled')->get();
-        return view('admin.deliveries.edit', compact('delivery', 'orders'));
+        $employees = Employee::with('job')->get();
+        return view('admin.deliveries.edit', compact('delivery', 'orders', 'employees'));
     }
 
     public function update(Request $request, Delivery $delivery)
     {
         $validated = $request->validate([
             'order_id' => 'required|exists:orders,order_id',
+            'employee_id' => 'nullable|exists:employees,employee_id',
             'delivery_date' => 'required|date',
             'delivery_address' => 'required|string|max:500',
             'driver_name' => 'nullable|string|max:255',

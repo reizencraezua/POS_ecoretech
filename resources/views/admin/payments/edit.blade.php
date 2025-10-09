@@ -38,7 +38,14 @@
                             @enderror
                         </div>
                         
-                        <input type="hidden" name="payment_date" value="{{ $payment->payment_date->format('Y-m-d') }}">
+                        <div>
+                            <label for="payment_date" class="block text-sm font-medium text-gray-700 mb-1">Payment Date *</label>
+                            <input type="date" name="payment_date" id="payment_date" value="{{ old('payment_date', $payment->payment_date->format('Y-m-d')) }}" required
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon @error('payment_date') border-red-500 @enderror">
+                            @error('payment_date')
+                                <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                            @enderror
+                        </div>
                     </div>
                 </div>
 
@@ -50,6 +57,29 @@
                             <label for="amount_paid" class="block text-sm font-medium text-gray-700 mb-1">Amount *</label>
                             <input type="number" name="amount_paid" id="amount_paid" value="{{ old('amount_paid', $payment->amount_paid) }}" step="0.01" min="0" required
                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon @error('amount_paid') border-red-500 @enderror">
+                            
+                            <!-- Maximum Payment Information -->
+                            <div id="max_payment_info" class="mt-2 p-3 bg-green-50 border border-green-200 rounded-md text-sm">
+                                <div class="flex items-center text-green-700 mb-2">
+                                    <i class="fas fa-info-circle mr-2"></i>
+                                    <span class="font-medium">Payment Information</span>
+                                </div>
+                                <div class="text-green-800">
+                                    <div class="flex justify-between items-center">
+                                        <span>Order Total Amount:</span>
+                                        <span id="order_total_display" class="font-semibold">₱0.00</span>
+                                    </div>
+                                    <div class="flex justify-between items-center">
+                                        <span>Already Paid:</span>
+                                        <span id="already_paid_display" class="font-semibold">₱0.00</span>
+                                    </div>
+                                    <div class="flex justify-between items-center border-t border-green-300 pt-2 mt-2">
+                                        <span class="font-medium">Maximum Payment:</span>
+                                        <span id="max_payment_display" class="font-bold text-lg text-green-700">₱0.00</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
                             <div id="downpayment_info" class="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-md text-sm" style="display: none;">
                                 <div class="flex items-center text-blue-700 mb-2">
                                     <i class="fas fa-info-circle mr-2"></i>
@@ -118,10 +148,10 @@
                 <div class="mb-8">
                     <h3 class="text-lg font-medium text-gray-900 mb-4 border-b border-gray-200 pb-2">Additional Information</h3>
                     <div>
-                        <label for="notes" class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
-                        <textarea name="notes" id="notes" rows="3"
-                                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon @error('notes') border-red-500 @enderror">{{ old('notes', $payment->notes) }}</textarea>
-                        @error('notes')
+                        <label for="remarks" class="block text-sm font-medium text-gray-700 mb-1">Remarks</label>
+                        <textarea name="remarks" id="remarks" rows="3"
+                                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon @error('remarks') border-red-500 @enderror">{{ old('remarks', $payment->remarks) }}</textarea>
+                        @error('remarks')
                             <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
                         @enderror
                     </div>
@@ -151,10 +181,12 @@ document.addEventListener('DOMContentLoaded', function() {
     const amountInput = document.getElementById('amount_paid');
     const orderSelect = document.getElementById('order_id');
     const downpaymentInfo = document.getElementById('downpayment_info');
-    const downpaymentText = document.getElementById('downpayment_text');
+    const paymentDateInput = document.getElementById('payment_date');
+    const maxPaymentInfo = document.getElementById('max_payment_info');
     
-    // Store order amounts for validation
+    // Store order amounts and payment data for validation
     const orderAmounts = {};
+    const orderPayments = @json($orderPayments);
     
     // Populate order amounts from options
     orderSelect.querySelectorAll('option').forEach(option => {
@@ -175,6 +207,47 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
+    function updateMaxPaymentInfo() {
+        const selectedOrder = orderSelect.value;
+        
+        if (selectedOrder && orderAmounts[selectedOrder]) {
+            const totalAmount = orderAmounts[selectedOrder];
+            
+            // Calculate already paid amount (total payments made by customer)
+            const totalPaidByCustomer = orderPayments[selectedOrder] || 0;
+            
+            // Calculate remaining balance (excluding current payment being edited)
+            const currentPaymentAmount = parseFloat(amountInput.value) || 0;
+            const alreadyPaidExcludingCurrent = totalPaidByCustomer - currentPaymentAmount;
+            const remainingBalance = totalAmount - alreadyPaidExcludingCurrent;
+            const maxPayment = Math.max(0, remainingBalance); // Cannot exceed remaining balance
+            
+            // Update display elements
+            document.getElementById('order_total_display').textContent = `₱${totalAmount.toFixed(2)}`;
+            document.getElementById('already_paid_display').textContent = `₱${totalPaidByCustomer.toFixed(2)}`;
+            document.getElementById('max_payment_display').textContent = `₱${maxPayment.toFixed(2)}`;
+            
+            // Add visual indicator if payment is at or near maximum
+            const maxPaymentInfo = document.getElementById('max_payment_info');
+            
+            if (currentPaymentAmount > maxPayment) {
+                maxPaymentInfo.classList.remove('bg-green-50', 'border-green-200');
+                maxPaymentInfo.classList.add('bg-red-50', 'border-red-200');
+                document.getElementById('max_payment_display').classList.add('text-red-700');
+                document.getElementById('max_payment_display').classList.remove('text-green-700');
+            } else {
+                maxPaymentInfo.classList.remove('bg-red-50', 'border-red-200');
+                maxPaymentInfo.classList.add('bg-green-50', 'border-green-200');
+                document.getElementById('max_payment_display').classList.remove('text-red-700');
+                document.getElementById('max_payment_display').classList.add('text-green-700');
+            }
+            
+            maxPaymentInfo.style.display = 'block';
+        } else {
+            maxPaymentInfo.style.display = 'none';
+        }
+    }
+    
     function toggleDownpaymentInfo() {
         const selectedTerm = paymentTermSelect.value;
         const selectedOrder = orderSelect.value;
@@ -190,6 +263,55 @@ document.addEventListener('DOMContentLoaded', function() {
             downpaymentInfo.style.display = 'block';
         } else {
             downpaymentInfo.style.display = 'none';
+        }
+    }
+    
+    function validatePaymentAmount() {
+        const selectedOrder = orderSelect.value;
+        const enteredAmount = parseFloat(amountInput.value);
+        
+        if (selectedOrder && orderAmounts[selectedOrder] && enteredAmount > 0) {
+            const totalAmount = orderAmounts[selectedOrder];
+            const totalPaidByCustomer = orderPayments[selectedOrder] || 0;
+            
+            // Calculate remaining balance (excluding current payment being edited)
+            const currentPaymentAmount = parseFloat(amountInput.value) || 0;
+            const alreadyPaidExcludingCurrent = totalPaidByCustomer - currentPaymentAmount;
+            const remainingBalance = totalAmount - alreadyPaidExcludingCurrent;
+            const maxPayment = Math.max(0, remainingBalance);
+            
+            if (enteredAmount > maxPayment) {
+                amountInput.classList.add('border-red-500');
+                amountInput.classList.remove('border-gray-300');
+                
+                // Show error message
+                let errorMsg = document.getElementById('amount_error_msg');
+                if (!errorMsg) {
+                    errorMsg = document.createElement('p');
+                    errorMsg.id = 'amount_error_msg';
+                    errorMsg.className = 'text-red-500 text-xs mt-1';
+                    amountInput.parentNode.appendChild(errorMsg);
+                }
+                errorMsg.textContent = `Payment cannot exceed remaining balance of ₱${maxPayment.toFixed(2)}`;
+            } else {
+                amountInput.classList.remove('border-red-500');
+                amountInput.classList.add('border-gray-300');
+                
+                // Remove error message
+                const errorMsg = document.getElementById('amount_error_msg');
+                if (errorMsg) {
+                    errorMsg.remove();
+                }
+            }
+        } else {
+            amountInput.classList.remove('border-red-500');
+            amountInput.classList.add('border-gray-300');
+            
+            // Remove error message
+            const errorMsg = document.getElementById('amount_error_msg');
+            if (errorMsg) {
+                errorMsg.remove();
+            }
         }
     }
     
@@ -224,12 +346,21 @@ document.addEventListener('DOMContentLoaded', function() {
     
     paymentMethodSelect.addEventListener('change', toggleReferenceField);
     paymentTermSelect.addEventListener('change', toggleDownpaymentInfo);
-    orderSelect.addEventListener('change', toggleDownpaymentInfo);
-    amountInput.addEventListener('input', validateDownpayment);
+    orderSelect.addEventListener('change', function() {
+        toggleDownpaymentInfo();
+        updateMaxPaymentInfo();
+        validatePaymentAmount();
+    });
+    amountInput.addEventListener('input', function() {
+        validatePaymentAmount();
+        validateDownpayment();
+        updateMaxPaymentInfo();
+    });
     
     // Check on page load
     toggleReferenceField();
     toggleDownpaymentInfo();
+    updateMaxPaymentInfo();
 });
 </script>
 @endsection

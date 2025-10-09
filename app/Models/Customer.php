@@ -24,7 +24,6 @@ class Customer extends Model
         'contact_number1',
         'contact_person2',
         'contact_number2',
-        'payment_terms',
         'tin',
     ];
 

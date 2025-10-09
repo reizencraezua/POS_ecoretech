@@ -8,10 +8,15 @@ use Illuminate\Http\Request;
 
 class DiscountRuleController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $discountRules = DiscountRule::orderBy('min_quantity')->get();
-        return view('admin.discount-rules.index', compact('discountRules'));
+        $showArchived = $request->boolean('archived');
+        $query = $showArchived
+            ? DiscountRule::onlyTrashed()
+            : DiscountRule::query();
+            
+        $discountRules = $query->orderBy('min_quantity')->get();
+        return view('admin.discount-rules.index', compact('discountRules', 'showArchived'));
     }
 
     public function create()

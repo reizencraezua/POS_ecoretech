@@ -34,11 +34,10 @@
                     <a href="{{ route('admin.suppliers.edit', $supplier) }}" class="bg-maroon text-white px-4 py-2 rounded-lg hover:bg-maroon-dark transition-colors inline-flex items-center">
                         <i class="fas fa-edit mr-2"></i>Edit Supplier
                     </a>
-                    <form method="POST" action="{{ route('admin.suppliers.destroy', $supplier) }}" 
+                    <form method="POST" action="{{ route('admin.suppliers.archive', $supplier) }}" 
                           class="inline-block" onsubmit="return confirm('Are you sure you want to archive this supplier?')">
                         @csrf
-                        @method('DELETE')
-                        <button type="submit" class="bg-red-100 text-red-700 px-4 py-2 rounded-lg hover:bg-red-200 transition-colors inline-flex items-center">
+                        <button type="submit" class="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors inline-flex items-center">
                             <i class="fas fa-archive mr-2"></i>Archive
                         </button>
                     </form>

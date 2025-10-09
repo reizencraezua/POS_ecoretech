@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Cashier;
 use App\Http\Controllers\Controller;
 use App\Models\Delivery;
 use App\Models\Order;
+use App\Models\Employee;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
@@ -16,9 +17,10 @@ class DeliveryController extends Controller
      */
     public function index(Request $request)
     {
-        // Check if user is cashier
-        if (!auth('admin')->user()->isCashier()) {
-            abort(403, 'Access denied. Cashier role required.');
+        // Check if user is cashier or admin
+        $user = auth('web')->user();
+        if (!$user || (!$user->isCashier() && !$user->isAdmin())) {
+            abort(403, 'Access denied. Cashier or Admin role required.');
         }
 
         $query = Delivery::with(['order.customer', 'order.employee']);
@@ -57,14 +59,21 @@ class DeliveryController extends Controller
     /**
      * Show the form for creating a new resource.
      */
-    public function create()
+    public function create(Request $request)
     {
         $orders = Order::whereNotIn('order_status', ['Completed', 'Cancelled'])
             ->whereDoesntHave('delivery')
             ->with('customer')
             ->get();
 
-        return view('cashier.deliveries.create', compact('orders'));
+        // Get the pre-selected order if order_id is provided
+        $selectedOrder = null;
+        if ($request->has('order_id')) {
+            $selectedOrder = Order::with('customer')->find($request->order_id);
+        }
+
+        $employees = Employee::with('job')->get();
+        return view('cashier.deliveries.create', compact('orders', 'employees', 'selectedOrder'));
     }
 
     /**
@@ -75,6 +84,7 @@ class DeliveryController extends Controller
         try {
             $validated = $request->validate([
                 'order_id' => 'required|exists:orders,order_id',
+                'employee_id' => 'nullable|exists:employees,employee_id',
                 'delivery_date' => 'required|date',
                 'delivery_address' => 'required|string|max:255',
                 'delivery_contact' => 'required|string|max:20',

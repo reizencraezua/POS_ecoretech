@@ -45,6 +45,14 @@ class Employee extends Model
     }
 
     /**
+     * Get deliveries assigned to this employee
+     */
+    public function deliveries()
+    {
+        return $this->hasMany(Delivery::class, 'employee_id', 'employee_id');
+    }
+
+    /**
      * Get the full name attribute
      */
     public function getFullNameAttribute()

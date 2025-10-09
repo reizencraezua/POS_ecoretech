@@ -173,11 +173,11 @@
                 <thead class="bg-gray-50">
                     <tr>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order Info</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dates</th>   
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payment</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created By</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                     </tr>
                 </thead>
@@ -194,42 +194,8 @@
                                             <div class="text-sm font-medium text-gray-900 group-hover:text-blue-600">Order #{{ str_pad($order->order_id, 5, '0', STR_PAD_LEFT) }}</div>
                                             <i class="fas fa-external-link-alt text-xs text-gray-400 group-hover:text-blue-600 transition-colors"></i>
                                         </div>
-                                        <div class="text-sm text-gray-500">{{ $order->employee->full_name ?? 'Unassigned' }}</div>
+                                        <div class="text-sm text-gray-500">{{ $order->customer->display_name }}</div>
                                     </div>
-                                </div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm font-medium text-gray-900">{{ $order->customer->display_name }}</div>
-                                <div class="text-sm text-gray-500">{{ $order->customer->contact_number1 }}</div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="flex items-center">
-                                    <span class="px-3 py-1 text-xs font-medium rounded-full
-                                        @switch($order->order_status)
-                                            @case('On-Process')
-                                                bg-blue-100 text-blue-800
-                                                @break
-                                            @case('Designing')
-                                                bg-purple-100 text-purple-800
-                                                @break
-                                            @case('Production')
-                                                bg-yellow-100 text-yellow-800
-                                                @break
-                                            @case('For Releasing')
-                                                bg-orange-100 text-orange-800
-                                                @break
-                                            @case('Completed')
-                                                bg-green-100 text-green-800
-                                                @break
-                                            @case('Cancelled')
-                                                bg-red-100 text-red-800
-                                                @break
-                                            @default
-                                                bg-gray-100 text-gray-800
-                                        @endswitch
-                                    ">
-                                        {{ $order->order_status }}
-                                    </span>
                                 </div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -274,10 +240,72 @@
                                     </div>
                                 </div>
                             </td>
+                            
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center">
+                                    <span class="px-3 py-1 text-xs font-medium rounded-full
+                                        @switch($order->order_status)
+                                            @case('On-Process')
+                                                bg-blue-100 text-blue-800
+                                                @break
+                                            @case('Designing')
+                                                bg-purple-100 text-purple-800
+                                                @break
+                                            @case('Production')
+                                                bg-yellow-100 text-yellow-800
+                                                @break
+                                            @case('For Releasing')
+                                                bg-orange-100 text-orange-800
+                                                @break
+                                            @case('Completed')
+                                                bg-green-100 text-green-800
+                                                @break
+                                            @case('Cancelled')
+                                                bg-red-100 text-red-800
+                                                @break
+                                            @case('Voided')
+                                                bg-gray-100 text-gray-800
+                                                @break
+                                            @default
+                                                bg-gray-100 text-gray-800
+                                        @endswitch
+                                    ">
+                                        {{ $order->order_status }}
+                                    </span>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm font-medium text-gray-900">
+                                    @if($order->creator)
+                                        {{ $order->creator->name }}
+                                    @else
+                                        Admin
+                                    @endif
+                                </div>
+                                <div class="text-sm text-gray-500">
+                                    @if($order->creator)
+                                        {{ $order->created_at->diffForHumans() }}
+                                    @endif
+                                </div>
+                                @if(isset($showArchived) && $showArchived && $order->order_status === 'Voided')
+                                    <div class="text-xs text-red-600 mt-1">
+                                        <i class="fas fa-ban mr-1"></i>
+                                        Voided by {{ $order->voidedBy ? $order->voidedBy->name : 'Admin' }}
+                                        @if($order->voided_at)
+                                            - {{ $order->voided_at->diffForHumans() }}
+                                        @endif
+                                    </div>
+                                    @if($order->void_reason)
+                                        <div class="text-xs text-gray-500 mt-1">
+                                            Reason: {{ Str::limit($order->void_reason, 50) }}
+                                        </div>
+                                    @endif
+                                @endif
+                            </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                 <div class="flex items-center space-x-2">
                                     <!-- Edit Order -->
-                                    <a href="{{ route('admin.orders.edit', $order) }}" class="text-indigo-600 hover:text-indigo-900 transition-colors" title="Edit Order" onclick="event.stopPropagation();">
+                                    <a href="{{ route('admin.orders.edit', $order) }}" class="text-red-600 hover:text-red-800 transition-colors" title="Edit Order" onclick="event.stopPropagation();">
                                         <i class="fas fa-edit"></i>
                                     </a>
                                     
@@ -296,8 +324,7 @@
                                         <!-- Archive Order -->
                                         <form method="POST" action="{{ route('admin.orders.archive', $order) }}" onsubmit="return confirm('Archive this order? It will be moved to archives.');" class="inline" onclick="event.stopPropagation();">
                                             @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="text-orange-600 hover:text-orange-800 transition-colors" title="Archive Order">
+                                            <button type="submit" class="text-gray-600 hover:text-gray-800 transition-colors" title="Archive Order">
                                                 <i class="fas fa-archive"></i>
                                             </button>
                                         </form>

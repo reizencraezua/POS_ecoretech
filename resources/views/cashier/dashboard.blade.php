@@ -29,7 +29,7 @@
 @section('content')
 <div class="space-y-6">
     <!-- Stats Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <a href="{{ route('cashier.quotations.index') }}" class="bg-white rounded-lg shadow p-6 border-l-4 border-blue-500 hover:shadow-lg transition-shadow">
             <div class="flex items-center justify-between">
                 <div>
@@ -84,23 +84,6 @@
             </div>
         </a>
 
-        <div class="bg-white rounded-lg shadow p-6 border-l-4 border-maroon">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm font-medium text-gray-600">
-                        @if(request('start_date') && request('end_date'))
-                            Sales ({{ \Carbon\Carbon::parse(request('start_date'))->format('M d') }} - {{ \Carbon\Carbon::parse(request('end_date'))->format('M d, Y') }})
-                        @else
-                            Total Sales
-                        @endif
-                    </p>
-                    <p class="text-3xl font-bold text-gray-900">₱{{ number_format($stats['period_sales'], 2) }}</p>
-                </div>
-                <div class="p-3 bg-maroon bg-opacity-10 rounded-full">
-                    <i class="fas fa-chart-line text-maroon text-xl"></i>
-                </div>
-            </div>
-        </div>
     </div>
 
     <!-- Recent Activity Row -->

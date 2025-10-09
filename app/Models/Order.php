@@ -21,6 +21,10 @@ class Order extends Model
         'customer_id',
         'employee_id',
         'layout_employee_id',
+        'created_by',
+        'voided_at',
+        'voided_by',
+        'void_reason',
     ];
 
     protected $casts = [
@@ -28,6 +32,7 @@ class Order extends Model
         'deadline_date' => 'date',
         'total_amount' => 'decimal:2',
         'layout_design_fee' => 'decimal:2',
+        'voided_at' => 'datetime',
     ];
 
     const STATUS_ON_PROCESS = 'On-Process';
@@ -50,6 +55,16 @@ class Order extends Model
     public function layoutEmployee()
     {
         return $this->belongsTo(Employee::class, 'layout_employee_id');
+    }
+
+    public function creator()
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function voidedBy()
+    {
+        return $this->belongsTo(User::class, 'voided_by');
     }
 
     public function details()

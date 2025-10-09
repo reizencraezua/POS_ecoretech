@@ -20,7 +20,7 @@
                         </div>
                         <div class="flex space-x-2">
                             <a href="{{ route('admin.jobs.edit', $job) }}" 
-                               class="bg-yellow-600 text-white px-4 py-2 rounded-md hover:bg-yellow-700 transition-colors">
+                               class="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition-colors">
                                 <i class="fas fa-edit mr-2"></i>Edit
                             </a>
                         </div>

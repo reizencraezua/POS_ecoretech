@@ -16,6 +16,7 @@ class UnitSeeder extends Seeder
         $units = [
             ['unit_name' => 'Pieces', 'unit_code' => 'PCS', 'description' => 'Individual pieces/items', 'is_active' => true],
             ['unit_name' => 'Meters', 'unit_code' => 'M', 'description' => 'Length measurement in meters', 'is_active' => true],
+            ['unit_name' => 'Feet', 'unit_code' => 'FT', 'description' => 'Length measurement in feet', 'is_active' => true],
             ['unit_name' => 'Set', 'unit_code' => 'SET', 'description' => 'Complete sets of items', 'is_active' => true],
         ];
 

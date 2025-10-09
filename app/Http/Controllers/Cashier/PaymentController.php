@@ -16,9 +16,10 @@ class PaymentController extends Controller
      */
     public function index(Request $request)
     {
-        // Check if user is cashier
-        if (!auth('admin')->user()->isCashier()) {
-            abort(403, 'Access denied. Cashier role required.');
+        // Check if user is cashier or admin
+        $user = auth('web')->user();
+        if (!$user || (!$user->isCashier() && !$user->isAdmin())) {
+            abort(403, 'Access denied. Cashier or Admin role required.');
         }
 
         $query = Payment::with(['order.customer']);
@@ -128,6 +129,81 @@ class PaymentController extends Controller
     }
 
     /**
+     * Show the form for editing the specified resource.
+     */
+    public function edit(Payment $payment)
+    {
+        $orders = Order::whereNotIn('order_status', ['Cancelled'])
+            ->with('customer', 'payments')
+            ->get()
+            ->filter(function($order) {
+                return $order->remaining_balance > 0 || $order->payments->contains('id', $payment->id);
+            });
+
+        return view('cashier.payments.edit', compact('payment', 'orders'));
+    }
+
+    /**
+     * Update the specified resource in storage.
+     */
+    public function update(Request $request, Payment $payment)
+    {
+        // Check for admin password
+        if (!$this->verifyAdminPassword($request)) {
+            return redirect()->back()
+                ->withErrors(['admin_password' => 'Invalid admin password.'])
+                ->withInput();
+        }
+
+        try {
+            $validated = $request->validate([
+                'order_id' => 'required|exists:orders,order_id',
+                'payment_method' => 'required|in:Cash,Check,GCash,PayMaya,Bank Transfer',
+                'amount_paid' => 'required|numeric|min:0.01',
+                'payment_date' => 'required|date',
+                'payment_reference' => 'nullable|string|max:100',
+                'payment_notes' => 'nullable|string|max:500',
+            ]);
+
+            // Check if payment amount exceeds remaining balance
+            $order = Order::findOrFail($validated['order_id']);
+            $totalPayments = $order->payments->sum('amount_paid');
+            $currentPaymentAmount = $payment->amount_paid;
+            $existingPaymentsExcludingCurrent = $totalPayments - $currentPaymentAmount;
+            $remainingBalance = $order->final_total_amount - $existingPaymentsExcludingCurrent;
+            
+            if ($validated['amount_paid'] > $remainingBalance) {
+                return redirect()->back()
+                    ->with('error', 'Payment amount cannot exceed remaining balance of ₱' . number_format($remainingBalance, 2))
+                    ->withInput();
+            }
+
+            // Update payment
+            $payment->update([
+                'order_id' => $validated['order_id'],
+                'payment_method' => $validated['payment_method'],
+                'amount_paid' => $validated['amount_paid'],
+                'payment_date' => $validated['payment_date'],
+                'payment_reference' => $validated['payment_reference'],
+                'payment_notes' => $validated['payment_notes'],
+            ]);
+
+            // Check if order is fully paid
+            if ($order->remaining_balance <= 0) {
+                $order->update(['order_status' => 'For Releasing']);
+            }
+
+            return redirect()->route('cashier.payments.index')
+                ->with('success', 'Payment updated successfully.');
+        } catch (\Exception $e) {
+            Log::error('Error updating payment: ' . $e->getMessage());
+            return redirect()->back()
+                ->with('error', 'Failed to update payment. Please try again.')
+                ->withInput();
+        }
+    }
+
+    /**
      * Print receipt for a payment
      */
     public function print(Payment $payment)
@@ -191,5 +267,21 @@ class PaymentController extends Controller
             'average_payment' => $averagePayment,
             'payment_methods' => $paymentMethods
         ]);
+    }
+
+    private function verifyAdminPassword(Request $request)
+    {
+        $adminPassword = $request->input('admin_password');
+        if (!$adminPassword) {
+            return false;
+        }
+
+        // Get admin user (assuming admin user ID is 1)
+        $admin = \App\Models\User::find(1);
+        if (!$admin) {
+            return false;
+        }
+
+        return \Hash::check($adminPassword, $admin->password);
     }
 }

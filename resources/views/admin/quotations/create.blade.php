@@ -33,16 +33,27 @@
                 </h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     <div>
-                        <label for="customer_id" class="block text-sm font-medium text-gray-700 mb-2">Customer *</label>
-                        <select name="customer_id" id="customer_id" required
-                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon @error('customer_id') border-red-500 @enderror">
-                            <option value="">Select Customer</option>
-                            @foreach($customers as $customer)
-                                <option value="{{ $customer->customer_id }}" {{ old('customer_id') == $customer->customer_id ? 'selected' : '' }}>
-                                    {{ $customer->display_name }}
-                                </option>
-                            @endforeach
-                        </select>
+                        <label for="customer_search" class="block text-sm font-medium text-gray-700 mb-2">Customer *</label>
+                        <div class="relative">
+                            <input type="text" id="customer_search" placeholder="Search or type customer name..." 
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon @error('customer_id') border-red-500 @enderror"
+                                   autocomplete="off" oninput="filterCustomers(this)" onfocus="showCustomerDropdown()" onblur="hideCustomerDropdown()">
+                            <input type="hidden" name="customer_id" id="customer_id" value="{{ old('customer_id') }}">
+                            <div id="customer_dropdown" class="absolute z-10 w-full bg-white border border-gray-300 rounded-md shadow-lg hidden max-h-60 overflow-y-auto">
+                                @foreach($customers as $customer)
+                                    <div class="px-3 py-2 hover:bg-gray-100 cursor-pointer customer-option" 
+                                         data-id="{{ $customer->customer_id }}" 
+                                         data-name="{{ $customer->display_name }}"
+                                         onclick="selectCustomer(this)">
+                                        {{ $customer->display_name }}
+                                    </div>
+                                @endforeach
+                                <div class="px-3 py-2 hover:bg-gray-100 cursor-pointer text-green-600 font-semibold border-t border-gray-200" 
+                                     onclick="showAddCustomerModal()">
+                                    + Add New Customer
+                                </div>
+                            </div>
+                        </div>
                         @error('customer_id')
                             <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
                         @enderror
@@ -59,7 +70,7 @@
                     
                     <div>
                         <label for="valid_until" class="block text-sm font-medium text-gray-700 mb-2">Valid Until</label>
-                        <input type="date" name="valid_until" id="valid_until" value="{{ old('valid_until', now()->addDays(30)->format('Y-m-d')) }}"
+                        <input type="date" name="valid_until" id="valid_until" value="{{ old('valid_until') }}"
                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon @error('valid_until') border-red-500 @enderror">
                         @error('valid_until')
                             <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
@@ -129,9 +140,13 @@
                                                min="1" required class="w-20 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon">
                                     </td>
                                     <td class="px-4 py-4">
-                                        <input type="text" x-model="item.unit" :name="`items[${index}][unit]`" 
-                                               class="w-20 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon"
-                                               placeholder="Pcs" value="Pcs">
+                                        <select x-model="item.unit_id" :name="`items[${index}][unit_id]`" 
+                                                class="w-24 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon">
+                                            <option value="">Select Unit</option>
+                                            @foreach($units as $unit)
+                                                <option value="{{ $unit->unit_id }}">{{ $unit->unit_name }}</option>
+                                            @endforeach
+                                        </select>
                                     </td>
                                     <td class="px-4 py-4">
                                         <select x-model="item.size" :name="`items[${index}][size]`" 
@@ -292,7 +307,7 @@ function quotationForm() {
                 type: '',
                 id: '',
                 quantity: 1,
-                unit: 'Pcs',
+                unit_id: '',
                 size: '',
                 price: 0,
                 layout: false,
@@ -467,5 +482,211 @@ function quotationForm() {
         }
     }
 }
+
+// Add Customer Modal Functions
+function handleCustomerSelection(select) {
+    if (select.value === 'add_new') {
+        openAddCustomerModal();
+        // Reset to empty selection
+        select.value = '';
+    }
+}
+
+function openAddCustomerModal() {
+    document.getElementById('addCustomerModal').classList.remove('hidden');
+}
+
+function closeAddCustomerModal() {
+    document.getElementById('addCustomerModal').classList.add('hidden');
+    document.getElementById('addCustomerForm').reset();
+}
+
+function addCustomer() {
+    const form = document.getElementById('addCustomerForm');
+    const formData = new FormData(form);
+    
+    fetch('{{ route("admin.customers.store") }}', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            // Add new customer to dropdown
+            const select = document.getElementById('customer_id');
+            const option = document.createElement('option');
+            option.value = data.customer.customer_id;
+            option.textContent = data.customer.display_name;
+            option.selected = true;
+            select.appendChild(option);
+            
+            // Close modal
+            closeAddCustomerModal();
+            
+            // Show success message
+            alert('Customer added successfully!');
+        } else {
+            let errorMessage = 'Error adding customer: ' + (data.message || 'Unknown error');
+            if (data.errors) {
+                errorMessage += '\nValidation errors:\n';
+                for (const field in data.errors) {
+                    errorMessage += `${field}: ${data.errors[field].join(', ')}\n`;
+                }
+            }
+            alert(errorMessage);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error adding customer: ' + error.message);
+    });
+}
+
+// Searchable dropdown functions
+function filterCustomers(input) {
+    const dropdown = document.getElementById('customer_dropdown');
+    const options = dropdown.querySelectorAll('.customer-option');
+    const searchTerm = input.value.toLowerCase();
+    
+    options.forEach(option => {
+        const name = option.dataset.name.toLowerCase();
+        if (name.includes(searchTerm)) {
+            option.style.display = 'block';
+        } else {
+            option.style.display = 'none';
+        }
+    });
+    
+    dropdown.classList.remove('hidden');
+}
+
+function showCustomerDropdown() {
+    const dropdown = document.getElementById('customer_dropdown');
+    dropdown.classList.remove('hidden');
+}
+
+function hideCustomerDropdown() {
+    // Delay hiding to allow clicking on options
+    setTimeout(() => {
+        const dropdown = document.getElementById('customer_dropdown');
+        dropdown.classList.add('hidden');
+    }, 200);
+}
+
+function selectCustomer(option) {
+    const customerId = option.dataset.id;
+    const customerName = option.dataset.name;
+    
+    document.getElementById('customer_id').value = customerId;
+    document.getElementById('customer_search').value = customerName;
+    
+    const dropdown = document.getElementById('customer_dropdown');
+    dropdown.classList.add('hidden');
+    
+    // Trigger the original customer selection handler
+    handleCustomerSelection({ value: customerId });
+}
+
+function showAddCustomerModal() {
+    document.getElementById('addCustomerModal').classList.remove('hidden');
+}
 </script>
+
+<!-- Add Customer Modal -->
+<div id="addCustomerModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+    <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-2/3 lg:w-1/2 shadow-lg rounded-md bg-white">
+        <div class="mt-3">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-medium text-gray-900">Add New Customer</h3>
+                <button onclick="closeAddCustomerModal()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <form id="addCustomerForm" class="space-y-4">
+                @csrf
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="customer_firstname" class="block text-sm font-medium text-gray-700">First Name *</label>
+                        <input type="text" name="customer_firstname" id="customer_firstname" required
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon">
+                    </div>
+                    <div>
+                        <label for="customer_middlename" class="block text-sm font-medium text-gray-700">Middle Name</label>
+                        <input type="text" name="customer_middlename" id="customer_middlename"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon">
+                    </div>
+                    <div>
+                        <label for="customer_lastname" class="block text-sm font-medium text-gray-700">Last Name *</label>
+                        <input type="text" name="customer_lastname" id="customer_lastname" required
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon">
+                    </div>
+                  
+                    <div>
+                        <label for="business_name" class="block text-sm font-medium text-gray-700">Business Name</label>
+                        <input type="text" name="business_name" id="business_name"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon">
+                    </div>
+                    <div>
+                        <label for="customer_email" class="block text-sm font-medium text-gray-700">Email</label>
+                        <input type="email" name="customer_email" id="customer_email"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon">
+                    </div>
+                    <div>
+                        <label for="contact_person1" class="block text-sm font-medium text-gray-700">Contact Person *</label>
+                        <input type="text" name="contact_person1" id="contact_person1" required
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon">
+                    </div>
+                    <div>
+                        <label for="contact_number1" class="block text-sm font-medium text-gray-700">Contact Number *</label>
+                        <input type="text" name="contact_number1" id="contact_number1" required
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon">
+                    </div>
+                    <div>
+                        <label for="contact_person2" class="block text-sm font-medium text-gray-700">Secondary Contact Person</label>
+                        <input type="text" name="contact_person2" id="contact_person2"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon">
+                    </div>
+                    <div>
+                        <label for="contact_number2" class="block text-sm font-medium text-gray-700">Secondary Contact Number</label>
+                        <input type="text" name="contact_number2" id="contact_number2"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon">
+                    </div>
+                    <div>
+                        <label for="tin" class="block text-sm font-medium text-gray-700">TIN</label>
+                        <input type="text" name="tin" id="tin"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon">
+                    </div>
+                </div>
+                <div>
+                    <label for="customer_address" class="block text-sm font-medium text-gray-700">Address *</label>
+                    <textarea name="customer_address" id="customer_address" rows="3" required
+                              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon"></textarea>
+                </div>
+
+                <div class="flex justify-end space-x-3 mt-6">
+                    <button type="button" onclick="closeAddCustomerModal()"
+                            class="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors">
+                        Cancel
+                    </button>
+                    <button type="button" onclick="addCustomer()"
+                            class="px-4 py-2 bg-maroon text-white rounded-lg hover:bg-maroon-dark transition-colors">
+                        Add Customer
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 @endsection

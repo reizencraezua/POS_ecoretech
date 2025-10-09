@@ -48,8 +48,9 @@ class QuotationController extends Controller
         $products = Product::with(['category.sizes'])->orderBy('product_name')->get();
         $services = Service::with(['category.sizes'])->orderBy('service_name')->get();
         $discountRules = DiscountRule::active()->validAt()->orderBy('min_quantity')->get();
+        $units = \App\Models\Unit::where('is_active', true)->orderBy('unit_name')->get();
 
-        return view('admin.quotations.create', compact('customers', 'products', 'services', 'discountRules'));
+        return view('admin.quotations.create', compact('customers', 'products', 'services', 'discountRules', 'units'));
     }
 
     public function store(Request $request)
@@ -62,13 +63,14 @@ class QuotationController extends Controller
             $validated = $request->validate([
                 'customer_id' => 'required|exists:customers,customer_id',
                 'quotation_date' => 'required|date',
+                'valid_until' => 'required|date|after:quotation_date',
                 'notes' => 'nullable|string',
                 'terms_and_conditions' => 'nullable|string',
                 'items' => 'required|array|min:1',
                 'items.*.type' => 'required|in:product,service',
                 'items.*.id' => 'required|integer',
                 'items.*.quantity' => 'required|integer|min:1',
-                'items.*.unit' => 'required|string',
+                'items.*.unit_id' => 'required|exists:units,unit_id',
                 'items.*.size' => 'nullable|string',
                 'items.*.price' => 'required|numeric|min:0',
                 'items.*.layout' => 'nullable|in:on,1,true,false,0',
@@ -82,6 +84,7 @@ class QuotationController extends Controller
             $quotation = Quotation::create([
                 'customer_id' => $validated['customer_id'],
                 'quotation_date' => $validated['quotation_date'],
+                'valid_until' => $validated['valid_until'],
                 'notes' => $validated['notes'],
                 'terms_and_conditions' => $validated['terms_and_conditions'],
                 'status' => 'Pending',
@@ -95,7 +98,7 @@ class QuotationController extends Controller
 
                 $quotation->details()->create([
                     'quantity' => $item['quantity'],
-                    'unit' => $item['unit'],
+                    'unit_id' => $item['unit_id'],
                     'size' => $item['size'],
                     'price' => $item['price'],
                     'subtotal' => $baseAmount, // Store base amount (Quantity × Price)
@@ -171,6 +174,7 @@ class QuotationController extends Controller
         $validated = $request->validate([
             'customer_id' => 'required|exists:customers,customer_id',
             'quotation_date' => 'required|date',
+            'valid_until' => 'required|date|after:quotation_date',
             'notes' => 'nullable|string',
             'terms_and_conditions' => 'nullable|string',
             'items' => 'required|array|min:1',
@@ -191,6 +195,7 @@ class QuotationController extends Controller
         $quotation->update([
             'customer_id' => $validated['customer_id'],
             'quotation_date' => $validated['quotation_date'],
+            'valid_until' => $validated['valid_until'],
             'notes' => $validated['notes'],
             'terms_and_conditions' => $validated['terms_and_conditions'],
         ]);
@@ -399,6 +404,7 @@ class QuotationController extends Controller
                 'deadline_date' => $validated['deadline_date'],
                 'order_status' => Order::STATUS_ON_PROCESS,
                 'total_amount' => 0, // Will be calculated after details
+                'created_by' => auth('admin')->id(),
             ]);
 
             // Convert quotation details to order details
@@ -460,6 +466,30 @@ class QuotationController extends Controller
             return redirect()->back()
                 ->with('error', 'Failed to convert quotation to job order: ' . $e->getMessage())
                 ->withInput();
+        }
+    }
+
+    /**
+     * Get quotation data for AJAX requests
+     */
+    public function getData(Quotation $quotation)
+    {
+        try {
+            $quotation->load(['details.product', 'details.service']);
+            
+            // Calculate if any items require layout
+            $hasLayout = $quotation->details->some(function ($detail) {
+                return ($detail->product && $detail->product->requires_layout) || 
+                       ($detail->service && $detail->service->requires_layout);
+            });
+
+            return response()->json([
+                'final_total_amount' => $quotation->final_total_amount,
+                'has_layout' => $hasLayout,
+                'quotation_id' => $quotation->quotation_id
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Failed to fetch quotation data'], 500);
         }
     }
 }

@@ -25,7 +25,7 @@
                         </form>
                     @endif
                     <a href="{{ route('admin.layout-fees.edit', $layoutFee) }}" 
-                       class="bg-yellow-600 text-white px-4 py-2 rounded-md hover:bg-yellow-700 transition-colors">
+                       class="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition-colors">
                         <i class="fas fa-edit mr-2"></i>Edit
                     </a>
                 </div>
@@ -144,7 +144,7 @@
                     Back to List
                 </a>
                 <a href="{{ route('admin.layout-fees.edit', $layoutFee) }}" 
-                   class="px-4 py-2 bg-yellow-600 text-white rounded-md hover:bg-yellow-700 transition-colors">
+                   class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors">
                     <i class="fas fa-edit mr-2"></i>Edit Setting
                 </a>
             </div>

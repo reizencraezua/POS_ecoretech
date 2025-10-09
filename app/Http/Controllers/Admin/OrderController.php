@@ -18,8 +18,8 @@ class OrderController extends Controller
     {
         $showArchived = $request->boolean('archived');
         $query = $showArchived
-            ? Order::onlyTrashed()->with(['customer', 'employee', 'details', 'payments'])
-            : Order::with(['customer', 'employee', 'details', 'payments']);
+            ? Order::onlyTrashed()->with(['customer', 'employee', 'details', 'payments', 'creator', 'voidedBy'])
+            : Order::with(['customer', 'employee', 'details', 'payments', 'creator']);
 
         if ($request->has('status') && $request->status !== '') {
             $status = $request->status;
@@ -77,8 +77,9 @@ class OrderController extends Controller
         $products = Product::with(['category.sizes'])->orderBy('product_name')->get();
         $services = Service::with(['category.sizes'])->orderBy('service_name')->get();
         $discountRules = DiscountRule::active()->validAt()->orderBy('min_quantity')->get();
+        $units = \App\Models\Unit::where('is_active', true)->orderBy('unit_name')->get();
 
-        return view('admin.orders.create', compact('customers', 'employees', 'products', 'services', 'discountRules'));
+        return view('admin.orders.create', compact('customers', 'employees', 'products', 'services', 'discountRules', 'units'));
     }
 
     public function store(Request $request)
@@ -98,7 +99,7 @@ class OrderController extends Controller
                 'items.*.type' => 'required|in:product,service',
                 'items.*.id' => 'required|integer',
                 'items.*.quantity' => 'required|integer|min:1',
-                'items.*.unit' => 'required|string',
+                'items.*.unit_id' => 'required|exists:units,unit_id',
                 'items.*.size' => 'nullable|string',
                 'items.*.price' => 'required|numeric|min:0',
                 'items.*.layout' => 'nullable|in:on,1,true,false,0',
@@ -123,6 +124,7 @@ class OrderController extends Controller
                 'order_status' => 'On-Process',
                 'total_amount' => 0, // Will be calculated after details
                 'layout_design_fee' => 0,
+                'created_by' => auth('admin')->id(),
             ]);
 
             // Group items by product for discount calculation
@@ -165,7 +167,7 @@ class OrderController extends Controller
 
                 $order->details()->create([
                     'quantity' => $item['quantity'],
-                    'unit' => $item['unit'],
+                    'unit_id' => $item['unit_id'],
                     'size' => $item['size'],
                     'price' => $item['price'],
                     'subtotal' => $baseAmount, // Store base amount (Quantity × Price)

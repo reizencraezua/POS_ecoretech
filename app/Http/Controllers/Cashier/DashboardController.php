@@ -15,21 +15,16 @@ class DashboardController extends Controller
 
     public function index(Request $request)
     {
-        // Check if user is cashier
-        if (!auth('admin')->user()->isCashier()) {
-            abort(403, 'Access denied. Cashier role required.');
+        // Check if user is cashier or admin
+        $user = auth('web')->user();
+        if (!$user || (!$user->isCashier() && !$user->isAdmin())) {
+            abort(403, 'Access denied. Cashier or Admin role required.');
         }
 
         $startDateParam = $request->query('start_date');
         $endDateParam = $request->query('end_date');
         $startDate = $startDateParam ? Carbon::parse($startDateParam)->startOfDay() : null;
         $endDate = $endDateParam ? Carbon::parse($endDateParam)->endOfDay() : null;
-
-        // Calculate period sales for display
-        $periodSales = Payment::sum('amount_paid');
-        if ($startDate && $endDate) {
-            $periodSales = Payment::whereBetween('payment_date', [$startDate, $endDate])->sum('amount_paid');
-        }
 
         $stats = [
             'total_quotations' => Quotation::count(),
@@ -38,8 +33,6 @@ class DashboardController extends Controller
             'active_orders' => Order::whereNotIn('order_status', [Order::STATUS_COMPLETED, Order::STATUS_CANCELLED])->count(),
             'total_deliveries' => Delivery::count(),
             'pending_deliveries' => Delivery::where('status', '!=', 'Delivered')->count(),
-            'period_sales' => $periodSales,
-            'total_sales' => Payment::sum('amount_paid'),
         ];
 
         // Recent quotations

@@ -83,12 +83,13 @@
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created By</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                     </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
                     @forelse($orders as $order)
-                    <tr class="hover:bg-gray-50">
+                    <tr class="hover:bg-gray-50 cursor-pointer" onclick="window.location.href='{{ route('cashier.orders.show', $order) }}'">
                         <td class="px-6 py-4 whitespace-nowrap">
                             <div class="text-sm font-medium text-gray-900">{{ $order->order_id }}</div>
                         </td>
@@ -119,15 +120,32 @@
                                 {{ $order->order_status }}
                             </span>
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm font-medium text-gray-900">
+                                @if($order->creator)
+                                    {{ $order->creator->name }}
+                                @else
+                                    Admin
+                                @endif
+                            </div>
+                            <div class="text-sm text-gray-500">
+                                @if($order->creator)
+                                    {{ $order->created_at->diffForHumans() }}
+                                @endif
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium" onclick="event.stopPropagation()">
                             <div class="flex items-center space-x-2">
-                                <a href="{{ route('cashier.orders.show', $order) }}" 
-                                   class="text-maroon hover:text-maroon-dark">
-                                    <i class="fas fa-eye"></i>
+                                <!-- Edit Button -->
+                                <a href="{{ route('cashier.orders.edit', $order) }}" 
+                                   class="text-indigo-600 hover:text-indigo-800 transition-colors" 
+                                   title="Edit Order">
+                                    <i class="fas fa-edit"></i>
                                 </a>
                                 
                                 @if($order->order_status !== 'Completed' && $order->order_status !== 'Cancelled')
-                                    <form method="POST" action="{{ route('cashier.orders.update-status', $order) }}" class="inline">
+                                    <!-- Status Update Dropdown -->
+                                    <form method="POST" action="{{ route('cashier.orders.status', $order) }}" class="inline">
                                         @csrf
                                         @method('PATCH')
                                         <select name="status" onchange="this.form.submit()" 
@@ -141,6 +159,13 @@
                                             <option value="Cancelled" {{ $order->order_status === 'Cancelled' ? 'selected' : '' }}>Cancelled</option>
                                         </select>
                                     </form>
+                                    
+                                    <!-- Void Button -->
+                                    <button onclick="openVoidModal({{ $order->order_id }})" 
+                                            class="text-red-600 hover:text-red-800 transition-colors" 
+                                            title="Void Order">
+                                        <i class="fas fa-ban"></i>
+                                    </button>
                                 @endif
                             </div>
                         </td>
@@ -167,4 +192,67 @@
         @endif
     </div>
 </div>
+
+<!-- Void Order Modal -->
+<div id="voidModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+        <div class="mt-3">
+            <div class="flex items-center justify-center w-12 h-12 mx-auto bg-red-100 rounded-full">
+                <i class="fas fa-exclamation-triangle text-red-600"></i>
+            </div>
+            <div class="mt-2 text-center">
+                <h3 class="text-lg font-medium text-gray-900">Void Order</h3>
+                <div class="mt-2 px-7 py-3">
+                    <p class="text-sm text-gray-500">
+                        This action will void the order and move it to archives. This action cannot be undone.
+                    </p>
+                </div>
+            </div>
+            <form id="voidForm" method="POST" class="mt-4">
+                @csrf
+                <div class="mb-4">
+                    <label for="admin_password" class="block text-sm font-medium text-gray-700 mb-1">Admin Password *</label>
+                    <input type="password" name="admin_password" id="admin_password" required
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                           placeholder="Enter admin password">
+                </div>
+                <div class="mb-4">
+                    <label for="void_reason" class="block text-sm font-medium text-gray-700 mb-1">Reason for Voiding *</label>
+                    <textarea name="void_reason" id="void_reason" rows="3" required
+                              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                              placeholder="Enter reason for voiding this order"></textarea>
+                </div>
+                <div class="flex items-center justify-end space-x-3">
+                    <button type="button" onclick="closeVoidModal()" 
+                            class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-md font-medium transition-colors">
+                        Cancel
+                    </button>
+                    <button type="submit" 
+                            class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md font-medium transition-colors">
+                        Void Order
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function openVoidModal(orderId) {
+    document.getElementById('voidForm').action = `/cashier/orders/${orderId}/void`;
+    document.getElementById('voidModal').classList.remove('hidden');
+}
+
+function closeVoidModal() {
+    document.getElementById('voidModal').classList.add('hidden');
+    document.getElementById('voidForm').reset();
+}
+
+// Close modal when clicking outside
+document.getElementById('voidModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeVoidModal();
+    }
+});
+</script>
 @endsection

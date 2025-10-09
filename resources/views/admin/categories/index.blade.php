@@ -65,12 +65,14 @@
                                             :item="$category" 
                                             :archiveRoute="'admin.categories.archive'" 
                                             :restoreRoute="'admin.categories.restore'" 
+                                            :editRoute="'admin.categories.edit'"
                                             :showRestore="true" />
                                     @else
                                         <x-archive-actions 
                                             :item="$category" 
                                             :archiveRoute="'admin.categories.archive'" 
                                             :restoreRoute="'admin.categories.restore'" 
+                                            :editRoute="'admin.categories.edit'"
                                             :showRestore="false" />
                                     @endif
                                 </div>

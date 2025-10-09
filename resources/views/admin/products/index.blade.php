@@ -108,24 +108,27 @@
 
 					<!-- Actions -->
 					<div class="flex items-center justify-between border-t border-gray-200 pt-4 relative z-20">
+						<span class="text-xs text-gray-500">
+							Updated {{ $product->updated_at->diffForHumans() }}
+						</span>
+						
 						<div class="flex items-center space-x-2">
 							@if($showArchived)
 								<x-archive-actions 
 									:item="$product" 
 									:archiveRoute="'admin.products.archive'" 
 									:restoreRoute="'admin.products.restore'" 
+									:editRoute="'admin.products.edit'"
 									:showRestore="true" />
 							@else
 								<x-archive-actions 
 									:item="$product" 
 									:archiveRoute="'admin.products.archive'" 
 									:restoreRoute="'admin.products.restore'" 
+									:editRoute="'admin.products.edit'"
 									:showRestore="false" />
 							@endif
 						</div>
-						<span class="text-xs text-gray-500">
-							Updated {{ $product->updated_at->diffForHumans() }}
-						</span>
 					</div>
 				</div>
 			</div>
@@ -376,22 +379,22 @@
 	</div>
 </div>
 
-<!-- Delete Confirmation Modal -->
-<div id="deleteModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+<!-- Archive Confirmation Modal -->
+<div id="archiveModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
 	<div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
 		<div class="mt-3 text-center">
-			<div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
-				<i class="fas fa-exclamation-triangle text-red-600"></i>
+			<div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-gray-100">
+				<i class="fas fa-archive text-gray-600"></i>
 			</div>
-			<h3 class="text-lg font-medium text-gray-900 mt-2">Delete Product</h3>
+			<h3 class="text-lg font-medium text-gray-900 mt-2">Archive Product</h3>
 			<div class="mt-2 px-7 py-3">
-				<p class="text-sm text-gray-500">Are you sure you want to delete this product? This action cannot be undone.</p>
+				<p class="text-sm text-gray-500">Are you sure you want to archive this product? It will be moved to archives.</p>
 			</div>
 			<div class="items-center px-4 py-3">
-				<button id="confirmDeleteBtn" class="px-4 py-2 bg-red-500 text-white text-base font-medium rounded-md shadow-sm hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-300 mr-2">
-					Delete
+				<button id="confirmArchiveBtn" class="px-4 py-2 bg-gray-500 text-white text-base font-medium rounded-md shadow-sm hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-300 mr-2">
+					Archive
 				</button>
-				<button onclick="closeDeleteModal()" class="px-4 py-2 bg-gray-300 text-gray-800 text-base font-medium rounded-md shadow-sm hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-300">
+				<button onclick="closeArchiveModal()" class="px-4 py-2 bg-gray-300 text-gray-800 text-base font-medium rounded-md shadow-sm hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-300">
 					Cancel
 				</button>
 			</div>
@@ -405,24 +408,24 @@ function editProduct(product) {
 	this.editModal = true;
 }
 
-// Delete confirmation functionality
-let productToDelete = null;
+// Archive confirmation functionality
+let productToArchive = null;
 
-function confirmDelete(productId) {
-	productToDelete = productId;
-	document.getElementById('deleteModal').classList.remove('hidden');
+function confirmArchive(productId) {
+	productToArchive = productId;
+	document.getElementById('archiveModal').classList.remove('hidden');
 }
 
-function closeDeleteModal() {
-	document.getElementById('deleteModal').classList.add('hidden');
-	productToDelete = null;
+function closeArchiveModal() {
+	document.getElementById('archiveModal').classList.add('hidden');
+	productToArchive = null;
 }
 
-document.getElementById('confirmDeleteBtn').addEventListener('click', function() {
-	if (productToDelete) {
+document.getElementById('confirmArchiveBtn').addEventListener('click', function() {
+	if (productToArchive) {
 		const form = document.createElement('form');
 		form.method = 'POST';
-		form.action = `/admin/products/${productToDelete}`;
+		form.action = `/admin/products/${productToArchive}/archive`;
 		
 		const csrfToken = document.createElement('input');
 		csrfToken.type = 'hidden';
@@ -430,21 +433,15 @@ document.getElementById('confirmDeleteBtn').addEventListener('click', function()
 		csrfToken.value = '{{ csrf_token() }}';
 		form.appendChild(csrfToken);
 		
-		const methodField = document.createElement('input');
-		methodField.type = 'hidden';
-		methodField.name = '_method';
-		methodField.value = 'DELETE';
-		form.appendChild(methodField);
-		
 		document.body.appendChild(form);
 		form.submit();
 	}
 });
 
 // Close modal when clicking outside
-document.getElementById('deleteModal').addEventListener('click', function(e) {
+document.getElementById('archiveModal').addEventListener('click', function(e) {
 	if (e.target === this) {
-		closeDeleteModal();
+		closeArchiveModal();
 	}
 });
 </script>

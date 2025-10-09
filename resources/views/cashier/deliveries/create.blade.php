@@ -27,7 +27,8 @@
                         class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-cashier-blue focus:border-cashier-blue @error('order_id') border-red-500 @enderror">
                     <option value="">Select an order</option>
                     @foreach($orders as $order)
-                        <option value="{{ $order->order_id }}" {{ old('order_id') == $order->order_id ? 'selected' : '' }}>
+                        <option value="{{ $order->order_id }}" 
+                                {{ (old('order_id', $selectedOrder ? $selectedOrder->order_id : '') == $order->order_id) ? 'selected' : '' }}>
                             {{ $order->order_id }} - {{ $order->customer->customer_firstname }} {{ $order->customer->customer_lastname }}
                             @if($order->customer->business_name) ({{ $order->customer->business_name }}) @endif
                             - ₱{{ number_format($order->total_amount, 2) }}
@@ -55,10 +56,26 @@
                 </div>
                 
                 <div>
+                    <label for="employee_id" class="block text-sm font-medium text-gray-700 mb-1">Assigned Employee</label>
+                    <select name="employee_id" id="employee_id"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-cashier-blue focus:border-cashier-blue @error('employee_id') border-red-500 @enderror">
+                        <option value="">Select Employee (Optional)</option>
+                        @foreach($employees as $employee)
+                            <option value="{{ $employee->employee_id }}" {{ old('employee_id') == $employee->employee_id ? 'selected' : '' }}>
+                                {{ $employee->full_name }} - {{ $employee->job->job_title ?? 'No Job Title' }}
+                            </option>
+                        @endforeach
+                    </select>
+                    @error('employee_id')
+                        <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                    @enderror
+                </div>
+                
+                <div>
                     <label for="delivery_address" class="block text-sm font-medium text-gray-700 mb-1">Delivery Address *</label>
                     <textarea name="delivery_address" id="delivery_address" rows="3" required
                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-cashier-blue focus:border-cashier-blue @error('delivery_address') border-red-500 @enderror"
-                              placeholder="Enter complete delivery address">{{ old('delivery_address') }}</textarea>
+                              placeholder="Enter complete delivery address">{{ old('delivery_address', $selectedOrder ? $selectedOrder->customer->address : '') }}</textarea>
                     @error('delivery_address')
                         <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
                     @enderror
@@ -66,7 +83,7 @@
                 
                 <div>
                     <label for="delivery_contact" class="block text-sm font-medium text-gray-700 mb-1">Contact Number *</label>
-                    <input type="text" name="delivery_contact" id="delivery_contact" value="{{ old('delivery_contact') }}" required
+                    <input type="text" name="delivery_contact" id="delivery_contact" value="{{ old('delivery_contact', $selectedOrder ? $selectedOrder->customer->contact_number1 : '') }}" required
                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-cashier-blue focus:border-cashier-blue @error('delivery_contact') border-red-500 @enderror"
                            placeholder="Enter contact number">
                     @error('delivery_contact')
@@ -97,4 +114,51 @@
         </div>
     </form>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const orderSelect = document.getElementById('order_id');
+    const addressField = document.getElementById('delivery_address');
+    const contactField = document.getElementById('delivery_contact');
+    
+    // Store order data for auto-population
+    const orderData = {
+        @foreach($orders as $order)
+        {{ $order->order_id }}: {
+            address: @json($order->customer->address ?? ''),
+            contact: @json($order->customer->contact_number1 ?? '')
+        },
+        @endforeach
+    };
+    
+    // Handle order selection change
+    orderSelect.addEventListener('change', function() {
+        const selectedOrderId = this.value;
+        
+        if (selectedOrderId && orderData[selectedOrderId]) {
+            const order = orderData[selectedOrderId];
+            
+            // Auto-populate address if empty
+            if (!addressField.value.trim()) {
+                addressField.value = order.address;
+            }
+            
+            // Auto-populate contact if empty
+            if (!contactField.value.trim()) {
+                contactField.value = order.contact;
+            }
+        }
+    });
+    
+    // Auto-populate on page load if order is pre-selected
+    @if($selectedOrder)
+        const selectedOrderId = {{ $selectedOrder->order_id }};
+        if (orderData[selectedOrderId]) {
+            const order = orderData[selectedOrderId];
+            addressField.value = order.address;
+            contactField.value = order.contact;
+        }
+    @endif
+});
+</script>
 @endsection

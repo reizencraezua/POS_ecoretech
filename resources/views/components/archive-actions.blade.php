@@ -1,9 +1,29 @@
-@props(['item', 'archiveRoute' => '', 'restoreRoute' => '', 'showRestore' => false])
+@props(['item', 'archiveRoute' => '', 'restoreRoute' => '', 'editRoute' => '', 'showRestore' => false])
 
 <div class="flex items-center space-x-2 relative z-20">
+    @if(!$showRestore && $editRoute)
+        <!-- Edit Button -->
+        <a href="{{ route($editRoute, $item) }}" 
+           class="text-red-600 hover:text-red-800 transition-colors p-1 rounded hover:bg-red-50"
+           title="Edit"
+           onclick="event.stopPropagation();">
+            <i class="fas fa-edit"></i>
+        </a>
+    @endif
+    
     @if($showRestore)
+        <!-- Edit Button for Archived Items -->
+        @if($editRoute)
+            <a href="{{ route($editRoute, $item) }}" 
+               class="text-red-600 hover:text-red-800 transition-colors p-1 rounded hover:bg-red-50"
+               title="Edit"
+               onclick="event.stopPropagation();">
+                <i class="fas fa-edit"></i>
+            </a>
+        @endif
+        
         <!-- Restore Button -->
-        <form action="{{ $restoreRoute }}" method="POST" class="inline">
+        <form action="{{ route($restoreRoute, $item) }}" method="POST" class="inline" onclick="event.stopPropagation();">
             @csrf
             <button type="submit" 
                     class="text-green-600 hover:text-green-800 transition-colors p-1 rounded hover:bg-green-50"
@@ -14,23 +34,14 @@
         </form>
     @else
         <!-- Archive Button -->
-        <form action="{{ $archiveRoute }}" method="POST" class="inline">
+        <form action="{{ route($archiveRoute, $item) }}" method="POST" class="inline" onclick="event.stopPropagation();">
             @csrf
             <button type="submit" 
-                    class="text-orange-600 hover:text-orange-800 transition-colors p-1 rounded hover:bg-orange-50"
+                    class="text-gray-600 hover:text-gray-800 transition-colors p-1 rounded hover:bg-gray-50"
                     onclick="return confirm('Are you sure you want to archive this item?')"
                     title="Archive">
                 <i class="fas fa-archive"></i>
             </button>
         </form>
-    @endif
-    
-    @if(!$showRestore)
-        <!-- Edit Button -->
-        <a href="{{ route(str_replace('.archive', '.edit', $archiveRoute), $item) }}" 
-           class="text-indigo-600 hover:text-indigo-800 transition-colors p-1 rounded hover:bg-indigo-50"
-           title="Edit">
-            <i class="fas fa-edit"></i>
-        </a>
     @endif
 </div>

@@ -9,11 +9,18 @@
     <!-- Header Actions -->
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div class="flex items-center space-x-4">
-            <button @click="jobModal = true" 
-                    class="bg-maroon hover:bg-maroon-dark text-white px-4 py-2 rounded-lg font-medium transition-colors inline-flex items-center">
-                <i class="fas fa-plus mr-2"></i>
-                Add Job Position
-            </button>
+            @if(!$showArchived)
+                <button @click="jobModal = true" 
+                        class="bg-maroon hover:bg-maroon-dark text-white px-4 py-2 rounded-lg font-medium transition-colors inline-flex items-center">
+                    <i class="fas fa-plus mr-2"></i>
+                    Add Job Position
+                </button>
+            @endif
+            <a href="{{ route('admin.jobs.index', array_merge(request()->query(), ['archived' => isset($showArchived) && $showArchived ? 0 : 1])) }}"
+               class="px-4 py-2 rounded-lg font-medium transition-colors inline-flex items-center border {{ (isset($showArchived) && $showArchived) ? 'border-green-600 text-green-700 hover:bg-green-50' : 'border-gray-300 text-gray-700 hover:bg-gray-50' }}">
+                <i class="fas fa-box-archive mr-2"></i>
+                {{ (isset($showArchived) && $showArchived) ? 'Show Active' : 'View Archives' }}
+            </a>
         </div>
         
         <!-- Search -->
@@ -82,21 +89,21 @@
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
                                 <div class="flex items-center space-x-2">
-                                    <!-- Edit Job -->
-                                    <a href="{{ route('admin.jobs.edit', $job) }}" 
-                                       class="text-maroon hover:text-maroon-dark transition-colors" title="Edit Job Position" onclick="event.stopPropagation();">
-                                        <i class="fas fa-edit"></i>
-                                    </a>
-                                    
-                                    <!-- Delete Job -->
-                                    <form method="POST" action="{{ route('admin.jobs.destroy', $job) }}" 
-                                          class="inline" onsubmit="return confirm('Are you sure you want to delete this job position? This action cannot be undone.')">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="text-red-600 hover:text-red-900 transition-colors" title="Delete Job Position" onclick="event.stopPropagation();">
-                                            <i class="fas fa-trash"></i>
-                                        </button>
-                                    </form>
+                                    @if($showArchived)
+                                        <x-archive-actions 
+                                            :item="$job" 
+                                            :archiveRoute="'admin.jobs.archive'" 
+                                            :restoreRoute="'admin.jobs.restore'" 
+                                            :editRoute="'admin.jobs.edit'"
+                                            :showRestore="true" />
+                                    @else
+                                        <x-archive-actions 
+                                            :item="$job" 
+                                            :archiveRoute="'admin.jobs.archive'" 
+                                            :restoreRoute="'admin.jobs.restore'" 
+                                            :editRoute="'admin.jobs.edit'"
+                                            :showRestore="false" />
+                                    @endif
                                 </div>
                             </td>
                         </tr>

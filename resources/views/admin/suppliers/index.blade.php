@@ -5,7 +5,7 @@
 @section('page-description', 'Manage your suppliers and vendor information')
 
 @section('content')
-<div class="space-y-6" x-data="{ supplierModal: false }">
+<div class="space-y-6" x-data="{ supplierModal: false, editModal: false, editingSupplier: null }">
     <!-- Header Actions -->
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div class="flex items-center space-x-4">
@@ -95,6 +95,12 @@
                                             :restoreRoute="'admin.suppliers.restore'" 
                                             :showRestore="true" />
                                     @else
+                                        <button @click="editingSupplier = {{ $supplier->toJson() }}; editModal = true" 
+                                                class="text-red-600 hover:text-red-800 transition-colors" 
+                                                title="Edit Supplier"
+                                                onclick="event.stopPropagation();">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
                                         <x-archive-actions 
                                             :item="$supplier" 
                                             :archiveRoute="'admin.suppliers.archive'" 
@@ -234,6 +240,110 @@
                             class="bg-maroon hover:bg-maroon-dark text-white px-6 py-2 rounded-md transition-colors">
                         <i class="fas fa-save mr-2"></i>
                         Save Supplier
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Supplier Modal -->
+    <div x-show="editModal" x-cloak class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50" @click.self="editModal = false">
+        <div class="relative top-20 mx-auto p-5 border w-full max-w-2xl shadow-lg rounded-md bg-white">
+            <div class="flex items-center justify-between border-b border-gray-200 pb-4 mb-4">
+                <h3 class="text-xl font-semibold text-gray-900">Edit Supplier</h3>
+                <button @click="editModal = false" class="text-gray-400 hover:text-gray-600 transition-colors">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+
+            <form method="POST" :action="`/admin/suppliers/${editingSupplier?.supplier_id}`" class="space-y-6">
+                @csrf
+                @method('PUT')
+
+                <!-- Supplier Information -->
+                <div class="space-y-6">
+                    <!-- Supplier Name -->
+                    <div>
+                        <label for="edit_supplier_name" class="block text-sm font-medium text-gray-700 mb-1">
+                            Supplier Name *
+                        </label>
+                        <input type="text" 
+                               name="supplier_name" 
+                               id="edit_supplier_name" 
+                               x-model="editingSupplier?.supplier_name"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon @error('supplier_name') border-red-500 @enderror"
+                               placeholder="Enter supplier or company name"
+                               required>
+                        @error('supplier_name')
+                            <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Email -->
+                        <div>
+                            <label for="edit_supplier_email" class="block text-sm font-medium text-gray-700 mb-1">
+                                Email Address
+                            </label>
+                            <input type="email" 
+                                   name="supplier_email" 
+                                   id="edit_supplier_email" 
+                                   x-model="editingSupplier?.supplier_email"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon @error('supplier_email') border-red-500 @enderror"
+                                   placeholder="supplier@example.com">
+                            @error('supplier_email')
+                                <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                            @enderror
+                        </div>
+
+                        <!-- Contact -->
+                        <div>
+                            <label for="edit_supplier_contact" class="block text-sm font-medium text-gray-700 mb-1">
+                                Contact Number *
+                            </label>
+                            <input type="text" 
+                                   name="supplier_contact" 
+                                   id="edit_supplier_contact" 
+                                   x-model="editingSupplier?.supplier_contact"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon @error('supplier_contact') border-red-500 @enderror"
+                                   placeholder="09XX-XXX-XXXX"
+                                   maxlength="11"
+                                   pattern="[0-9]{11}"
+                                   required>
+                            @error('supplier_contact')
+                                <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                            @enderror
+                        </div>
+                    </div>
+
+                    <!-- Address -->
+                    <div>
+                        <label for="edit_supplier_address" class="block text-sm font-medium text-gray-700 mb-1">
+                            Address *
+                        </label>
+                        <textarea name="supplier_address" 
+                                  id="edit_supplier_address" 
+                                  rows="3"
+                                  x-model="editingSupplier?.supplier_address"
+                                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon @error('supplier_address') border-red-500 @enderror"
+                                  placeholder="Enter complete business address"
+                                  required></textarea>
+                        @error('supplier_address')
+                            <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                        @enderror
+                    </div>
+                </div>
+
+                <!-- Form Actions -->
+                <div class="flex items-center justify-end space-x-4 border-t border-gray-200 pt-6">
+                    <button type="button" @click="editModal = false" 
+                            class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors">
+                        Cancel
+                    </button>
+                    <button type="submit" 
+                            class="bg-maroon hover:bg-maroon-dark text-white px-6 py-2 rounded-md transition-colors">
+                        <i class="fas fa-save mr-2"></i>
+                        Update Supplier
                     </button>
                 </div>
             </form>

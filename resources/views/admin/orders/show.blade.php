@@ -167,7 +167,11 @@
                                 </td>
                                 <td class="px-4 py-3 whitespace-nowrap">
                                     <div class="text-sm font-medium text-gray-900">
-                                        {{ $detail->item_type === 'Product' ? $detail->product->product_name : $detail->service->service_name }}
+                                        @if($detail->item_type === 'Product')
+                                            {{ $detail->product ? $detail->product->product_name : 'Product Not Found' }}
+                                        @else
+                                            {{ $detail->service ? $detail->service->service_name : 'Service Not Found' }}
+                                        @endif
                                     </div>
                                 </td>
                                 <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ $detail->quantity }}</td>

@@ -1,12 +1,34 @@
+{{-- resources/views/layouts/cashier.blade.php --}}
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('title', 'Cashier Panel') - Ecoretech Printing Shop</title>
+    <title>@yield('title') - Ecoretech Printing Shop</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-maroon: #800020;
+            --secondary-gray: #6B7280;
+            --light-gray: #F3F4F6;
+            --dark-gray: #374151;
+        }
+        .bg-maroon { background-color: var(--primary-maroon); }
+        .text-maroon { color: var(--primary-maroon); }
+        .border-maroon { border-color: var(--primary-maroon); }
+        .hover-maroon:hover { background-color: var(--primary-maroon); }
+        .sidebar-gradient { background: linear-gradient(180deg, #ffffff 0%, #fafafa 100%); }
+        .sidebar-active { background-color: rgba(128, 0, 32, 0.08); border-right: 3px solid var(--primary-maroon); color: var(--primary-maroon); }
+        .sidebar-link { display:flex; align-items:center; gap:12px; padding:10px 12px; border-radius:10px; color:#374151; transition: all .2s; }
+        .sidebar-link-collapsed { display:flex; align-items:center; justify-center; padding:10px; border-radius:10px; color:#374151; transition: all .2s; width:100%; }
+        .sidebar-link:hover { background:#F3F4F6; color:#111827; }
+        .sidebar-icon { width:20px; text-align:center; }
+        .sidebar-tooltip { position:absolute; left:68px; background:#111827; color:#fff; padding:4px 8px; border-radius:6px; font-size:12px; white-space:nowrap; transform: translateY(-50%); top:50%; opacity:0; pointer-events:none; transition:opacity .15s; }
+        .sidebar-item:hover .sidebar-tooltip { opacity:1; }
+    </style>
     <script>
         tailwind.config = {
             theme: {
@@ -19,62 +41,113 @@
             }
         }
     </script>
-    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </head>
-<body class="bg-gray-100" x-data="{ sidebarOpen: false, userMenuOpen: false }">
-    <div class="flex h-screen">
+<body class="bg-gray-100 font-sans">
+    <div class="flex h-screen" x-data="{
+        sidebarOpen: true,
+        mobileOpen: false,
+        toggleSidebar() { this.sidebarOpen = !this.sidebarOpen; localStorage.setItem('ecore_sidebar_open', this.sidebarOpen ? '1' : '0'); },
+        init() { const v = localStorage.getItem('ecore_sidebar_open'); if (v !== null) { this.sidebarOpen = v === '1'; } }
+    }">
         <!-- Sidebar -->
-        <div class="bg-white shadow-lg w-64 transform transition-transform duration-300 ease-in-out" 
-             :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0" 
-             x-show="true">
+        <div class="sidebar-gradient shadow-lg transition-all duration-300 ease-in-out" 
+             :class="sidebarOpen ? 'w-64' : 'w-16'">
             <div class="flex flex-col h-full">
                 <!-- Logo -->
-                <div class="p-6 border-b border-gray-200">
-                    <div class="flex items-center space-x-3">
-                        <div class="w-10 h-10 bg-cashier-blue rounded-lg flex items-center justify-center">
-                            <i class="fas fa-cash-register text-white text-lg"></i>
+                <div :class="sidebarOpen ? 'p-4' : 'p-3'" class="border-b border-gray-200">
+                    <div class="flex items-center justify-center">
+                        <div :class="sidebarOpen ? 'w-12 h-12' : 'w-10 h-10'" class="bg-maroon rounded-2xl flex items-center justify-center text-white font-bold transition-all duration-300"
+                             :class="sidebarOpen ? 'text-xl' : 'text-lg'">
+                            E
                         </div>
-                        <div x-show="sidebarOpen" class="lg:block">
-                            <h1 class="text-xl font-bold text-gray-900">Cashier Panel</h1>
-                            <p class="text-sm text-gray-500">Ecoretech Printing</p>
+                        <div x-show="sidebarOpen" class="ml-3 transition-opacity duration-300">
+                            <h1 class="text-lg font-bold text-maroon">Ecoretech Printing Shop</h1>
+                            <p class="text-xs text-gray-500">Cashier Panel</p>
                         </div>
+                    </div>
+                    <div :class="sidebarOpen ? 'mt-4 flex items-center gap-2' : 'mt-3 flex justify-center'" class="transition-all duration-300">
+                        <button
+                            @click="toggleSidebar()"
+                            class="p-2 rounded-lg hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-maroon"
+                            :aria-pressed="sidebarOpen.toString()"
+                            :aria-label="sidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'"
+                            :title="sidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'"
+                        >
+                            <i class="fas text-gray-600 transition-transform duration-200"
+                               :class="sidebarOpen ? 'fa-angles-left' : 'fa-angles-right'"></i>
+                        </button>
+                        <button x-show="sidebarOpen" class="md:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors" @click="mobileOpen = !mobileOpen" title="Open menu">
+                            <i class="fas fa-ellipsis-vertical text-gray-600"></i>
+                        </button>
                     </div>
                 </div>
 
                 <!-- Navigation -->
-                <nav class="flex-1 px-4 py-6 space-y-2">
-                    <a href="{{ route('cashier.dashboard') }}" 
-                       class="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-maroon hover:text-white transition-colors {{ request()->routeIs('cashier.dashboard') ? 'bg-maroon text-white' : '' }}">
-                        <i class="fas fa-tachometer-alt w-5"></i>
-                        <span class="lg:block">Dashboard</span>
-                    </a>
+                <nav class="flex-1 px-3 py-4 space-y-1">
+                    <!-- Dashboard -->
+                    <div class="sidebar-item relative">
+                        <a href="{{ route('cashier.dashboard') }}" 
+                           :class="sidebarOpen ? 'sidebar-link' : 'sidebar-link-collapsed'"
+                           class="{{ request()->routeIs('cashier.dashboard') ? 'sidebar-active' : '' }}">
+                            <i class="fas fa-tachometer-alt sidebar-icon"></i>
+                            <span x-show="sidebarOpen" class="transition-opacity duration-300">Dashboard</span>
+                        </a>
+                        <div x-show="!sidebarOpen" class="sidebar-tooltip">Dashboard</div>
+                    </div>
 
-                    <a href="{{ route('cashier.quotations.index') }}" 
-                       class="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-maroon hover:text-white transition-colors {{ request()->routeIs('cashier.quotations.*') ? 'bg-maroon text-white' : '' }}">
-                        <i class="fas fa-file-invoice w-5"></i>
-                        <span class="lg:block">Quotations</span>
-                    </a>
+                    <!-- Quotations -->
+                    <div class="sidebar-item relative">
+                        <a href="{{ route('cashier.quotations.index') }}" 
+                           :class="sidebarOpen ? 'sidebar-link' : 'sidebar-link-collapsed'"
+                           class="{{ request()->routeIs('cashier.quotations.*') ? 'sidebar-active' : '' }}">
+                            <i class="fas fa-file-invoice sidebar-icon"></i>
+                            <span x-show="sidebarOpen" class="transition-opacity duration-300">Quotations</span>
+                        </a>
+                        <div x-show="!sidebarOpen" class="sidebar-tooltip">Quotations</div>
+                    </div>
 
-                    <a href="{{ route('cashier.orders.index') }}" 
-                       class="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-maroon hover:text-white transition-colors {{ request()->routeIs('cashier.orders.*') ? 'bg-maroon text-white' : '' }}">
-                        <i class="fas fa-shopping-cart w-5"></i>
-                        <span class="lg:block">Job Orders</span>
-                    </a>
+                    <!-- Job Orders -->
+                    <div class="sidebar-item relative">
+                        <a href="{{ route('cashier.orders.index') }}" 
+                           :class="sidebarOpen ? 'sidebar-link' : 'sidebar-link-collapsed'"
+                           class="{{ request()->routeIs('cashier.orders.*') ? 'sidebar-active' : '' }}">
+                            <i class="fas fa-shopping-cart sidebar-icon"></i>
+                            <span x-show="sidebarOpen" class="transition-opacity duration-300">Job Orders</span>
+                        </a>
+                        <div x-show="!sidebarOpen" class="sidebar-tooltip">Job Orders</div>
+                    </div>
 
-                    <a href="{{ route('cashier.deliveries.index') }}" 
-                       class="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-maroon hover:text-white transition-colors {{ request()->routeIs('cashier.deliveries.*') ? 'bg-maroon text-white' : '' }}">
-                        <i class="fas fa-truck w-5"></i>
-                        <span class="lg:block">Deliveries</span>
-                    </a>
+                    <!-- Deliveries -->
+                    <div class="sidebar-item relative">
+                        <a href="{{ route('cashier.deliveries.index') }}" 
+                           :class="sidebarOpen ? 'sidebar-link' : 'sidebar-link-collapsed'"
+                           class="{{ request()->routeIs('cashier.deliveries.*') ? 'sidebar-active' : '' }}">
+                            <i class="fas fa-truck sidebar-icon"></i>
+                            <span x-show="sidebarOpen" class="transition-opacity duration-300">Deliveries</span>
+                        </a>
+                        <div x-show="!sidebarOpen" class="sidebar-tooltip">Deliveries</div>
+                    </div>
 
-                    
+                    <!-- Payments -->
+                    <div class="sidebar-item relative">
+                        <a href="{{ route('cashier.payments.index') }}" 
+                           :class="sidebarOpen ? 'sidebar-link' : 'sidebar-link-collapsed'"
+                           class="{{ request()->routeIs('cashier.payments.*') ? 'sidebar-active' : '' }}">
+                            <i class="fas fa-credit-card sidebar-icon"></i>
+                            <span x-show="sidebarOpen" class="transition-opacity duration-300">Payments</span>
+                        </a>
+                        <div x-show="!sidebarOpen" class="sidebar-tooltip">Payments</div>
+                    </div>
                 </nav>
 
                 <!-- User Section -->
-                <div class="p-4 border-t border-gray-200" x-data="{ userMenuOpen: false }">
+                <div :class="sidebarOpen ? 'p-4' : 'p-2'" class="border-t border-gray-200 transition-all duration-300" x-data="{ userMenuOpen: false }">
                     <div class="relative">
-                        <button @click="userMenuOpen = !userMenuOpen" class="flex items-center w-full p-2 rounded-lg hover:bg-gray-100 transition-colors">
-                            <div class="w-8 h-8 bg-maroon rounded-full flex items-center justify-center text-white text-sm">
+                        <button @click.stop="userMenuOpen = !userMenuOpen" 
+                                :class="sidebarOpen ? 'flex items-center w-full p-2' : 'flex items-center justify-center w-full p-2'"
+                                class="rounded-lg hover:bg-gray-100 transition-colors">
+                            <div :class="sidebarOpen ? 'w-8 h-8' : 'w-10 h-10'" class="bg-maroon rounded-full flex items-center justify-center text-white transition-all duration-300"
+                                 :class="sidebarOpen ? 'text-sm' : 'text-base'">
                                 {{ substr(Auth::user()->name, 0, 1) }}
                             </div>
                             <div x-show="sidebarOpen" class="ml-3 flex-1 text-left">
@@ -82,7 +155,10 @@
                                 <p class="text-xs text-gray-500">Cashier</p>
                             </div>
                         </button>
-                        <div x-show="userMenuOpen" @click.away="userMenuOpen = false" x-transition class="absolute bottom-full left-0 right-0 mb-2 bg-white rounded-lg shadow-lg border border-gray-200 py-2">
+                        <div x-show="userMenuOpen" @click.away="userMenuOpen = false" x-transition 
+                             :class="sidebarOpen ? 'absolute bottom-full left-0 right-0 mb-2' : 'absolute bottom-full left-0 mb-2'"
+                             class="bg-white rounded-lg shadow-lg border border-gray-200 py-2"
+                             :style="sidebarOpen ? '' : 'width: 200px;'">
                             <form method="POST" action="{{ route('cashier.logout') }}">
                                 @csrf
                                 <button type="submit" class="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
@@ -92,7 +168,6 @@
                             </form>
                         </div>
                     </div>
-                    <div x-show="sidebarOpen" class="mt-3 text-[11px] text-gray-400">v1.0.0</div>
                 </div>
             </div>
         </div>

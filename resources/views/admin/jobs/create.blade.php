@@ -88,13 +88,12 @@
                                         <i class="fas fa-edit"></i>
                                     </a>
                                     
-                                    <!-- Delete Job -->
-                                    <form method="POST" action="{{ route('admin.jobs.destroy', $job) }}" 
-                                          class="inline" onsubmit="return confirm('Are you sure you want to delete this job position? This action cannot be undone.')">
+                                    <!-- Archive Job -->
+                                    <form method="POST" action="{{ route('admin.jobs.archive', $job) }}" 
+                                          class="inline" onsubmit="return confirm('Are you sure you want to archive this job position?')">
                                         @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="text-red-600 hover:text-red-900 transition-colors" title="Delete Job Position" onclick="event.stopPropagation();">
-                                            <i class="fas fa-trash"></i>
+                                        <button type="submit" class="text-gray-600 hover:text-gray-900 transition-colors" title="Archive Job Position" onclick="event.stopPropagation();">
+                                            <i class="fas fa-archive"></i>
                                         </button>
                                     </form>
                                 </div>

@@ -6,11 +6,8 @@
 
 @section('content')
 <div class="space-y-6">
-    <!-- Archive Toggle
-    <x-archive-toggle :showArchived="$showArchived" :route="route('admin.payments.index')" /> -->
-    
     <!-- Header Actions -->
-    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div class="flex items-center space-x-4">
             @if(!$showArchived)
                 <a href="{{ route('admin.payments.create') }}" class="bg-maroon hover:bg-maroon-dark text-white px-4 py-2 rounded-lg font-medium transition-colors inline-flex items-center">
@@ -18,14 +15,22 @@
                     Record Payment
                 </a>
             @endif
-                <button onclick="openFilterModal()" class="bg-maroon hover:bg-maroon-dark text-white px-4 py-2 rounded-lg transition-colors inline-flex items-center">
-                    <i class="fas fa-filter mr-2"></i>
-                    Advanced Filters
-                </button>
-            </div>
-            
-        <!-- Search -->
+            <button onclick="openFilterModal()" class="bg-maroon hover:bg-maroon-dark text-white px-4 py-2 rounded-lg transition-colors inline-flex items-center">
+                <i class="fas fa-filter mr-2"></i>
+                Advanced Filters
+            </button>
+        </div>
+        
+        <!-- Search and Archive Toggle -->
         <div class="flex items-center space-x-4">
+            <!-- Archive Toggle -->
+            <a href="{{ route('admin.payments.index', array_merge(request()->query(), ['archived' => isset($showArchived) && $showArchived ? 0 : 1])) }}"
+               class="px-4 py-2 rounded-lg font-medium transition-colors inline-flex items-center border {{ (isset($showArchived) && $showArchived) ? 'border-green-600 text-green-700 hover:bg-green-50' : 'border-gray-300 text-gray-700 hover:bg-gray-50' }}">
+                <i class="fas fa-box-archive mr-2"></i>
+                {{ (isset($showArchived) && $showArchived) ? 'Show Active' : 'View Archives' }}
+            </a>
+            
+            <!-- Search -->
             <form method="GET" id="searchForm" class="flex items-center space-x-2">
                 <div class="relative">
                     <input type="text" name="search" id="searchInput" value="{{ request('search') }}" placeholder="Search payments..." 
@@ -71,12 +76,32 @@
                                 </div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm font-medium text-gray-900">Order #{{ str_pad($payment->order->order_id, 5, '0', STR_PAD_LEFT) }}</div>
-                                <div class="text-sm text-gray-500">₱{{ number_format($payment->order->final_total_amount, 2) }} total</div>
+                                @php
+                                    $orderStatus = $payment->getOrderStatus();
+                                    $order = $payment->orderWithTrashed()->first();
+                                @endphp
+                                @if($orderStatus === 'active')
+                                    <div class="text-sm font-medium text-gray-900">Order #{{ str_pad($order->order_id, 5, '0', STR_PAD_LEFT) }}</div>
+                                    <div class="text-sm text-gray-500">₱{{ number_format($order->final_total_amount, 2) }} total</div>
+                                @elseif($orderStatus === 'deleted')
+                                    <div class="text-sm font-medium text-gray-900 text-orange-600">Order #{{ str_pad($order->order_id, 5, '0', STR_PAD_LEFT) }} (Deleted)</div>
+                                    <div class="text-sm text-gray-500">₱{{ number_format($order->final_total_amount, 2) }} total</div>
+                                @else
+                                    <div class="text-sm font-medium text-gray-900 text-red-600">Order Not Found</div>
+                                    <div class="text-sm text-gray-500">Payment ID: {{ $payment->payment_id }}</div>
+                                @endif
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm font-medium text-gray-900">{{ $payment->order->customer->display_name }}</div>
-                                <div class="text-sm text-gray-500">{{ $payment->order->customer->contact_number1 }}</div>
+                                @if($orderStatus === 'active' && $order && $order->customer)
+                                    <div class="text-sm font-medium text-gray-900">{{ $order->customer->display_name }}</div>
+                                    <div class="text-sm text-gray-500">{{ $order->customer->contact_number1 }}</div>
+                                @elseif($orderStatus === 'deleted' && $order && $order->customer)
+                                    <div class="text-sm font-medium text-gray-900 text-orange-600">{{ $order->customer->display_name }} (Deleted)</div>
+                                    <div class="text-sm text-gray-500">{{ $order->customer->contact_number1 }}</div>
+                                @else
+                                    <div class="text-sm font-medium text-gray-900 text-red-600">Customer Not Found</div>
+                                    <div class="text-sm text-gray-500">Payment ID: {{ $payment->payment_id }}</div>
+                                @endif
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <span class="px-2 py-1 text-xs font-medium rounded-full
@@ -106,15 +131,17 @@
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <div class="flex items-center space-x-2">
                                     <div class="text-lg font-bold text-maroon">₱{{ number_format($payment->amount_paid, 2) }}</div>
-                                    @php
-                                        $deadlineDate = \Carbon\Carbon::parse($payment->order->deadline_date);
-                                        $today = \Carbon\Carbon::today();
-                                        $daysUntilDeadline = $today->diffInDays($deadlineDate, false);
-                                    @endphp
-                                    @if($daysUntilDeadline <= 3 && $daysUntilDeadline >= 0)
-                                        <i class="fas fa-exclamation-triangle text-yellow-500 animate-pulse" title="Due in {{ $daysUntilDeadline }} day(s)"></i>
-                                    @elseif($daysUntilDeadline < 0)
-                                        <i class="fas fa-exclamation-triangle text-red-500 animate-pulse" title="Overdue by {{ abs($daysUntilDeadline) }} day(s)"></i>
+                                    @if($orderStatus === 'active' && $order && $order->deadline_date)
+                                        @php
+                                            $deadlineDate = \Carbon\Carbon::parse($order->deadline_date);
+                                            $today = \Carbon\Carbon::today();
+                                            $daysUntilDeadline = $today->diffInDays($deadlineDate, false);
+                                        @endphp
+                                        @if($daysUntilDeadline <= 3 && $daysUntilDeadline >= 0)
+                                            <i class="fas fa-exclamation-triangle text-yellow-500 animate-pulse" title="Due in {{ $daysUntilDeadline }} day(s)"></i>
+                                        @elseif($daysUntilDeadline < 0)
+                                            <i class="fas fa-exclamation-triangle text-red-500 animate-pulse" title="Overdue by {{ abs($daysUntilDeadline) }} day(s)"></i>
+                                        @endif
                                     @endif
                                 </div>
                                 @if($payment->change > 0)
@@ -143,34 +170,23 @@
                                 </button>
                                 
                                     <!-- Edit Button -->
-                                    <a href="{{ route('admin.payments.edit', $payment) }}" 
-                                       class="text-maroon hover:text-maroon-dark transition-colors" 
-                                       title="Edit Payment">
-                                        <i class="fas fa-edit"></i>
-                                    </a>
+                                   
                                     
-                                    <!-- Delete/Archive Button -->
-                                @if($showArchived)
-                                        <form method="POST" action="{{ route('admin.payments.restore', $payment) }}" class="inline">
-                                            @csrf
-                                            <button type="submit" 
-                                                    class="text-green-600 hover:text-green-900 transition-colors" 
-                                                    title="Restore Payment"
-                                                    onclick="return confirm('Are you sure you want to restore this payment?')">
-                                                <i class="fas fa-undo"></i>
-                                            </button>
-                                        </form>
-                                @else
-                                        <form method="POST" action="{{ route('admin.payments.archive', $payment) }}" class="inline">
-                                            @csrf
-                                            <button type="submit" 
-                                                    class="text-red-600 hover:text-red-900 transition-colors" 
-                                                    title="Archive Payment"
-                                                    onclick="return confirm('Are you sure you want to archive this payment?')">
-                                                <i class="fas fa-trash"></i>
-                                            </button>
-                                        </form>
-                                @endif
+                                    @if($showArchived)
+                                        <x-archive-actions 
+                                            :item="$payment" 
+                                            :archiveRoute="'admin.payments.archive'" 
+                                            :restoreRoute="'admin.payments.restore'" 
+                                            :editRoute="'admin.payments.edit'"
+                                            :showRestore="true" />
+                                    @else
+                                        <x-archive-actions 
+                                            :item="$payment" 
+                                            :archiveRoute="'admin.payments.archive'" 
+                                            :restoreRoute="'admin.payments.restore'" 
+                                            :editRoute="'admin.payments.edit'"
+                                            :showRestore="false" />
+                                    @endif
                                 </div>
                             </td>
                         </tr>

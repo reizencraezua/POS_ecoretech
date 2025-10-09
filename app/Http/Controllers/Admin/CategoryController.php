@@ -122,9 +122,8 @@ class CategoryController extends Controller
             ->with('success', 'Category archived successfully.');
     }
 
-    public function restore($categoryId)
+    public function restore(Category $category)
     {
-        $category = Category::withTrashed()->findOrFail($categoryId);
         $category->restore();
 
         return redirect()->route('admin.categories.index')

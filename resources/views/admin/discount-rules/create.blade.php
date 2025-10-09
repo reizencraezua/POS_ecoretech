@@ -18,15 +18,16 @@
             </div>
         </div>
         
-        <form method="POST" action="{{ route('admin.discount-rules.store') }}" class="p-6">
+        <form method="POST" action="{{ route('admin.discount-rules.store') }}" class="p-6 space-y-6">
             @csrf
             
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <!-- Left Column -->
-                <div class="space-y-6">
-                    <!-- Rule Name -->
+            <!-- Basic Information -->
+            <div class="space-y-4">
+                <h3 class="text-lg font-semibold text-gray-900 border-b border-gray-200 pb-2">Basic Information</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label for="rule_name" class="block text-sm font-medium text-gray-700 mb-2">Rule Name *</label>
+                        <label for="rule_name" class="block text-sm font-medium text-gray-700 mb-1">Rule Name *</label>
                         <input type="text" name="rule_name" id="rule_name" value="{{ old('rule_name') }}" required
                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon @error('rule_name') border-red-500 @enderror"
                                placeholder="e.g., Bulk Order Discount">
@@ -35,41 +36,54 @@
                         @enderror
                     </div>
 
-                    <!-- Quantity Range -->
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label for="min_quantity" class="block text-sm font-medium text-gray-700 mb-2">Min Quantity *</label>
-                            <input type="number" name="min_quantity" id="min_quantity" value="{{ old('min_quantity', 1) }}" required min="1"
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon @error('min_quantity') border-red-500 @enderror">
-                            @error('min_quantity')
-                                <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
-                            @enderror
-                        </div>
+                    <div>
+                        <label for="description" class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                        <input type="text" name="description" id="description" value="{{ old('description') }}"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon @error('description') border-red-500 @enderror"
+                               placeholder="Optional description">
+                        @error('description')
+                            <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                        @enderror
+                    </div>
+                </div>
+            </div>
 
-                        <div>
-                            <label for="max_quantity" class="block text-sm font-medium text-gray-700 mb-2">Max Quantity</label>
-                            <input type="number" name="max_quantity" id="max_quantity" value="{{ old('max_quantity') }}" min="1"
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon @error('max_quantity') border-red-500 @enderror"
-                                   placeholder="Unlimited">
-                            @error('max_quantity')
-                                <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
-                            @enderror
-                        </div>
+            <!-- Quantity & Discount Settings -->
+            <div class="space-y-4">
+                <h3 class="text-lg font-semibold text-gray-900 border-b border-gray-200 pb-2">Quantity & Discount Settings</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label for="min_quantity" class="block text-sm font-medium text-gray-700 mb-1">Min Quantity *</label>
+                        <input type="number" name="min_quantity" id="min_quantity" value="{{ old('min_quantity', 1) }}" required min="1"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon @error('min_quantity') border-red-500 @enderror">
+                        @error('min_quantity')
+                            <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                        @enderror
                     </div>
 
-                    <!-- Discount Type -->
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-3">Discount Type *</label>
+                        <label for="max_quantity" class="block text-sm font-medium text-gray-700 mb-1">Max Quantity</label>
+                        <input type="number" name="max_quantity" id="max_quantity" value="{{ old('max_quantity') }}" min="1"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon @error('max_quantity') border-red-500 @enderror"
+                               placeholder="Unlimited">
+                        @error('max_quantity')
+                            <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Discount Type *</label>
                         <div class="flex space-x-4">
                             <label class="flex items-center">
                                 <input type="radio" name="discount_type" value="percentage" {{ old('discount_type', 'percentage') === 'percentage' ? 'checked' : '' }}
                                        class="h-4 w-4 text-maroon focus:ring-maroon border-gray-300" onchange="toggleDiscountFields()">
-                                <span class="ml-2 text-sm text-gray-700">Percentage</span>
+                                <span class="ml-2 text-sm text-gray-700">%</span>
                             </label>
                             <label class="flex items-center">
                                 <input type="radio" name="discount_type" value="fixed" {{ old('discount_type') === 'fixed' ? 'checked' : '' }}
                                        class="h-4 w-4 text-maroon focus:ring-maroon border-gray-300" onchange="toggleDiscountFields()">
-                                <span class="ml-2 text-sm text-gray-700">Fixed Amount</span>
+                                <span class="ml-2 text-sm text-gray-700">₱</span>
                             </label>
                         </div>
                         @error('discount_type')
@@ -78,11 +92,10 @@
                     </div>
                 </div>
 
-                <!-- Middle Column -->
-                <div class="space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <!-- Discount Percentage -->
                     <div id="percentage-field">
-                        <label for="discount_percentage" class="block text-sm font-medium text-gray-700 mb-2">Discount Percentage *</label>
+                        <label for="discount_percentage" class="block text-sm font-medium text-gray-700 mb-1">Discount Percentage *</label>
                         <div class="relative">
                             <input type="number" name="discount_percentage" id="discount_percentage" value="{{ old('discount_percentage') }}" 
                                    min="0" max="100" step="0.01"
@@ -98,7 +111,7 @@
 
                     <!-- Discount Amount -->
                     <div id="amount-field" style="display: none;">
-                        <label for="discount_amount" class="block text-sm font-medium text-gray-700 mb-2">Discount Amount *</label>
+                        <label for="discount_amount" class="block text-sm font-medium text-gray-700 mb-1">Discount Amount *</label>
                         <div class="relative">
                             <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                 <span class="text-gray-500 sm:text-sm">₱</span>
@@ -111,49 +124,38 @@
                             <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
                         @enderror
                     </div>
-
-                    <!-- Status -->
-                    <div>
-                        <label class="flex items-center">
-                            <input type="checkbox" name="is_active" value="1" {{ old('is_active', true) ? 'checked' : '' }}
-                                class="h-4 w-4 text-maroon focus:ring-maroon border-gray-300 rounded">
-                            <span class="ml-2 text-sm text-gray-700">Active (Enable this discount rule)</span>
-                        </label>
-                    </div>
                 </div>
+            </div>
 
-                <!-- Right Column -->
-                <div class="space-y-6">
-                    <!-- Description -->
+            <!-- Validity & Status -->
+            <div class="space-y-4">
+                <h3 class="text-lg font-semibold text-gray-900 border-b border-gray-200 pb-2">Validity & Status</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
-                        <label for="description" class="block text-sm font-medium text-gray-700 mb-2">Description</label>
-                        <textarea name="description" id="description" rows="4"
-                                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon @error('description') border-red-500 @enderror"
-                                  placeholder="Optional description for this discount rule">{{ old('description') }}</textarea>
-                        @error('description')
+                        <label for="valid_from" class="block text-sm font-medium text-gray-700 mb-1">Valid From</label>
+                        <input type="date" name="valid_from" id="valid_from" value="{{ old('valid_from') }}"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon @error('valid_from') border-red-500 @enderror">
+                        @error('valid_from')
                             <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
                         @enderror
                     </div>
 
-                    <!-- Validity Period -->
-                    <div class="grid grid-cols-1 gap-4">
-                        <div>
-                            <label for="valid_from" class="block text-sm font-medium text-gray-700 mb-2">Valid From</label>
-                            <input type="date" name="valid_from" id="valid_from" value="{{ old('valid_from') }}"
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon @error('valid_from') border-red-500 @enderror">
-                            @error('valid_from')
-                                <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
-                            @enderror
-                        </div>
+                    <div>
+                        <label for="valid_until" class="block text-sm font-medium text-gray-700 mb-1">Valid Until</label>
+                        <input type="date" name="valid_until" id="valid_until" value="{{ old('valid_until') }}"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon @error('valid_until') border-red-500 @enderror">
+                        @error('valid_until')
+                            <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                        @enderror
+                    </div>
 
-                        <div>
-                            <label for="valid_until" class="block text-sm font-medium text-gray-700 mb-2">Valid Until</label>
-                            <input type="date" name="valid_until" id="valid_until" value="{{ old('valid_until') }}"
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon @error('valid_until') border-red-500 @enderror">
-                            @error('valid_until')
-                                <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
-                            @enderror
-                        </div>
+                    <div class="flex items-end">
+                        <label class="flex items-center">
+                            <input type="checkbox" name="is_active" value="1" {{ old('is_active', true) ? 'checked' : '' }}
+                                class="h-4 w-4 text-maroon focus:ring-maroon border-gray-300 rounded">
+                            <span class="ml-2 text-sm text-gray-700">Enable rule</span>
+                        </label>
                     </div>
                 </div>
             </div>

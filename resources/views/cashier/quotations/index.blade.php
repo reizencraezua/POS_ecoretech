@@ -78,10 +78,10 @@
                             @endif
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {{ $quotation->quotation_date->format('M d, Y') }}
+                            {{ $quotation->quotation_date ? $quotation->quotation_date->format('M d, Y') : 'N/A' }}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {{ $quotation->valid_until->format('M d, Y') }}
+                            {{ $quotation->valid_until ? $quotation->valid_until->format('M d, Y') : 'N/A' }}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                             ₱{{ number_format($quotation->total_amount, 2) }}

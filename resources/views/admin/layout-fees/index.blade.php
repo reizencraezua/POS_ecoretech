@@ -79,12 +79,11 @@
                                         <a href="{{ route('admin.layout-fees.show', $setting) }}" 
                                            class="text-blue-600 hover:text-blue-900">View</a>
                                         <a href="{{ route('admin.layout-fees.edit', $setting) }}" 
-                                           class="text-yellow-600 hover:text-yellow-900">Edit</a>
-                                        <form method="POST" action="{{ route('admin.layout-fees.destroy', $setting) }}" 
-                                              class="inline" onsubmit="return confirm('Are you sure you want to delete this layout fee setting?')">
+                                           class="text-red-600 hover:text-red-800">Edit</a>
+                                        <form method="POST" action="{{ route('admin.layout-fees.archive', $setting) }}" 
+                                              class="inline" onsubmit="return confirm('Are you sure you want to archive this layout fee setting?')">
                                             @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="text-red-600 hover:text-red-900">Delete</button>
+                                            <button type="submit" class="text-gray-600 hover:text-gray-900">Archive</button>
                                         </form>
                                     </div>
                                 </td>

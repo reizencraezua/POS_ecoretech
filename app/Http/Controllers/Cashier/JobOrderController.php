@@ -20,12 +20,13 @@ class JobOrderController extends Controller
      */
     public function index(Request $request)
     {
-        // Check if user is cashier
-        if (!auth('admin')->user()->isCashier()) {
-            abort(403, 'Access denied. Cashier role required.');
+        // Check if user is cashier or admin
+        $user = auth('web')->user();
+        if (!$user->isCashier() && !$user->isAdmin()) {
+            abort(403, 'Access denied. Cashier or Admin role required.');
         }
 
-        $query = Order::with(['customer', 'employee', 'payments']);
+        $query = Order::with(['customer', 'employee', 'payments', 'creator']);
 
             // Filter by status
             if ($request->has('status') && $request->status !== '') {
@@ -126,6 +127,7 @@ class JobOrderController extends Controller
                 'delivery_date' => $validated['delivery_date'],
                 'order_status' => Order::STATUS_ON_PROCESS,
                 'total_amount' => 0, // Will be calculated after details
+                'created_by' => auth('web')->id(),
             ]);
 
             // Process order details
@@ -172,6 +174,102 @@ class JobOrderController extends Controller
     }
 
     /**
+     * Show the form for editing the specified resource.
+     */
+    public function edit(Order $order)
+    {
+        // Check if user is cashier or admin
+        $user = auth('web')->user();
+        if (!$user->isCashier() && !$user->isAdmin()) {
+            abort(403, 'Access denied. Cashier or Admin role required.');
+        }
+
+        $customers = Customer::orderBy('customer_firstname')->get();
+        $employees = Employee::orderBy('employee_firstname')->get();
+        $products = Product::with(['category.sizes'])->orderBy('product_name')->get();
+        $services = Service::with(['category.sizes'])->orderBy('service_name')->get();
+        $units = \App\Models\Unit::where('is_active', true)->orderBy('unit_name')->get();
+        
+        $order->load(['details.product', 'details.service']);
+
+        return view('cashier.orders.edit', compact('order', 'customers', 'employees', 'products', 'services', 'units'));
+    }
+
+    /**
+     * Update the specified resource in storage.
+     */
+    public function update(Request $request, Order $order)
+    {
+        // Check for admin password
+        if (!$this->verifyAdminPassword($request)) {
+            return redirect()->back()
+                ->withErrors(['admin_password' => 'Invalid admin password.'])
+                ->withInput();
+        }
+
+        try {
+            $validated = $request->validate([
+                'customer_id' => 'required|exists:customers,customer_id',
+                'employee_id' => 'required|exists:employees,employee_id',
+                'order_date' => 'required|date',
+                'delivery_date' => 'nullable|date|after_or_equal:order_date',
+                'items' => 'required|array|min:1',
+                'items.*.type' => 'required|in:product,service',
+                'items.*.id' => 'required|integer',
+                'items.*.quantity' => 'required|integer|min:1',
+                'items.*.unit' => 'required|string',
+                'items.*.size' => 'nullable|string',
+                'items.*.price' => 'required|numeric|min:0',
+                'items.*.layout' => 'nullable|in:on,1,true,false,0',
+                'items.*.layoutPrice' => 'nullable|numeric|min:0',
+            ]);
+
+            // Update order
+            $order->update([
+                'customer_id' => $validated['customer_id'],
+                'employee_id' => $validated['employee_id'],
+                'order_date' => $validated['order_date'],
+                'delivery_date' => $validated['delivery_date'],
+            ]);
+
+            // Delete existing order details
+            $order->details()->delete();
+
+            // Process new order details
+            $totalAmount = 0;
+            foreach ($validated['items'] as $item) {
+                $baseAmount = $item['quantity'] * $item['price'];
+                $layoutPrice = in_array($item['layout'] ?? false, ['on', '1', 'true', 1, true]) ? ($item['layoutPrice'] ?? 0) : 0;
+                $subtotal = $baseAmount + $layoutPrice;
+                $totalAmount += $subtotal;
+
+                $order->details()->create([
+                    'quantity' => $item['quantity'],
+                    'unit' => $item['unit'],
+                    'size' => $item['size'],
+                    'price' => $item['price'],
+                    'subtotal' => $subtotal,
+                    'layout' => in_array($item['layout'] ?? false, ['on', '1', 'true', 1, true]),
+                    'layout_price' => $layoutPrice,
+                    'product_id' => $item['type'] === 'product' ? $item['id'] : null,
+                    'service_id' => $item['type'] === 'service' ? $item['id'] : null,
+                ]);
+            }
+
+            // Update total amount
+            $order->update(['total_amount' => $totalAmount]);
+
+            return redirect()->route('cashier.orders.index')
+                ->with('success', 'Job order updated successfully.');
+        } catch (\Exception $e) {
+            Log::error('Error updating job order: ' . $e->getMessage());
+            return redirect()->back()
+                ->with('error', 'Failed to update job order. Please try again.')
+                ->withInput();
+        }
+    }
+
+    /**
      * Update order status
      */
     public function updateStatus(Request $request, Order $order)
@@ -184,5 +282,59 @@ class JobOrderController extends Controller
 
         return redirect()->back()
             ->with('success', "Order status updated to {$request->status}.");
+    }
+
+    /**
+     * Void order with admin password confirmation
+     */
+    public function void(Request $request, Order $order)
+    {
+        $request->validate([
+            'admin_password' => 'required|string',
+            'void_reason' => 'required|string|max:500'
+        ]);
+
+        // Verify admin password
+        $admin = auth('web')->user();
+        if (!\Hash::check($request->admin_password, $admin->password)) {
+            return redirect()->back()
+                ->with('error', 'Invalid admin password. Void operation cancelled.');
+        }
+
+        try {
+            // Update order status to voided
+            $order->update([
+                'order_status' => 'Voided',
+                'voided_at' => now(),
+                'voided_by' => $admin->id,
+                'void_reason' => $request->void_reason
+            ]);
+
+            // Soft delete the order (archive it)
+            $order->delete();
+
+            return redirect()->route('cashier.orders.index')
+                ->with('success', 'Order has been voided and archived successfully.');
+        } catch (\Exception $e) {
+            Log::error('Error voiding order: ' . $e->getMessage());
+            return redirect()->back()
+                ->with('error', 'Failed to void order. Please try again.');
+        }
+    }
+
+    private function verifyAdminPassword(Request $request)
+    {
+        $adminPassword = $request->input('admin_password');
+        if (!$adminPassword) {
+            return false;
+        }
+
+        // Get admin user (assuming admin user ID is 1)
+        $admin = \App\Models\User::find(1);
+        if (!$admin) {
+            return false;
+        }
+
+        return \Hash::check($adminPassword, $admin->password);
     }
 }

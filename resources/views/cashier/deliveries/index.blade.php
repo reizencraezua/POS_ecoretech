@@ -75,7 +75,7 @@
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Delivery Date</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Address</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                     </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
@@ -88,10 +88,17 @@
                             <div class="text-sm text-gray-900">{{ $delivery->order->order_id }}</div>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="text-sm text-gray-900">{{ $delivery->order->customer->customer_firstname }} {{ $delivery->order->customer->customer_lastname }}</div>
-                            @if($delivery->order->customer->business_name)
-                                <div class="text-sm text-gray-500">{{ $delivery->order->customer->business_name }}</div>
-                            @endif
+                            <div class="flex items-center space-x-3">
+                                <div class="w-8 h-8 bg-maroon text-white rounded-full flex items-center justify-center text-sm font-bold">
+                                    {{ substr($delivery->order->customer->customer_firstname, 0, 1) }}{{ substr($delivery->order->customer->customer_lastname, 0, 1) }}
+                                </div>
+                                <div>
+                                    <div class="text-sm font-medium text-gray-900">{{ $delivery->order->customer->customer_firstname }} {{ $delivery->order->customer->customer_lastname }}</div>
+                                    @if($delivery->order->customer->business_name)
+                                        <div class="text-sm text-gray-500">{{ $delivery->order->customer->business_name }}</div>
+                                    @endif
+                                </div>
+                            </div>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                             {{ $delivery->delivery_date->format('M d, Y') }}
@@ -110,7 +117,7 @@
                             </span>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            <div class="flex items-center space-x-2">
+                            <div class="flex items-center justify-center space-x-2">
                                 <a href="{{ route('cashier.deliveries.show', $delivery) }}" 
                                    class="text-maroon hover:text-maroon-dark">
                                     <i class="fas fa-eye"></i>

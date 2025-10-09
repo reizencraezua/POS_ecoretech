@@ -92,4 +92,21 @@ class LayoutFeeController extends Controller
         return redirect()->route('admin.layout-fees.index')
             ->with('success', 'Layout fee setting activated successfully.');
     }
+
+    public function archive(LayoutFeeSetting $layoutFee)
+    {
+        $layoutFee->delete();
+
+        return redirect()->route('admin.layout-fees.index')
+            ->with('success', 'Layout fee setting archived successfully.');
+    }
+
+    public function restore($id)
+    {
+        $layoutFee = LayoutFeeSetting::withTrashed()->findOrFail($id);
+        $layoutFee->restore();
+
+        return redirect()->route('admin.layout-fees.index')
+            ->with('success', 'Layout fee setting restored successfully.');
+    }
 }

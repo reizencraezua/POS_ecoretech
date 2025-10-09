@@ -145,8 +145,12 @@
                                    class="text-maroon hover:text-maroon-dark" title="View Payment">
                                     <i class="fas fa-eye"></i>
                                 </a>
+                                <a href="{{ route('cashier.payments.edit', $payment) }}" 
+                                   class="text-blue-600 hover:text-blue-900" title="Edit Payment">
+                                    <i class="fas fa-edit"></i>
+                                </a>
                                 <button onclick="printReceipt({{ $payment->payment_id }})" 
-                                        class="text-blue-600 hover:text-blue-900" 
+                                        class="text-green-600 hover:text-green-900" 
                                         title="Print Receipt">
                                     <i class="fas fa-print"></i>
                                 </button>

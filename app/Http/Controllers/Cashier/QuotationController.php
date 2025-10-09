@@ -23,9 +23,10 @@ class QuotationController extends Controller
      */
     public function index(Request $request)
     {
-        // Check if user is cashier
-        if (!auth('admin')->user()->isCashier()) {
-            abort(403, 'Access denied. Cashier role required.');
+        // Check if user is cashier or admin
+        $user = auth('web')->user();
+        if (!$user || (!$user->isCashier() && !$user->isAdmin())) {
+            abort(403, 'Access denied. Cashier or Admin role required.');
         }
 
         $query = Quotation::with(['customer', 'details']);

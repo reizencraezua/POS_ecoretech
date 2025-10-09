@@ -20,7 +20,7 @@
                 </div>
                 <div class="flex space-x-2">
                     <a href="{{ route('admin.categories.edit', $category) }}" 
-                       class="bg-yellow-600 text-white px-4 py-2 rounded-md hover:bg-yellow-700 transition-colors">
+                       class="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition-colors">
                         <i class="fas fa-edit mr-2"></i>Edit
                     </a>
                 </div>
@@ -159,7 +159,7 @@
                                                 <a href="{{ route('admin.products.show', $product) }}" 
                                                    class="text-blue-600 hover:text-blue-900 mr-3">View</a>
                                                 <a href="{{ route('admin.products.edit', $product) }}" 
-                                                   class="text-yellow-600 hover:text-yellow-900">Edit</a>
+                                                   class="text-red-600 hover:text-red-800">Edit</a>
                                             </td>
                                         </tr>
                                     @endforeach
@@ -206,7 +206,7 @@
                                                 <a href="{{ route('admin.services.show', $service) }}" 
                                                    class="text-blue-600 hover:text-blue-900 mr-3">View</a>
                                                 <a href="{{ route('admin.services.edit', $service) }}" 
-                                                   class="text-yellow-600 hover:text-yellow-900">Edit</a>
+                                                   class="text-red-600 hover:text-red-800">Edit</a>
                                             </td>
                                         </tr>
                                     @endforeach

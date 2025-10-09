@@ -42,4 +42,33 @@ class Payment extends Model
     {
         return $this->belongsTo(Order::class, 'order_id');
     }
+
+    /**
+     * Get the order including soft-deleted ones
+     */
+    public function orderWithTrashed()
+    {
+        return $this->belongsTo(Order::class, 'order_id')->withTrashed();
+    }
+
+    /**
+     * Check if the payment has a valid order (including soft-deleted)
+     */
+    public function hasValidOrder()
+    {
+        return $this->orderWithTrashed()->exists();
+    }
+
+    /**
+     * Get the order status (active, deleted, or not found)
+     */
+    public function getOrderStatus()
+    {
+        if (!$this->hasValidOrder()) {
+            return 'not_found';
+        }
+        
+        $order = $this->orderWithTrashed()->first();
+        return $order->trashed() ? 'deleted' : 'active';
+    }
 }

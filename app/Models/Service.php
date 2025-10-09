@@ -19,7 +19,6 @@ class Service extends Model
         'base_fee',
         'layout_price',
         'requires_layout',
-        'layout_description',
         'category_id',
         'size_id',
         'unit_id',

@@ -16,7 +16,7 @@ class OrderDetail extends Model
         'product_id',
         'service_id',
         'quantity',
-        'unit',
+        'unit_id',
         'size',
         'price',
         'subtotal',
@@ -57,6 +57,14 @@ class OrderDetail extends Model
     public function service()
     {
         return $this->belongsTo(Service::class, 'service_id');
+    }
+
+    /**
+     * Get the unit for this detail
+     */
+    public function unit()
+    {
+        return $this->belongsTo(Unit::class, 'unit_id');
     }
 
     /**

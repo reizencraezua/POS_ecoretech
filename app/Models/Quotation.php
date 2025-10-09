@@ -14,6 +14,7 @@ class Quotation extends Model
 
     protected $fillable = [
         'quotation_date',
+        'valid_until',
         'notes',
         'terms_and_conditions',
         'status',
@@ -23,6 +24,7 @@ class Quotation extends Model
 
     protected $casts = [
         'quotation_date' => 'date',
+        'valid_until' => 'date',
         'total_amount' => 'decimal:2',
     ];
 

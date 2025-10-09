@@ -33,26 +33,39 @@
     <!-- Stats Cards -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 
-        <a href="{{ route('admin.orders.index') }}" class="bg-white rounded-lg shadow p-6 border-l-4 border-green-500 hover:shadow-lg transition-shadow">
+        <div class="bg-white rounded-lg shadow p-6 border-l-4 border-green-500 hover:shadow-lg transition-shadow" x-data="{ salesVisible: true }">
             <div class="flex items-center justify-between">
                 <div>
-                     <p class="text-sm font-medium text-gray-600">
-                         @if(request('start_date') && request('end_date'))
-                             Sales ({{ \Carbon\Carbon::parse(request('start_date'))->format('M d') }} - {{ \Carbon\Carbon::parse(request('end_date'))->format('M d, Y') }})
-                         @else
-                             Total Sales (All Time)
-                         @endif
-                     </p>
-                     <p class="text-3xl font-bold text-gray-900">₱{{ number_format($stats['monthly_sales'], 2) }}</p>
+                     <div class="flex items-center justify-between mb-2">
+                         <p class="text-sm font-medium text-gray-600">
+                             @if(request('start_date') && request('end_date'))
+                                 Sales ({{ \Carbon\Carbon::parse(request('start_date'))->format('M d') }} - {{ \Carbon\Carbon::parse(request('end_date'))->format('M d, Y') }})
+                             @else
+                                 Total Sales (All Time)
+                             @endif
+                         </p>
+                         <button @click="salesVisible = !salesVisible" 
+                                 class="p-1 rounded-full hover:bg-gray-100 transition-colors"
+                                 :title="salesVisible ? 'Hide sales amount' : 'Show sales amount'">
+                             <i class="fas text-gray-500 transition-colors" 
+                                :class="salesVisible ? 'fa-eye-slash' : 'fa-eye'"></i>
+                         </button>
+                     </div>
+                     <div x-show="salesVisible" x-transition>
+                         <p class="text-3xl font-bold text-gray-900">₱{{ number_format($stats['monthly_sales'], 2) }}</p>
+                     </div>
+                     <div x-show="!salesVisible" x-transition>
+                         <p class="text-3xl font-bold text-gray-400">••••••</p>
+                     </div>
                 </div>
                 <div class="p-3 bg-green-500 bg-opacity-10 rounded-full">
                     <i class="fas fa-chart-line text-green-500 text-xl"></i>
                 </div>
             </div>
-        </a>
+        </div>
 
 
-        <a href="{{ route('admin.inventory.index') }}" class="bg-white rounded-lg shadow p-6 border-l-4 border-purple-500 hover:shadow-lg transition-shadow">
+        <a href="{{ route('admin.inventories.index') }}" class="bg-white rounded-lg shadow p-6 border-l-4 border-purple-500 hover:shadow-lg transition-shadow">
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-sm font-medium text-gray-600">Inventory Items</p>

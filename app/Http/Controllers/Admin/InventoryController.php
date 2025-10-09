@@ -16,7 +16,10 @@ class InventoryController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Inventory::with('supplier');
+        $showArchived = $request->boolean('archived');
+        $query = $showArchived
+            ? Inventory::withTrashed()->whereNotNull('deleted_at')->with('supplier')
+            : Inventory::with('supplier');
 
         // Search functionality
         if ($request->filled('search')) {
@@ -38,7 +41,7 @@ class InventoryController extends Controller
             ->whereRaw('stocks <= critical_level')
             ->count();
 
-        return view('admin.inventory.index', compact('inventories', 'criticalInventories'));
+        return view('admin.inventories.index', compact('inventories', 'criticalInventories', 'showArchived'));
     }
 
     /**
@@ -47,7 +50,7 @@ class InventoryController extends Controller
     public function create()
     {
         $suppliers = Supplier::all();
-        return view('admin.inventory.create', compact('suppliers'));
+        return view('admin.inventories.create', compact('suppliers'));
     }
 
     /**
@@ -81,7 +84,7 @@ class InventoryController extends Controller
 
             DB::commit();
 
-            return redirect()->route('admin.inventory.index')
+            return redirect()->route('admin.inventories.index')
                 ->with('success', 'Inventory item created successfully.');
         } catch (\Exception $e) {
             DB::rollBack();
@@ -97,7 +100,7 @@ class InventoryController extends Controller
     public function show(Inventory $inventory)
     {
         $inventory->load('supplier', 'stockUsages');
-        return view('admin.inventory.show', compact('inventory'));
+        return view('admin.inventories.show', compact('inventory'));
     }
 
     /**
@@ -106,7 +109,7 @@ class InventoryController extends Controller
     public function edit(Inventory $inventory)
     {
         $suppliers = Supplier::all();
-        return view('admin.inventory.edit', compact('inventory', 'suppliers'));
+        return view('admin.inventories.edit', compact('inventory', 'suppliers'));
     }
 
     /**
@@ -134,7 +137,7 @@ class InventoryController extends Controller
                 'last_updated' => now()
             ]);
 
-            return redirect()->route('admin.inventory.index')
+            return redirect()->route('admin.inventories.index')
                 ->with('success', 'Inventory item updated successfully.');
         } catch (\Exception $e) {
             return redirect()->back()
@@ -150,7 +153,7 @@ class InventoryController extends Controller
     {
         try {
             $inventory->delete();
-            return redirect()->route('admin.inventory.index')
+            return redirect()->route('admin.inventories.index')
                 ->with('success', 'Inventory item deleted successfully.');
         } catch (\Exception $e) {
             return redirect()->back()
@@ -226,6 +229,69 @@ class InventoryController extends Controller
             ->orderBy('stocks', 'asc')
             ->get();
 
-        return view('admin.inventory.critical', compact('inventories'));
+        return view('admin.inventories.critical', compact('inventories'));
+    }
+
+    /**
+     * Archive an inventory item.
+     */
+    public function archive(Inventory $inventory)
+    {
+        try {
+            $inventory->delete();
+            return redirect()->route('admin.inventories.index')
+                ->with('success', 'Inventory item archived successfully.');
+        } catch (\Exception $e) {
+            return redirect()->back()
+                ->with('error', 'Failed to archive inventory item. Please try again.');
+        }
+    }
+
+    /**
+     * Restore an archived inventory item.
+     */
+    public function restore($id)
+    {
+        try {
+            $inventory = Inventory::withTrashed()->findOrFail($id);
+            $inventory->restore();
+            return redirect()->route('admin.inventories.index')
+                ->with('success', 'Inventory item restored successfully.');
+        } catch (\Exception $e) {
+            return redirect()->back()
+                ->with('error', 'Failed to restore inventory item. Please try again.');
+        }
+    }
+
+    /**
+     * Search inventories for API.
+     */
+    public function search(Request $request)
+    {
+        $query = $request->get('q', '');
+        
+        $inventories = Inventory::where('is_active', true)
+            ->where(function($q) use ($query) {
+                $q->where('name', 'like', "%{$query}%")
+                  ->orWhere('inventory_id', 'like', "%{$query}%");
+            })
+            ->limit(10)
+            ->get(['id', 'inventory_id', 'name', 'stocks', 'unit']);
+
+        return response()->json($inventories);
+    }
+
+    /**
+     * Search suppliers for API.
+     */
+    public function searchSuppliers(Request $request)
+    {
+        $query = $request->get('q', '');
+        
+        $suppliers = Supplier::where('supplier_name', 'like', "%{$query}%")
+            ->limit(10)
+            ->get(['supplier_id', 'supplier_name']);
+
+        return response()->json($suppliers);
     }
 }

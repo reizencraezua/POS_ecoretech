@@ -100,15 +100,21 @@
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
                                 <div class="flex items-center space-x-2">
-                                    <!-- Edit Employee -->
-                                    <a href="{{ route('admin.employees.edit', $employee) }}" class="text-maroon hover:text-maroon-dark transition-colors" title="Edit Employee" onclick="event.stopPropagation();">
-                                        <i class="fas fa-edit"></i>
-                                    </a>
-                                    
-                                    <!-- Delete Employee -->
-                                    <button onclick="event.stopPropagation(); confirmDelete({{ $employee->employee_id }})" class="text-red-600 hover:text-red-900 transition-colors" title="Delete Employee">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
+                                    @if($showArchived)
+                                        <x-archive-actions 
+                                            :item="$employee" 
+                                            :archiveRoute="'admin.employees.archive'" 
+                                            :restoreRoute="'admin.employees.restore'" 
+                                            :editRoute="'admin.employees.edit'"
+                                            :showRestore="true" />
+                                    @else
+                                        <x-archive-actions 
+                                            :item="$employee" 
+                                            :archiveRoute="'admin.employees.archive'" 
+                                            :restoreRoute="'admin.employees.restore'" 
+                                            :editRoute="'admin.employees.edit'"
+                                            :showRestore="false" />
+                                    @endif
                                 </div>
                             </td>
                         </tr>

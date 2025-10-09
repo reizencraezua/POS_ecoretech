@@ -1,51 +1,58 @@
 @extends('layouts.admin')
 
 @section('title', 'Deliveries')
+@section('page-title', 'Delivery Management')
+@section('page-description', 'Manage delivery schedules and track delivery status')
+
 
 @section('content')
-<div class="container mx-auto px-4 py-6">
-    <div class="max-w-7xl mx-auto">
-        <!-- Header -->
-        <div class="mb-8 flex justify-between items-center">
-            <div>
-                <h1 class="text-3xl font-bold text-gray-900">Deliveries</h1>
-                <p class="text-gray-600 mt-2">Manage delivery schedules and tracking</p>
-            </div>
-            <a href="{{ route('admin.deliveries.create') }}" 
-               class="px-4 py-2 bg-maroon text-white rounded-md hover:bg-maroon-700">
-                Schedule Delivery
-            </a>
-        </div>
+<div class="space-y-6">
 
-        <!-- Search and Filters -->
-        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
-            <form method="GET" class="flex flex-wrap gap-4">
-                <div class="flex-1 min-w-64">
-                    <input type="text" name="search" value="{{ request('search') }}" 
-                           placeholder="Search deliveries..." 
-                           class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon">
+    <!-- Header Actions -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+        <div class="flex items-center space-x-4">
+            @if(!$showArchived)
+                <a href="{{ route('admin.deliveries.create') }}" class="bg-maroon hover:bg-maroon-dark text-white px-4 py-2 rounded-lg font-medium transition-colors inline-flex items-center">
+                    <i class="fas fa-plus mr-2"></i>
+                    Schedule Delivery
+                </a>
+            @endif
+        </div>
+        
+        <!-- Search and Archive Toggle -->
+        <div class="flex items-center space-x-4">
+            <!-- Archive Toggle -->
+            <a href="{{ route('admin.deliveries.index', array_merge(request()->query(), ['archived' => isset($showArchived) && $showArchived ? 0 : 1])) }}"
+               class="px-4 py-2 rounded-lg font-medium transition-colors inline-flex items-center border {{ (isset($showArchived) && $showArchived) ? 'border-green-600 text-green-700 hover:bg-green-50' : 'border-gray-300 text-gray-700 hover:bg-gray-50' }}">
+                <i class="fas fa-box-archive mr-2"></i>
+                {{ (isset($showArchived) && $showArchived) ? 'Show Active' : 'View Archives' }}
+            </a>
+            
+            <!-- Search and Filters -->
+            <form method="GET" class="flex items-center space-x-2">
+                <div class="relative">
+                    <input type="text" name="search" value="{{ request('search') }}" placeholder="Search deliveries..." 
+                           class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-maroon focus:border-maroon">
+                    <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
                 </div>
-                <div>
-                    <select name="status" class="px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon">
-                        <option value="">All Status</option>
-                        <option value="scheduled" {{ request('status') == 'scheduled' ? 'selected' : '' }}>Scheduled</option>
-                        <option value="in_transit" {{ request('status') == 'in_transit' ? 'selected' : '' }}>In Transit</option>
-                        <option value="delivered" {{ request('status') == 'delivered' ? 'selected' : '' }}>Delivered</option>
-                        <option value="cancelled" {{ request('status') == 'cancelled' ? 'selected' : '' }}>Cancelled</option>
-                    </select>
-                </div>
-                <button type="submit" 
-                        class="px-6 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700">
-                    Search
+                <select name="status" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-maroon focus:border-maroon">
+                    <option value="">All Status</option>
+                    <option value="scheduled" {{ request('status') == 'scheduled' ? 'selected' : '' }}>Scheduled</option>
+                    <option value="in_transit" {{ request('status') == 'in_transit' ? 'selected' : '' }}>In Transit</option>
+                    <option value="delivered" {{ request('status') == 'delivered' ? 'selected' : '' }}>Delivered</option>
+                    <option value="cancelled" {{ request('status') == 'cancelled' ? 'selected' : '' }}>Cancelled</option>
+                </select>
+                <button type="submit" class="bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-lg transition-colors">
+                    <i class="fas fa-search"></i>
                 </button>
                 @if(request('search') || request('status'))
-                    <a href="{{ route('admin.deliveries.index') }}" 
-                       class="px-6 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50">
-                        Clear
+                    <a href="{{ route('admin.deliveries.index') }}" class="bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-lg transition-colors">
+                        <i class="fas fa-times"></i>
                     </a>
                 @endif
             </form>
         </div>
+    </div>
 
         <!-- Deliveries Table -->
         <div class="bg-white rounded-lg shadow-md overflow-hidden">
@@ -58,17 +65,25 @@
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Delivery Date</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Driver</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                         </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
                         @forelse($deliveries as $delivery)
-                        <tr class="hover:bg-gray-50">
+                        <tr class="hover:bg-gray-50 transition-colors cursor-pointer" onclick="window.location.href='{{ route('admin.deliveries.show', $delivery) }}'">
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <div class="text-sm font-medium text-gray-900">Order #{{ $delivery->order_id }}</div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm text-gray-900">{{ $delivery->order->customer->customer_firstname }} {{ $delivery->order->customer->customer_lastname }}</div>
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-8 h-8 bg-maroon text-white rounded-full flex items-center justify-center text-sm font-bold">
+                                        {{ substr($delivery->order->customer->customer_firstname, 0, 1) }}{{ substr($delivery->order->customer->customer_lastname, 0, 1) }}
+                                    </div>
+                                    <div>
+                                        <div class="text-sm font-medium text-gray-900">{{ $delivery->order->customer->customer_firstname }} {{ $delivery->order->customer->customer_lastname }}</div>
+                                        <div class="text-sm text-gray-500">{{ $delivery->order->customer->customer_contact ?? 'No contact' }}</div>
+                                    </div>
+                                </div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                 {{ $delivery->delivery_date->format('M d, Y') }}
@@ -84,30 +99,50 @@
                                 </span>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                {{ $delivery->driver_name ?? 'N/A' }}
+                                @if($delivery->employee)
+                                    <div class="text-sm font-medium text-gray-900">{{ $delivery->employee->full_name }}</div>
+                                    <div class="text-sm text-gray-500">{{ $delivery->employee->job->job_title ?? 'No Job Title' }}</div>
+                                @elseif($delivery->driver_name)
+                                    <div class="text-sm font-medium text-gray-900">{{ $delivery->driver_name }}</div>
+                                    <div class="text-sm text-gray-500">External Driver</div>
+                                @else
+                                    <span class="text-sm text-gray-500">Not Assigned</span>
+                                @endif
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                <div class="flex space-x-2">
-                                    <a href="{{ route('admin.deliveries.show', $delivery) }}" 
-                                       class="text-blue-600 hover:text-blue-900">View</a>
-                                    <a href="{{ route('admin.deliveries.edit', $delivery) }}" 
-                                       class="text-indigo-600 hover:text-indigo-900">Edit</a>
-                                    <form action="{{ route('admin.deliveries.destroy', $delivery) }}" method="POST" class="inline">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" 
-                                                class="text-red-600 hover:text-red-900"
-                                                onclick="return confirm('Are you sure you want to delete this delivery?')">
-                                            Delete
-                                        </button>
-                                    </form>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium" onclick="event.stopPropagation()">
+                                <div class="flex items-center justify-center space-x-3">
+                                    @if($showArchived)
+                                        <x-archive-actions 
+                                            :item="$delivery" 
+                                            :archiveRoute="'admin.deliveries.archive'" 
+                                            :restoreRoute="'admin.deliveries.restore'" 
+                                            :editRoute="'admin.deliveries.edit'"
+                                            :showRestore="true" />
+                                    @else
+                                        <x-archive-actions 
+                                            :item="$delivery" 
+                                            :archiveRoute="'admin.deliveries.archive'" 
+                                            :restoreRoute="'admin.deliveries.restore'" 
+                                            :editRoute="'admin.deliveries.edit'"
+                                            :showRestore="false" />
+                                    @endif
                                 </div>
                             </td>
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="6" class="px-6 py-4 text-center text-gray-500">
-                                No deliveries found.
+                            <td colspan="6" class="px-6 py-12 text-center">
+                                <div class="text-gray-400">
+                                    <i class="fas fa-truck text-4xl mb-4"></i>
+                                    <p class="text-lg font-medium">No deliveries found</p>
+                                    <p class="text-sm">Schedule your first delivery to get started</p>
+                                    @if(!$showArchived)
+                                        <a href="{{ route('admin.deliveries.create') }}" class="bg-maroon hover:bg-maroon-dark text-white px-4 py-2 rounded-lg font-medium transition-colors inline-flex items-center mt-4">
+                                            <i class="fas fa-plus mr-2"></i>
+                                            Schedule Delivery
+                                        </a>
+                                    @endif
+                                </div>
                             </td>
                         </tr>
                         @endforelse
