@@ -188,17 +188,48 @@
                                 </td>
                                 <td class="px-4 py-4">
                                     <input type="number" name="items[{{ $index }}][quantity]" value="{{ $detail->quantity }}" min="1" required 
-                                           class="w-20 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon">
-                                </td>
-                                <td class="px-4 py-4">
-                                    <input type="text" name="items[{{ $index }}][unit]" value="{{ $detail->unit }}"
                                            class="w-20 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon"
-                                           placeholder="Pcs">
+                                           oninput="recalculateOrderSummary()">
                                 </td>
                                 <td class="px-4 py-4">
-                                    <input type="text" name="items[{{ $index }}][size]" value="{{ $detail->size }}"
-                                           class="w-24 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon"
-                                           placeholder="Size">
+                                    <select name="items[{{ $index }}][unit_id]" required
+                                            class="w-24 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon"
+                                            onchange="recalculateOrderSummary()">
+                                        <option value="">Select Unit</option>
+                                        @foreach($units as $unit)
+                                            <option value="{{ $unit->unit_id }}" {{ $detail->unit_id == $unit->unit_id ? 'selected' : '' }}>
+                                                {{ $unit->unit_name }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </td>
+                                <td class="px-4 py-4">
+                                    <select name="items[{{ $index }}][size]" 
+                                            class="w-24 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon"
+                                            onchange="recalculateOrderSummary()">
+                                        <option value="">Select Size</option>
+                                        @if($detail->product_id)
+                                            @php
+                                                $product = $products->firstWhere('product_id', $detail->product_id);
+                                                $availableSizes = $product ? $product->category->sizes : collect();
+                                            @endphp
+                                            @foreach($availableSizes as $size)
+                                                <option value="{{ $size->size_name }}" {{ $detail->size == $size->size_name ? 'selected' : '' }}>
+                                                    {{ $size->size_name }}
+                                                </option>
+                                            @endforeach
+                                        @elseif($detail->service_id)
+                                            @php
+                                                $service = $services->firstWhere('service_id', $detail->service_id);
+                                                $availableSizes = $service ? $service->category->sizes : collect();
+                                            @endphp
+                                            @foreach($availableSizes as $size)
+                                                <option value="{{ $size->size_name }}" {{ $detail->size == $size->size_name ? 'selected' : '' }}>
+                                                    {{ $size->size_name }}
+                                                </option>
+                                            @endforeach
+                                        @endif
+                                    </select>
                                 </td>
                                 <td class="px-4 py-4">
                                     <input type="number" name="items[{{ $index }}][price]" value="{{ $detail->price }}" step="0.01" min="0" required readonly
@@ -208,7 +239,8 @@
                                 <td class="px-4 py-4">
                                     <div class="flex items-center space-x-2">
                                         <input type="checkbox" name="items[{{ $index }}][layout]" value="1" {{ $detail->layout ? 'checked' : '' }}
-                                               class="h-4 w-4 text-maroon focus:ring-maroon border-gray-300 rounded">
+                                               class="h-4 w-4 text-maroon focus:ring-maroon border-gray-300 rounded"
+                                               onchange="recalculateOrderSummary()">
                                         <span class="text-xs text-gray-600">{{ $detail->layout_price > 0 ? '₱' . number_format($detail->layout_price, 2) : '' }}</span>
                                         <input type="hidden" name="items[{{ $index }}][layoutPrice]" value="{{ $detail->layout_price ?? 0 }}">
                                     </div>
@@ -252,9 +284,13 @@
                                                min="1" required class="w-20 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon">
                                     </td>
                                     <td class="px-4 py-4">
-                                        <input type="text" x-model="item.unit" :name="`items[${index + {{ $order->details->count() }} }][unit]`" 
-                                               class="w-20 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon"
-                                               placeholder="Pcs" value="Pcs">
+                                        <select x-model="item.unit_id" :name="`items[${index + {{ $order->details->count() }} }][unit_id]`" required
+                                                class="w-24 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon">
+                                            <option value="">Select Unit</option>
+                                            <template x-for="unit in units">
+                                                <option :value="unit.unit_id" x-text="unit.unit_name"></option>
+                                            </template>
+                                        </select>
                                     </td>
                                     <td class="px-4 py-4">
                                         <select x-model="item.size" :name="`items[${index + {{ $order->details->count() }} }][size]`" 
@@ -318,33 +354,33 @@
                             <!-- No. of Items -->
                             <div class="flex justify-between items-center py-2 border-b border-gray-100">
                                 <span class="text-sm text-gray-600">No. of items: </span>
-                                <span class="text-sm font-medium text-gray-900" x-text="getTotalQuantity()"></span>
+                                <span class="text-sm font-medium text-gray-900" x-text="getTotalQuantity()" data-summary="items-count"></span>
                             </div>
 
 
                             <!-- Base Amount -->
                             <div class="flex justify-between items-center py-2 border-b border-gray-100">
                                 <span class="text-sm text-gray-600">Base Amount: </span>
-                                <span class="text-sm font-medium text-gray-900" x-text="'₱' + getBaseAmount().toFixed(2)"></span>
+                                <span class="text-sm font-medium text-gray-900" x-text="'₱' + getBaseAmount().toFixed(2)" data-summary="base-amount"></span>
                             </div>
 
                             <!-- VAT Tax -->
                             <div class="flex justify-between items-center py-2 border-b border-gray-100">
                                 <span class="text-sm text-gray-600">VAT Tax (12%): </span>
-                                <span class="text-sm font-medium text-gray-900" x-text="'₱' + getVATAmount().toFixed(2)"></span>
+                                <span class="text-sm font-medium text-gray-900" x-text="'₱' + getVATAmount().toFixed(2)" data-summary="vat-amount"></span>
                             </div>
 
                             <!-- Sub Total -->
                             <div class="flex justify-between items-center py-2 border-b border-gray-100">
                                 <span class="text-sm text-gray-600">Sub Total: </span>
-                                <span class="text-sm font-medium text-gray-900" x-text="'₱' + getSubTotal().toFixed(2)"></span>
+                                <span class="text-sm font-medium text-gray-900" x-text="'₱' + getSubTotal().toFixed(2)" data-summary="sub-total"></span>
                             </div>
                             
                             <!-- Order Discount -->
                             <div class="flex justify-between items-center py-2 border-b border-gray-100">
                                 <span class="text-sm text-gray-600">Order Discount:</span>
                                 <div class="text-right">
-                                    <div class="text-sm font-medium text-green-600" x-text="'-₱' + getOrderDiscount().toFixed(2)"></div>
+                                    <div class="text-sm font-medium text-green-600" x-text="'-₱' + getOrderDiscount().toFixed(2)" data-summary="discount-amount"></div>
                                     <div class="text-xs text-gray-500" x-text="getDiscountInfo()"></div>
                                 </div>
                             </div>
@@ -353,13 +389,13 @@
                             <!-- Layout Fees -->
                             <div class="flex justify-between items-center py-2 border-b border-gray-100">
                                 <span class="text-sm text-gray-600">Layout Fees: </span>
-                                <span class="text-sm font-medium text-gray-900" x-text="'₱' + getLayoutFees().toFixed(2)"></span>
+                                <span class="text-sm font-medium text-gray-900" x-text="'₱' + getLayoutFees().toFixed(2)" data-summary="layout-fees"></span>
                             </div>
 
                             <!-- Final Total Amount -->
                             <div class="flex justify-between items-center py-3 border-t-2 border-maroon">
                                 <span class="text-lg font-semibold text-gray-900">TOTAL AMOUNT: </span>
-                                <span class="text-xl font-bold text-maroon" x-text="'₱' + getFinalTotalAmount().toFixed(2)"></span>
+                                <span class="text-xl font-bold text-maroon" x-text="'₱' + getFinalTotalAmount().toFixed(2)" data-summary="total-amount"></span>
                             </div>
                         </div>
                     </div>
@@ -423,11 +459,11 @@
                                 <div class="bg-maroon text-white rounded-lg p-4">
                                     <div class="flex justify-between items-center">
                                         <span class="font-semibold">Total Paid:</span>
-                                        <span class="text-xl font-bold">₱{{ number_format($order->payments->sum('amount_paid'), 2) }}</span>
+                                        <span class="text-xl font-bold" data-payment="total-paid">₱{{ number_format($order->payments->sum('amount_paid'), 2) }}</span>
                                     </div>
                                     <div class="flex justify-between items-center mt-1">
                                         <span class="text-sm opacity-90">Remaining Balance:</span>
-                                        <span class="text-lg font-semibold">₱{{ number_format($order->remaining_balance, 2) }}</span>
+                                        <span class="text-lg font-semibold" data-payment="remaining-balance">₱{{ number_format($order->remaining_balance, 2) }}</span>
                                     </div>
                                 </div>
                             </div>
@@ -538,6 +574,7 @@ function orderForm() {
         services: @json($services),
         employees: @json($employees),
         customers: @json($customers),
+        units: @json($units),
         discountRules: @json($discountRules),
         
         addItem() {
@@ -546,7 +583,7 @@ function orderForm() {
                 type: '',
                 id: '',
                 quantity: 1,
-                unit: 'Pcs',
+                unit_id: '',
                 size: '',
                 price: 0,
                 layout: false,
@@ -973,5 +1010,176 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
 });
+
+// Function to recalculate order summary when existing items are modified
+function recalculateOrderSummary() {
+    // Get all existing order items
+    const existingItems = [];
+    const itemRows = document.querySelectorAll('tbody tr');
+    
+    itemRows.forEach((row, index) => {
+        // Skip Alpine.js dynamic items (they have x-model attributes)
+        const hasAlpineModel = row.querySelector('[x-model]');
+        if (hasAlpineModel) return;
+        
+        const typeSelect = row.querySelector('select[name*="[type]"]');
+        const idSelect = row.querySelector('select[name*="[id]"]');
+        const quantityInput = row.querySelector('input[name*="[quantity]"]');
+        const priceInput = row.querySelector('input[name*="[price]"]');
+        const layoutCheckbox = row.querySelector('input[name*="[layout]"]');
+        const layoutPriceInput = row.querySelector('input[name*="[layoutPrice]"]');
+        
+        if (typeSelect && idSelect && quantityInput && priceInput) {
+            const item = {
+                type: typeSelect.value,
+                id: idSelect.value,
+                quantity: parseFloat(quantityInput.value) || 0,
+                price: parseFloat(priceInput.value) || 0,
+                layout: layoutCheckbox ? layoutCheckbox.checked : false,
+                layoutPrice: layoutPriceInput ? parseFloat(layoutPriceInput.value) || 0 : 0
+            };
+            existingItems.push(item);
+        }
+    });
+    
+    // Calculate totals
+    let totalQuantity = 0;
+    let baseAmount = 0;
+    let layoutFees = 0;
+    
+    existingItems.forEach(item => {
+        totalQuantity += item.quantity;
+        baseAmount += item.quantity * item.price;
+        if (item.layout) {
+            layoutFees += item.layoutPrice;
+        }
+    });
+    
+    // Add new items from Alpine.js if available
+    if (window.Alpine && window.Alpine.store && window.Alpine.store('orderForm')) {
+        const alpineData = window.Alpine.store('orderForm');
+        if (alpineData && alpineData.items) {
+            alpineData.items.forEach(item => {
+                totalQuantity += parseFloat(item.quantity) || 0;
+                baseAmount += (parseFloat(item.quantity) || 0) * (parseFloat(item.price) || 0);
+                if (item.layout) {
+                    layoutFees += parseFloat(item.layoutPrice) || 0;
+                }
+            });
+        }
+    }
+    
+    // Calculate using the correct formula
+    // Formula 1: Sub Total = (Quantity × Unit Price)
+    const subTotal = baseAmount;
+    
+    // Formula 2: VAT Tax = Sub Total × 0.12
+    const vatAmount = subTotal * 0.12;
+    
+    // Formula 3: Base Amount = Sub Total - VAT
+    const baseAmountAfterVAT = subTotal - vatAmount;
+    
+    // Formula 4: Calculate discount based on total quantity
+    let discountAmount = 0;
+    const discountRules = @json($discountRules);
+    for (const rule of discountRules) {
+        if (totalQuantity >= rule.min_quantity && (rule.max_quantity === null || totalQuantity <= rule.max_quantity)) {
+            if (rule.discount_type === 'percentage') {
+                discountAmount = subTotal * (rule.discount_percentage / 100);
+            } else {
+                discountAmount = rule.discount_amount;
+            }
+            break;
+        }
+    }
+    
+    // Formula 5: Final Total Amount = (Sub Total - Discount Amount) + layout fees
+    const finalTotal = (subTotal - discountAmount) + layoutFees;
+    
+    // Update the order summary display
+    updateOrderSummaryDisplay({
+        totalQuantity: totalQuantity,
+        baseAmount: baseAmountAfterVAT,
+        vatAmount: vatAmount,
+        subTotal: subTotal,
+        discountAmount: discountAmount,
+        layoutFees: layoutFees,
+        finalTotal: finalTotal
+    });
+    
+    // Update payment information
+    updatePaymentInformation(finalTotal);
+}
+
+// Function to update the order summary display
+function updateOrderSummaryDisplay(totals) {
+    // Update No. of items
+    const itemsCountElement = document.querySelector('[data-summary="items-count"]');
+    if (itemsCountElement) {
+        itemsCountElement.textContent = totals.totalQuantity;
+    }
+    
+    // Update Base Amount
+    const baseAmountElement = document.querySelector('[data-summary="base-amount"]');
+    if (baseAmountElement) {
+        baseAmountElement.textContent = '₱' + totals.baseAmount.toFixed(2);
+    }
+    
+    // Update VAT
+    const vatElement = document.querySelector('[data-summary="vat-amount"]');
+    if (vatElement) {
+        vatElement.textContent = '₱' + totals.vatAmount.toFixed(2);
+    }
+    
+    // Update Sub Total
+    const subTotalElement = document.querySelector('[data-summary="sub-total"]');
+    if (subTotalElement) {
+        subTotalElement.textContent = '₱' + totals.subTotal.toFixed(2);
+    }
+    
+    // Update Order Discount
+    const discountElement = document.querySelector('[data-summary="discount-amount"]');
+    if (discountElement) {
+        discountElement.textContent = '₱' + totals.discountAmount.toFixed(2);
+    }
+    
+    // Update Layout Fees
+    const layoutFeesElement = document.querySelector('[data-summary="layout-fees"]');
+    if (layoutFeesElement) {
+        layoutFeesElement.textContent = '₱' + totals.layoutFees.toFixed(2);
+    }
+    
+    // Update Total Amount
+    const totalAmountElement = document.querySelector('[data-summary="total-amount"]');
+    if (totalAmountElement) {
+        totalAmountElement.textContent = '₱' + totals.finalTotal.toFixed(2);
+    }
+}
+
+// Function to update payment information
+function updatePaymentInformation(newTotalAmount) {
+    // Get existing total paid amount (this doesn't change when items are modified)
+    const totalPaidElement = document.querySelector('[data-payment="total-paid"]');
+    const remainingBalanceElement = document.querySelector('[data-payment="remaining-balance"]');
+    
+    if (totalPaidElement && remainingBalanceElement) {
+        // Extract the current total paid amount from the existing text
+        const currentTotalPaidText = totalPaidElement.textContent;
+        const totalPaidAmount = parseFloat(currentTotalPaidText.replace('₱', '').replace(/,/g, '')) || 0;
+        
+        // Calculate new remaining balance
+        const newRemainingBalance = newTotalAmount - totalPaidAmount;
+        
+        // Update remaining balance display
+        remainingBalanceElement.textContent = '₱' + newRemainingBalance.toFixed(2);
+        
+        // Update the color based on balance
+        if (newRemainingBalance <= 0) {
+            remainingBalanceElement.className = 'text-lg font-semibold text-green-300';
+        } else {
+            remainingBalanceElement.className = 'text-lg font-semibold';
+        }
+    }
+}
 </script>
 @endsection

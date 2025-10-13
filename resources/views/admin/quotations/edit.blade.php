@@ -130,16 +130,12 @@
                                                min="1" required class="w-20 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon">
                                     </td>
                                     <td class="px-4 py-4">
-                                        <select x-model="item.unit" :name="`items[${index}][unit]`" 
-                                                class="w-20 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon">
-                                            <option value="Pcs" :selected="item.unit == 'Pcs'">Pcs</option>
-                                            <option value="Set" :selected="item.unit == 'Set'">Set</option>
-                                            <option value="Box" :selected="item.unit == 'Box'">Box</option>
-                                            <option value="Pack" :selected="item.unit == 'Pack'">Pack</option>
-                                            <option value="Roll" :selected="item.unit == 'Roll'">Roll</option>
-                                            <option value="Sheet" :selected="item.unit == 'Sheet'">Sheet</option>
-                                            <option value="Meter" :selected="item.unit == 'Meter'">Meter</option>
-                                            <option value="Foot" :selected="item.unit == 'Foot'">Foot</option>
+                                        <select x-model="item.unit_id" :name="`items[${index}][unit_id]`" 
+                                                class="w-24 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon">
+                                            <option value="">Select Unit</option>
+                                            <template x-for="unit in units" :key="unit.unit_id">
+                                                <option :value="unit.unit_id" :selected="item.unit_id == unit.unit_id" x-text="unit.unit_name"></option>
+                                            </template>
                                         </select>
                                     </td>
                                     <td class="px-4 py-4">
@@ -296,6 +292,7 @@ function quotationForm() {
         products: @json($products),
         services: @json($services),
         customers: @json($customers),
+        units: @json($units),
         discountRules: @json($discountRules),
         
         addItem() {
@@ -304,7 +301,7 @@ function quotationForm() {
                 type: '',
                 id: '',
                 quantity: 1,
-                unit: 'Pcs',
+                unit_id: '',
                 size: '',
                 price: 0,
                 layout: false,
@@ -477,7 +474,7 @@ function quotationForm() {
                     type: detail.product_id ? 'product' : 'service',
                     id: detail.product_id || detail.service_id,
                     quantity: detail.quantity,
-                    unit: detail.unit || 'Pcs',
+                    unit_id: detail.unit_id || '',
                     size: detail.size || '',
                     price: parseFloat(detail.price) || 0,
                     layout: detail.layout || false,

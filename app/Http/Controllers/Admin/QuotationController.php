@@ -30,14 +30,40 @@ class QuotationController extends Controller
 
         if ($request->has('search')) {
             $search = $request->search;
-            $query->whereHas('customer', function ($q) use ($search) {
-                $q->where('customer_firstname', 'like', "%{$search}%")
-                    ->orWhere('customer_lastname', 'like', "%{$search}%")
-                    ->orWhere('business_name', 'like', "%{$search}%");
+            $query->where(function ($q) use ($search) {
+                // Search in quotation fields
+                $q->where('quotation_id', 'like', "%{$search}%")
+                  ->orWhere('status', 'like', "%{$search}%")
+                  ->orWhere('notes', 'like', "%{$search}%")
+                  ->orWhere('terms_and_conditions', 'like', "%{$search}%")
+                  ->orWhere('total_amount', 'like', "%{$search}%")
+                  // Search in customer fields
+                  ->orWhereHas('customer', function ($customerQuery) use ($search) {
+                      $customerQuery->where('customer_firstname', 'like', "%{$search}%")
+                                   ->orWhere('customer_lastname', 'like', "%{$search}%")
+                                   ->orWhere('business_name', 'like', "%{$search}%")
+                                   ->orWhere('customer_email', 'like', "%{$search}%")
+                                   ->orWhere('customer_phone', 'like', "%{$search}%")
+                                   ->orWhere('customer_address', 'like', "%{$search}%");
+                  })
+                  // Search in quotation details
+                  ->orWhereHas('details', function ($detailQuery) use ($search) {
+                      $detailQuery->where('product_name', 'like', "%{$search}%")
+                                 ->orWhere('service_name', 'like', "%{$search}%")
+                                 ->orWhere('description', 'like', "%{$search}%")
+                                 ->orWhere('quantity', 'like', "%{$search}%")
+                                 ->orWhere('unit_price', 'like', "%{$search}%")
+                                 ->orWhere('total_price', 'like', "%{$search}%");
+                  });
             });
         }
 
         $quotations = $query->latest('quotation_date')->paginate(15)->appends($request->query());
+
+        // If it's an AJAX request, return only the table content
+        if ($request->ajax()) {
+            return view('admin.quotations.partials.quotations-table', compact('quotations', 'showArchived'));
+        }
 
         return view('admin.quotations.index', compact('quotations', 'showArchived'));
     }
@@ -154,7 +180,7 @@ class QuotationController extends Controller
 
     public function show(Quotation $quotation)
     {
-        $quotation->load(['customer', 'details.product', 'details.service']);
+        $quotation->load(['customer', 'details.product', 'details.service', 'details.unit']);
         return view('admin.quotations.show', compact('quotation'));
     }
 
@@ -164,9 +190,10 @@ class QuotationController extends Controller
         $products = Product::with(['category.sizes'])->orderBy('product_name')->get();
         $services = Service::with(['category.sizes'])->orderBy('service_name')->get();
         $discountRules = DiscountRule::active()->validAt()->orderBy('min_quantity')->get();
+        $units = \App\Models\Unit::where('is_active', true)->orderBy('unit_name')->get();
         $quotation->load(['details']);
 
-        return view('admin.quotations.edit', compact('quotation', 'customers', 'products', 'services', 'discountRules'));
+        return view('admin.quotations.edit', compact('quotation', 'customers', 'products', 'services', 'discountRules', 'units'));
     }
 
     public function update(Request $request, Quotation $quotation)
@@ -181,7 +208,7 @@ class QuotationController extends Controller
             'items.*.type' => 'required|in:product,service',
             'items.*.id' => 'required|integer',
             'items.*.quantity' => 'required|integer|min:1',
-            'items.*.unit' => 'nullable|string',
+            'items.*.unit_id' => 'required|exists:units,unit_id',
             'items.*.size' => 'nullable|string',
             'items.*.price' => 'required|numeric|min:0',
             'items.*.layout' => 'nullable|in:on,1,true,false,0',
@@ -210,7 +237,7 @@ class QuotationController extends Controller
 
             $quotation->details()->create([
                 'quantity' => $item['quantity'],
-                'unit' => $item['unit'],
+                'unit_id' => $item['unit_id'],
                 'size' => $item['size'],
                 'price' => $item['price'],
                 'subtotal' => $baseAmount, // Store base amount (Quantity × Price)

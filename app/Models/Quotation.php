@@ -20,6 +20,7 @@ class Quotation extends Model
         'status',
         'customer_id',
         'total_amount',
+        'created_by',
     ];
 
     protected $casts = [
@@ -29,6 +30,7 @@ class Quotation extends Model
     ];
 
     const STATUS_PENDING = 'Pending';
+    const STATUS_APPROVED = 'Approved';
     const STATUS_CLOSED = 'Closed';
 
     public function customer()
@@ -39,6 +41,11 @@ class Quotation extends Model
     public function details()
     {
         return $this->hasMany(QuotationDetail::class, 'quotation_id');
+    }
+
+    public function creator()
+    {
+        return $this->belongsTo(User::class, 'created_by');
     }
 
     // Calculation methods following the same formula as orders
@@ -129,5 +136,15 @@ class Quotation extends Model
             }
         }
         return null;
+    }
+
+    /**
+     * Generate a unique quotation ID
+     */
+    public static function generateQuotationId()
+    {
+        $lastQuotation = self::orderBy('quotation_id', 'desc')->first();
+        $lastId = $lastQuotation ? (int) $lastQuotation->quotation_id : 0;
+        return str_pad($lastId + 1, 5, '0', STR_PAD_LEFT);
     }
 }

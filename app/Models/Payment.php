@@ -23,6 +23,7 @@ class Payment extends Model
         'reference_number',
         'remarks',
         'order_id',
+        'created_by',
     ];
 
     protected $casts = [
@@ -41,6 +42,11 @@ class Payment extends Model
     public function order()
     {
         return $this->belongsTo(Order::class, 'order_id');
+    }
+
+    public function creator()
+    {
+        return $this->belongsTo(User::class, 'created_by');
     }
 
     /**
@@ -70,5 +76,30 @@ class Payment extends Model
         
         $order = $this->orderWithTrashed()->first();
         return $order->trashed() ? 'deleted' : 'active';
+    }
+
+    /**
+     * Generate a unique payment ID
+     */
+    public static function generatePaymentId()
+    {
+        $prefix = 'PAY';
+        $year = date('Y');
+        $month = date('m');
+        
+        // Get the last payment for this year and month
+        $lastPayment = self::where('payment_id', 'like', $prefix . $year . $month . '%')
+            ->orderBy('payment_id', 'desc')
+            ->first();
+        
+        if ($lastPayment) {
+            // Extract the number part and increment
+            $lastNumber = (int) substr($lastPayment->payment_id, -4);
+            $newNumber = $lastNumber + 1;
+        } else {
+            $newNumber = 1;
+        }
+        
+        return $prefix . $year . $month . str_pad($newNumber, 4, '0', STR_PAD_LEFT);
     }
 }

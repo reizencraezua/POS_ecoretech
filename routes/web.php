@@ -72,7 +72,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
 		// Orders
 		Route::resource('orders', OrderController::class);
 		Route::patch('orders/{order}/status', [OrderController::class, 'updateStatus'])->name('orders.status');
-		Route::delete('orders/{order}/archive', [OrderController::class, 'archive'])->name('orders.archive');
+		Route::post('orders/{order}/archive', [OrderController::class, 'archive'])->name('orders.archive');
 		Route::patch('orders/{order}/restore', [OrderController::class, 'restore'])->name('orders.restore');
 
 		// Products & Services
@@ -106,6 +106,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
 		Route::post('discount-rules/{discountRule}/restore', [DiscountRuleController::class, 'restore'])->name('discount-rules.restore');
 
 		// Payments
+		Route::get('payments/print-summary', [PaymentController::class, 'printSummary'])->name('payments.print-summary');
 		Route::resource('payments', PaymentController::class);
 		Route::post('payments/{payment}/archive', [PaymentController::class, 'archive'])->name('payments.archive');
 		Route::post('payments/{payment}/restore', [PaymentController::class, 'restore'])->name('payments.restore');
@@ -151,6 +152,8 @@ Route::prefix('cashier')->name('cashier.')->group(function () {
 
 		// Quotations
 		Route::resource('quotations', CashierQuotationController::class);
+		Route::patch('quotations/{quotation}/status', [CashierQuotationController::class, 'updateStatus'])->name('quotations.status');
+		Route::get('quotations/{quotation}/data', [CashierQuotationController::class, 'getData'])->name('quotations.data');
 		Route::post('quotations/convert-to-job', [CashierQuotationController::class, 'convertToJob'])->name('quotations.convert-to-job');
 
 		// Job Orders (Orders)
@@ -162,8 +165,15 @@ Route::prefix('cashier')->name('cashier.')->group(function () {
 		Route::resource('deliveries', CashierDeliveryController::class);
 
 		// Payments
+		Route::get('payments/print-summary', [CashierPaymentController::class, 'printSummary'])->name('payments.print-summary');
 		Route::resource('payments', CashierPaymentController::class);
 		Route::get('payments/{payment}/print', [CashierPaymentController::class, 'print'])->name('payments.print');
+		Route::post('payments/{payment}/archive', [CashierPaymentController::class, 'archive'])->name('payments.archive');
+		Route::post('payments/{id}/restore', [CashierPaymentController::class, 'restore'])->name('payments.restore');
+
+		// Password Change
+		Route::get('change-password', [CashierDashboardController::class, 'showChangePasswordForm'])->name('change-password');
+		Route::post('change-password', [CashierDashboardController::class, 'changePassword'])->name('change-password');
 	});
 });
 

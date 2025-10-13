@@ -29,19 +29,19 @@ class AppServiceProvider extends ServiceProvider
         
         // Configure route model binding for models with custom primary keys
         Route::bind('payment', function ($value) {
-            return Payment::where('payment_id', $value)->firstOrFail();
+            return Payment::withTrashed()->where('payment_id', $value)->firstOrFail();
         });
         
         Route::bind('delivery', function ($value) {
-            return Delivery::where('delivery_id', $value)->firstOrFail();
+            return Delivery::withTrashed()->where('delivery_id', $value)->firstOrFail();
         });
         
         Route::bind('order', function ($value) {
-            return Order::where('order_id', $value)->firstOrFail();
+            return Order::withTrashed()->where('order_id', $value)->firstOrFail();
         });
         
         Route::bind('quotation', function ($value) {
-            return Quotation::where('quotation_id', $value)->firstOrFail();
+            return Quotation::withTrashed()->where('quotation_id', $value)->firstOrFail();
         });
     }
 }

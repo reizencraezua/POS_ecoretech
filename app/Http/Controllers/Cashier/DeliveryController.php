@@ -17,13 +17,15 @@ class DeliveryController extends Controller
      */
     public function index(Request $request)
     {
-        // Check if user is cashier or admin
-        $user = auth('web')->user();
-        if (!$user || (!$user->isCashier() && !$user->isAdmin())) {
-            abort(403, 'Access denied. Cashier or Admin role required.');
-        }
+        // Allow all authenticated users to access deliveries
 
-        $query = Delivery::with(['order.customer', 'order.employee']);
+        $showArchived = $request->has('archived') && $request->archived;
+        
+        if ($showArchived) {
+            $query = Delivery::onlyTrashed()->with(['order.customer', 'order.employee']);
+        } else {
+            $query = Delivery::with(['order.customer', 'order.employee']);
+        }
 
         // Filter by status
         if ($request->has('status') && $request->status !== '') {
@@ -53,7 +55,7 @@ class DeliveryController extends Controller
 
         $deliveries = $query->latest('delivery_date')->paginate(15)->appends($request->query());
 
-        return view('cashier.deliveries.index', compact('deliveries'));
+        return view('cashier.deliveries.index', compact('deliveries', 'showArchived'));
     }
 
     /**
@@ -84,11 +86,13 @@ class DeliveryController extends Controller
         try {
             $validated = $request->validate([
                 'order_id' => 'required|exists:orders,order_id',
-                'employee_id' => 'nullable|exists:employees,employee_id',
                 'delivery_date' => 'required|date',
-                'delivery_address' => 'required|string|max:255',
-                'delivery_contact' => 'required|string|max:20',
-                'delivery_notes' => 'nullable|string|max:500',
+                'delivery_address' => 'required|string|max:500',
+                'driver_name' => 'nullable|string|max:100',
+                'driver_contact' => 'nullable|string|max:20',
+                'notes' => 'nullable|string|max:500',
+                'status' => 'nullable|in:scheduled,in_transit,delivered,cancelled',
+                'delivery_fee' => 'nullable|numeric|min:0',
             ]);
 
             // Check if order already has a delivery
@@ -105,9 +109,12 @@ class DeliveryController extends Controller
                 'order_id' => $validated['order_id'],
                 'delivery_date' => $validated['delivery_date'],
                 'delivery_address' => $validated['delivery_address'],
-                'driver_contact' => $validated['delivery_contact'],
-                'notes' => $validated['delivery_notes'],
-                'status' => 'Scheduled',
+                'driver_name' => $validated['driver_name'],
+                'driver_contact' => $validated['driver_contact'],
+                'notes' => $validated['notes'],
+                'status' => $validated['status'] ?? 'scheduled',
+                'delivery_fee' => $validated['delivery_fee'] ?? 0,
+                'created_by' => auth('web')->id() ?? App\Models\User::first()->id,
             ]);
 
             return redirect()->route('cashier.deliveries.index')
@@ -130,22 +137,111 @@ class DeliveryController extends Controller
     }
 
     /**
+     * Show the form for editing the specified resource.
+     */
+    public function edit(Delivery $delivery)
+    {
+        $orders = Order::whereNotIn('order_status', ['Completed', 'Cancelled'])
+            ->with('customer')
+            ->get();
+
+        return view('cashier.deliveries.edit', compact('delivery', 'orders'));
+    }
+
+    /**
+     * Update the specified resource in storage.
+     */
+    public function update(Request $request, Delivery $delivery)
+    {
+        try {
+            $validated = $request->validate([
+                'order_id' => 'required|exists:orders,order_id',
+                'delivery_date' => 'required|date',
+                'delivery_address' => 'required|string|max:500',
+                'driver_name' => 'nullable|string|max:100',
+                'driver_contact' => 'nullable|string|max:20',
+                'notes' => 'nullable|string|max:500',
+                'status' => 'required|in:scheduled,in_transit,delivered,cancelled',
+                'delivery_fee' => 'nullable|numeric|min:0',
+            ]);
+
+            // Update delivery
+            $delivery->update([
+                'order_id' => $validated['order_id'],
+                'delivery_date' => $validated['delivery_date'],
+                'delivery_address' => $validated['delivery_address'],
+                'driver_name' => $validated['driver_name'],
+                'driver_contact' => $validated['driver_contact'],
+                'notes' => $validated['notes'],
+                'status' => $validated['status'],
+                'delivery_fee' => $validated['delivery_fee'] ?? 0,
+            ]);
+
+            // If delivered, update order status to completed
+            if ($validated['status'] === 'delivered') {
+                $delivery->order->update(['order_status' => 'Completed']);
+            }
+
+            return redirect()->route('cashier.deliveries.index')
+                ->with('success', 'Delivery updated successfully.');
+        } catch (\Exception $e) {
+            Log::error('Error updating delivery: ' . $e->getMessage());
+            return redirect()->back()
+                ->with('error', 'Failed to update delivery. Please try again.')
+                ->withInput();
+        }
+    }
+
+    /**
+     * Archive a delivery
+     */
+    public function archive(Delivery $delivery)
+    {
+        try {
+            $delivery->delete();
+            return redirect()->route('cashier.deliveries.index')
+                ->with('success', 'Delivery archived successfully.');
+        } catch (\Exception $e) {
+            Log::error('Error archiving delivery: ' . $e->getMessage());
+            return redirect()->back()
+                ->with('error', 'Failed to archive delivery. Please try again.');
+        }
+    }
+
+    /**
+     * Restore an archived delivery
+     */
+    public function restore($id)
+    {
+        try {
+            $delivery = Delivery::withTrashed()->findOrFail($id);
+            $delivery->restore();
+            return redirect()->route('cashier.deliveries.index')
+                ->with('success', 'Delivery restored successfully.');
+        } catch (\Exception $e) {
+            Log::error('Error restoring delivery: ' . $e->getMessage());
+            return redirect()->back()
+                ->with('error', 'Failed to restore delivery. Please try again.');
+        }
+    }
+
+    /**
      * Update delivery status
      */
     public function updateStatus(Request $request, Delivery $delivery)
     {
         $request->validate([
-            'status' => 'required|in:Scheduled,In Transit,Delivered,Failed'
+            'status' => 'required|in:scheduled,in_transit,delivered,cancelled'
         ]);
 
         $delivery->update(['status' => $request->status]);
 
         // If delivered, update order status to completed
-        if ($request->status === 'Delivered') {
+        if ($request->status === 'delivered') {
             $delivery->order->update(['order_status' => 'Completed']);
         }
 
         return redirect()->back()
-            ->with('success', "Delivery status updated to {$request->status}.");
+            ->with('success', "Delivery status updated to " . ucfirst(str_replace('_', ' ', $request->status)) . ".");
     }
 }

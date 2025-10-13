@@ -6,7 +6,7 @@
 
 @section('header-actions')
 <div class="flex items-center space-x-4">
-    <a href="{{ route('cashier.quotations.index') }}" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-medium transition-colors inline-flex items-center">
+    <a href="{{ route('cashier.quotations.index') }}" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-medium inline-flex items-center">
         <i class="fas fa-arrow-left mr-2"></i>
         Back to Quotations
     </a>
@@ -16,7 +16,7 @@
             @csrf
             @method('PATCH')
             <input type="hidden" name="status" value="approved">
-            <button type="submit" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium transition-colors inline-flex items-center"
+            <button type="submit" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium inline-flex items-center"
                     onclick="return confirm('Approve this quotation?')">
                 <i class="fas fa-check mr-2"></i>
                 Approve
@@ -27,7 +27,7 @@
             @csrf
             @method('PATCH')
             <input type="hidden" name="status" value="rejected">
-            <button type="submit" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium transition-colors inline-flex items-center"
+            <button type="submit" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium inline-flex items-center"
                     onclick="return confirm('Reject this quotation?')">
                 <i class="fas fa-times mr-2"></i>
                 Reject

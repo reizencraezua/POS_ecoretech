@@ -18,8 +18,8 @@ class JobController extends Controller
 
         if ($request->has('search')) {
             $search = $request->search;
-            $query->where('job_title', 'like', "%{$search_query}%")
-                ->orWhere('job_description', 'like', "%{$search_query}%");
+            $query->where('job_title', 'like', "%{$search}%")
+                ->orWhere('job_description', 'like', "%{$search}%");
         }
 
         $jobs = $query->orderBy('job_title')->paginate(15);
@@ -30,7 +30,9 @@ class JobController extends Controller
 
     public function create()
     {
-        return view('admin.jobs.create');
+        // Get jobs for the table display in create view
+        $jobs = Job::with('employees')->orderBy('job_title')->paginate(15);
+        return view('admin.jobs.create', compact('jobs'));
     }
 
     public function store(Request $request)

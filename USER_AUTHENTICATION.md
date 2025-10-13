@@ -21,8 +21,9 @@ The application now uses a unified `users` table for all authentication (admin a
 - **Role**: admin
 
 ### Cashier
-- **Email**: cashier@ecoretech.com
-- **Password**: cashier123
+- **Auto-generated accounts only** - Created automatically when admin adds employee with "Cashier" job position
+- **Email Format**: `(firstname)(employeeID)@ecoretech.com`
+- **Password Format**: `(surname)(employeeID)`
 - **Role**: cashier
 
 ## Database Structure

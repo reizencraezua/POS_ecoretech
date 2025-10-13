@@ -16,13 +16,17 @@ class PaymentController extends Controller
      */
     public function index(Request $request)
     {
-        // Check if user is cashier or admin
-        $user = auth('web')->user();
-        if (!$user || (!$user->isCashier() && !$user->isAdmin())) {
-            abort(403, 'Access denied. Cashier or Admin role required.');
-        }
+        // Allow all authenticated users to view payments
 
-        $query = Payment::with(['order.customer']);
+        $showArchived = $request->has('archived') && $request->archived;
+        
+        if ($showArchived) {
+            $query = Payment::onlyTrashed()->with(['order.customer']);
+        } else {
+            $query = Payment::with(['order.customer'])->whereHas('order', function($q) {
+                $q->where('order_status', '!=', \App\Models\Order::STATUS_VOIDED);
+            });
+        }
 
         // Search functionality
         if ($request->has('search') && $request->search) {
@@ -50,9 +54,18 @@ class PaymentController extends Controller
             $query->where('payment_method', $request->payment_method);
         }
 
+        // Payment status filter
+        if ($request->has('payment_status') && $request->payment_status) {
+            if ($request->payment_status === 'complete') {
+                $query->where('balance', 0);
+            } elseif ($request->payment_status === 'partial') {
+                $query->where('balance', '>', 0);
+            }
+        }
+
         $payments = $query->latest('payment_date')->paginate(15)->appends($request->query());
 
-        return view('cashier.payments.index', compact('payments'));
+        return view('cashier.payments.index', compact('payments', 'showArchived'));
     }
 
     /**
@@ -78,11 +91,12 @@ class PaymentController extends Controller
         try {
             $validated = $request->validate([
                 'order_id' => 'required|exists:orders,order_id',
-                'payment_method' => 'required|in:Cash,Check,GCash,PayMaya,Bank Transfer',
+                'payment_method' => 'required|in:Cash,Check,GCash,Bank Transfer,Credit Card',
                 'amount_paid' => 'required|numeric|min:0.01',
                 'payment_date' => 'required|date',
-                'payment_reference' => 'nullable|string|max:100',
-                'payment_notes' => 'nullable|string|max:500',
+                'payment_term' => 'nullable|in:Downpayment,Initial,Partial,Full',
+                'reference_number' => 'nullable|string|max:100',
+                'notes' => 'nullable|string|max:500',
             ]);
 
             // Check if payment amount exceeds remaining balance
@@ -100,8 +114,10 @@ class PaymentController extends Controller
                 'payment_method' => $validated['payment_method'],
                 'amount_paid' => $validated['amount_paid'],
                 'payment_date' => $validated['payment_date'],
-                'payment_reference' => $validated['payment_reference'],
-                'payment_notes' => $validated['payment_notes'],
+                'payment_term' => $validated['payment_term'],
+                'reference_number' => $validated['reference_number'],
+                'remarks' => $validated['notes'],
+                'created_by' => auth('web')->id() ?? App\Models\User::first()->id,
             ]);
 
             // Check if order is fully paid
@@ -140,7 +156,13 @@ class PaymentController extends Controller
                 return $order->remaining_balance > 0 || $order->payments->contains('id', $payment->id);
             });
 
-        return view('cashier.payments.edit', compact('payment', 'orders'));
+        // Calculate total payments made by customer for each order
+        $orderPayments = [];
+        foreach ($orders as $order) {
+            $orderPayments[$order->order_id] = $order->payments->sum('amount_paid');
+        }
+
+        return view('cashier.payments.edit', compact('payment', 'orders', 'orderPayments'));
     }
 
     /**
@@ -148,21 +170,15 @@ class PaymentController extends Controller
      */
     public function update(Request $request, Payment $payment)
     {
-        // Check for admin password
-        if (!$this->verifyAdminPassword($request)) {
-            return redirect()->back()
-                ->withErrors(['admin_password' => 'Invalid admin password.'])
-                ->withInput();
-        }
-
         try {
             $validated = $request->validate([
                 'order_id' => 'required|exists:orders,order_id',
-                'payment_method' => 'required|in:Cash,Check,GCash,PayMaya,Bank Transfer',
+                'payment_method' => 'required|in:Cash,Check,GCash,Bank Transfer,Credit Card',
                 'amount_paid' => 'required|numeric|min:0.01',
                 'payment_date' => 'required|date',
-                'payment_reference' => 'nullable|string|max:100',
-                'payment_notes' => 'nullable|string|max:500',
+                'payment_term' => 'nullable|in:Downpayment,Initial,Partial,Full',
+                'reference_number' => 'nullable|string|max:100',
+                'remarks' => 'nullable|string|max:500',
             ]);
 
             // Check if payment amount exceeds remaining balance
@@ -184,8 +200,9 @@ class PaymentController extends Controller
                 'payment_method' => $validated['payment_method'],
                 'amount_paid' => $validated['amount_paid'],
                 'payment_date' => $validated['payment_date'],
-                'payment_reference' => $validated['payment_reference'],
-                'payment_notes' => $validated['payment_notes'],
+                'payment_term' => $validated['payment_term'],
+                'reference_number' => $validated['reference_number'],
+                'remarks' => $validated['remarks'],
             ]);
 
             // Check if order is fully paid
@@ -213,11 +230,69 @@ class PaymentController extends Controller
     }
 
     /**
+     * Print payment summary
+     */
+    public function printSummary(Request $request)
+    {
+        $query = Payment::with(['order.customer']);
+
+        // Apply filters
+        if ($request->has('start_date') && $request->start_date) {
+            $query->whereDate('payment_date', '>=', $request->start_date);
+        }
+        if ($request->has('end_date') && $request->end_date) {
+            $query->whereDate('payment_date', '<=', $request->end_date);
+        }
+        if ($request->has('payment_method') && $request->payment_method) {
+            $query->where('payment_method', $request->payment_method);
+        }
+        if ($request->has('payment_status') && $request->payment_status) {
+            if ($request->payment_status === 'complete') {
+                $query->where('balance', 0);
+            } elseif ($request->payment_status === 'partial') {
+                $query->where('balance', '>', 0);
+            }
+        }
+
+        $payments = $query->latest('payment_date')->get();
+
+        // Calculate summary data
+        $totalAmount = $payments->sum('amount_paid');
+        $paymentCount = $payments->count();
+        $averagePayment = $paymentCount > 0 ? $totalAmount / $paymentCount : 0;
+
+        // Payment methods breakdown
+        $paymentMethods = $payments->groupBy('payment_method')->map(function ($group, $method) use ($totalAmount) {
+            $amount = $group->sum('amount_paid');
+            $count = $group->count();
+            $percentage = $totalAmount > 0 ? round(($amount / $totalAmount) * 100, 1) : 0;
+            
+            return [
+                'method' => $method,
+                'amount' => $amount,
+                'count' => $count,
+                'percentage' => $percentage
+            ];
+        })->values();
+
+        // Filter information
+        $filters = [];
+        if ($request->start_date) $filters['Start Date'] = $request->start_date;
+        if ($request->end_date) $filters['End Date'] = $request->end_date;
+        if ($request->payment_method) $filters['Payment Method'] = $request->payment_method;
+        if ($request->payment_status) $filters['Payment Status'] = ucfirst($request->payment_status);
+
+        return view('components.print-summary', compact('payments', 'totalAmount', 'paymentCount', 'averagePayment', 'paymentMethods', 'filters'));
+    }
+
+    /**
      * Get payment summary data
      */
     public function summary(Request $request)
     {
-        $query = Payment::with(['order.customer']);
+        $query = Payment::with(['order.customer'])->whereHas('order', function($q) {
+            $q->where('order_status', '!=', \App\Models\Order::STATUS_VOIDED);
+        });
 
         // Apply same filters as index method
         if ($request->has('start_date') && $request->start_date) {
@@ -267,6 +342,39 @@ class PaymentController extends Controller
             'average_payment' => $averagePayment,
             'payment_methods' => $paymentMethods
         ]);
+    }
+
+    /**
+     * Archive a payment
+     */
+    public function archive(Payment $payment)
+    {
+        try {
+            $payment->delete();
+            return redirect()->route('cashier.payments.index')
+                ->with('success', 'Payment archived successfully.');
+        } catch (\Exception $e) {
+            Log::error('Error archiving payment: ' . $e->getMessage());
+            return redirect()->back()
+                ->with('error', 'Failed to archive payment. Please try again.');
+        }
+    }
+
+    /**
+     * Restore an archived payment
+     */
+    public function restore($id)
+    {
+        try {
+            $payment = Payment::withTrashed()->findOrFail($id);
+            $payment->restore();
+            return redirect()->route('cashier.payments.index')
+                ->with('success', 'Payment restored successfully.');
+        } catch (\Exception $e) {
+            Log::error('Error restoring payment: ' . $e->getMessage());
+            return redirect()->back()
+                ->with('error', 'Failed to restore payment. Please try again.');
+        }
     }
 
     private function verifyAdminPassword(Request $request)

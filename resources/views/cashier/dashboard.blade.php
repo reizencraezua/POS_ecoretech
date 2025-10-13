@@ -30,25 +30,7 @@
 <div class="space-y-6">
     <!-- Stats Cards -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <a href="{{ route('cashier.quotations.index') }}" class="bg-white rounded-lg shadow p-6 border-l-4 border-blue-500 hover:shadow-lg transition-shadow">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm font-medium text-gray-600">Total Quotations</p>
-                    <p class="text-3xl font-bold text-gray-900">{{ number_format($stats['total_quotations']) }}</p>
-                    @if($stats['pending_quotations'] > 0)
-                        <p class="text-xs text-orange-600 mt-1">
-                            <i class="fas fa-clock mr-1"></i>
-                            {{ $stats['pending_quotations'] }} pending
-                        </p>
-                    @endif
-                </div>
-                <div class="p-3 bg-blue-500 bg-opacity-10 rounded-full">
-                    <i class="fas fa-file-invoice text-blue-500 text-xl"></i>
-                </div>
-            </div>
-        </a>
-
-        <a href="{{ route('cashier.orders.index') }}" class="bg-white rounded-lg shadow p-6 border-l-4 border-green-500 hover:shadow-lg transition-shadow">
+        <a href="{{ route('cashier.orders.index') }}" class="bg-white rounded-lg shadow p-6 border-l-4 border-green-500 hover:shadow-lg">
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-sm font-medium text-gray-600">Job Orders</p>
@@ -66,7 +48,35 @@
             </div>
         </a>
 
-        <a href="{{ route('cashier.deliveries.index') }}" class="bg-white rounded-lg shadow p-6 border-l-4 border-purple-500 hover:shadow-lg transition-shadow">
+        <a href="{{ route('cashier.orders.index') }}" class="bg-white rounded-lg shadow p-6 border-l-4 border-blue-500 hover:shadow-lg">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-600">Order Due Dates</p>
+                    <p class="text-3xl font-bold text-gray-900">{{ number_format($stats['due_orders_today']) }}</p>
+                    @if($stats['due_orders_today'] > 0)
+                        <p class="text-xs text-red-600 mt-1">
+                            <i class="fas fa-exclamation-triangle mr-1"></i>
+                            Due today
+                        </p>
+                    @elseif($stats['due_orders_soon'] > 0)
+                        <p class="text-xs text-orange-600 mt-1">
+                            <i class="fas fa-clock mr-1"></i>
+                            {{ $stats['due_orders_soon'] }} due in 1-3 days
+                        </p>
+                    @else
+                        <p class="text-xs text-green-600 mt-1">
+                            <i class="fas fa-check-circle mr-1"></i>
+                            No urgent due dates
+                        </p>
+                    @endif
+                </div>
+                <div class="p-3 bg-blue-500 bg-opacity-10 rounded-full">
+                    <i class="fas fa-calendar-alt text-blue-500 text-xl"></i>
+                </div>
+            </div>
+        </a>
+
+        <a href="{{ route('cashier.deliveries.index') }}" class="bg-white rounded-lg shadow p-6 border-l-4 border-purple-500 hover:shadow-lg">
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-sm font-medium text-gray-600">Deliveries</p>
@@ -93,7 +103,7 @@
             <div class="px-6 py-4 border-b border-gray-200">
                 <div class="flex items-center justify-between">
                     <h3 class="text-lg font-semibold text-gray-900">Recent Quotations</h3>
-                    <a href="{{ route('cashier.quotations.index') }}" class="text-cashier-blue hover:text-cashier-blue-dark text-sm font-medium transition-colors">
+                    <a href="{{ route('cashier.quotations.index') }}" class="text-cashier-blue hover:text-cashier-blue-dark text-sm font-medium">
                         View All
                     </a>
                 </div>
@@ -102,7 +112,7 @@
                 @if($recent_quotations->count() > 0)
                 <div class="space-y-4">
                     @foreach($recent_quotations as $quotation)
-                    <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                    <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100">
                         <div class="flex-1">
                             <p class="font-medium text-gray-900">{{ $quotation->customer->customer_firstname }} {{ $quotation->customer->customer_lastname }}</p>
                             <p class="text-sm text-gray-600">₱{{ number_format($quotation->total_amount, 2) }}</p>
@@ -134,7 +144,7 @@
             <div class="px-6 py-4 border-b border-gray-200">
                 <div class="flex items-center justify-between">
                     <h3 class="text-lg font-semibold text-gray-900">Recent Job Orders</h3>
-                    <a href="{{ route('cashier.orders.index') }}" class="text-cashier-blue hover:text-cashier-blue-dark text-sm font-medium transition-colors">
+                    <a href="{{ route('cashier.orders.index') }}" class="text-cashier-blue hover:text-cashier-blue-dark text-sm font-medium">
                         View All
                     </a>
                 </div>
@@ -143,7 +153,7 @@
                 @if($recent_orders->count() > 0)
                 <div class="space-y-4">
                     @foreach($recent_orders as $order)
-                    <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                    <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100">
                         <div class="flex-1">
                             <p class="font-medium text-gray-900">{{ $order->customer->customer_firstname }} {{ $order->customer->customer_lastname }}</p>
                             <p class="text-sm text-gray-600">₱{{ number_format($order->total_amount, 2) }}</p>
@@ -180,7 +190,7 @@
         <div class="px-6 py-4 border-b border-gray-200">
             <div class="flex items-center justify-between">
                 <h3 class="text-lg font-semibold text-gray-900">Orders Due Soon (1-3 days)</h3>
-                <a href="{{ route('cashier.orders.index') }}" class="text-maroon hover:text-maroon-dark text-sm font-medium transition-colors">
+                <a href="{{ route('cashier.orders.index') }}" class="text-maroon hover:text-maroon-dark text-sm font-medium">
                     View All Orders
                 </a>
             </div>
@@ -249,7 +259,7 @@
         <div class="px-6 py-4 border-b border-gray-200">
             <div class="flex items-center justify-between">
                 <h3 class="text-lg font-semibold text-gray-900">Orders with Pending Payments</h3>
-                <a href="{{ route('cashier.payments.index') }}" class="text-maroon hover:text-maroon-dark text-sm font-medium transition-colors">
+                <a href="{{ route('cashier.payments.index') }}" class="text-maroon hover:text-maroon-dark text-sm font-medium">
                     View All Payments
                 </a>
             </div>

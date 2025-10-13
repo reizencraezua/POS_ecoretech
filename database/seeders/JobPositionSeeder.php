@@ -4,7 +4,7 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
-use App\Models\JobPosition;
+use App\Models\Job;
 
 class JobPositionSeeder extends Seeder
 {
@@ -29,7 +29,7 @@ class JobPositionSeeder extends Seeder
         ];
 
         foreach ($jobPositions as $position) {
-            JobPosition::create($position);
+            Job::create($position);
         }
 
         $this->command->info('Successfully seeded ' . count($jobPositions) . ' job positions.');

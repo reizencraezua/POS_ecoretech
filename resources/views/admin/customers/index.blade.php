@@ -27,15 +27,21 @@
                 {{ (isset($showArchived) && $showArchived) ? 'Show Active' : 'View Archives' }}
             </a>
             
-            <form method="GET" class="flex items-center space-x-2">
+            <form method="GET" class="flex items-center space-x-2" id="searchForm">
                 <div class="relative">
-                    <input type="text" name="search" value="{{ request('search') }}" placeholder="Search customers..." 
+                    <input type="text" 
+                           id="instantSearchInput" 
+                           data-instant-search="true"
+                           data-container="customersTableContainer"
+                           data-loading="searchLoading"
+                           value="{{ request('search') }}" 
+                           placeholder="Search customers..." 
                            class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-maroon focus:border-maroon">
                     <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                    <div id="searchLoading" class="absolute right-3 top-1/2 transform -translate-y-1/2 hidden">
+                        <i class="fas fa-spinner fa-spin text-gray-400"></i>
+                    </div>
                 </div>
-                <button type="submit" class="bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-lg transition-colors">
-                    <i class="fas fa-search"></i>
-                </button>
                 @if(request('search'))
                     <a href="{{ route('admin.customers.index') }}" class="bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-lg transition-colors">
                         <i class="fas fa-times"></i>
@@ -216,10 +222,10 @@
                             <div>
                                 <label for="contact_number1" class="block text-sm font-medium text-gray-700 mb-1">Primary Contact Number *</label>
                                 <input type="text" name="contact_number1" id="contact_number1" required
+                                       pattern="[0-9]{11}" maxlength="11" minlength="11"
+                                       title="Contact number must be exactly 11 digits"
                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon"
-                                       placeholder="09XX-XXX-XXXX"
-                                       maxlength="11"
-                                       pattern="[0-9]{11}">
+                                       placeholder="09XX-XXX-XXXX">
                             </div>
                         </div>
                         
@@ -232,10 +238,10 @@
                             <div>
                                 <label for="contact_number2" class="block text-sm font-medium text-gray-700 mb-1">Secondary Contact Number</label>
                                 <input type="text" name="contact_number2" id="contact_number2"
+                                       pattern="[0-9]{11}" maxlength="11" minlength="11"
+                                       title="Contact number must be exactly 11 digits"
                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon"
-                                       placeholder="09XX-XXX-XXXX"
-                                       maxlength="11"
-                                       pattern="[0-9]{11}">
+                                       placeholder="09XX-XXX-XXXX">
                             </div>
                         </div>
                     </div>
@@ -317,4 +323,5 @@ function editCustomer(customer) {
 <style>
 [x-cloak] { display: none !important; }
 </style>
+<script src="{{ asset('js/instant-search.js') }}"></script>
 @endsection

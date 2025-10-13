@@ -5,20 +5,21 @@
 @section('page-description', 'Track and manage all job orders')
 
 @section('header-actions')
-<form method="GET" action="{{ route('admin.orders.index') }}" class="flex items-end gap-3">
+<form method="GET" action="{{ route('admin.orders.index') }}" class="flex items-end gap-3" id="dateFilterForm">
     <div>
         <label for="start_date" class="block text-xs font-medium text-gray-600 mb-1">Start date</label>
         <input type="date" id="start_date" name="start_date" value="{{ request('start_date') }}"
-               class="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon">
+               class="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon"
+               onchange="document.getElementById('dateFilterForm').submit();">
     </div>
     <div>
         <label for="end_date" class="block text-xs font-medium text-gray-600 mb-1">End date</label>
         <input type="date" id="end_date" name="end_date" value="{{ request('end_date') }}"
-               class="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon">
+               class="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon"
+               onchange="document.getElementById('dateFilterForm').submit();">
     </div>
     <div class="flex items-center gap-2">
         <input type="hidden" name="archived" value="{{ (isset($showArchived) && $showArchived) ? 1 : 0 }}">
-        <button type="submit" class="bg-maroon hover:bg-maroon-dark text-white px-4 py-2 rounded-md">Filter</button>
         <a href="{{ route('admin.orders.index', ['archived' => (isset($showArchived) && $showArchived) ? 1 : 0]) }}" class="px-3 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">Reset</a>
     </div>
 </form>
@@ -29,7 +30,7 @@
 
      <!-- Order Statistics -->
      @if(!isset($showArchived) || !$showArchived)
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4 mb-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
             <div class="bg-white rounded-lg shadow p-4">
                 <div class="flex items-center">
                     <div class="p-2 bg-blue-100 rounded-lg">
@@ -90,17 +91,6 @@
                 </div>
             </div>
             
-            <div class="bg-white rounded-lg shadow p-4">
-                <div class="flex items-center">
-                    <div class="p-2 bg-red-100 rounded-lg">
-                        <i class="fas fa-times-circle text-red-600"></i>
-                    </div>
-                    <div class="ml-4">
-                        <p class="text-sm font-medium text-gray-600">Cancelled</p>
-                        <p class="text-2xl font-bold text-gray-900">{{ $orders->where('order_status', 'Cancelled')->count() }}</p>
-                    </div>
-                </div>
-            </div>
         </div>
     @endif
 
@@ -121,8 +111,8 @@
                 {{ (isset($showArchived) && $showArchived) ? 'Show Active' : 'View Archives' }}
             </a>
             
-            <form method="GET" class="flex items-center space-x-2">
-                <select name="status" class="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-maroon focus:border-maroon">
+            <form method="GET" class="flex items-center space-x-2" id="searchForm">
+                <select name="status" class="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-maroon focus:border-maroon" onchange="document.getElementById('searchForm').submit();">
                     <option value="">All Status</option>
                     <option value="On-Process" {{ request('status') == 'On-Process' ? 'selected' : '' }}>On-Process</option>
                     <option value="Designing" {{ request('status') == 'Designing' ? 'selected' : '' }}>Designing</option>
@@ -130,6 +120,7 @@
                     <option value="For Releasing" {{ request('status') == 'For Releasing' ? 'selected' : '' }}>For Releasing</option>
                     <option value="Completed" {{ request('status') == 'Completed' ? 'selected' : '' }}>Completed</option>
                     <option value="Cancelled" {{ request('status') == 'Cancelled' ? 'selected' : '' }}>Cancelled</option>
+                    <option value="Voided" {{ request('status') == 'Voided' ? 'selected' : '' }}>Voided</option>
                     <optgroup label="Due Dates">
                         <option value="due_today" {{ request('status') == 'due_today' ? 'selected' : '' }}>Due Today</option>
                         <option value="due_tomorrow" {{ request('status') == 'due_tomorrow' ? 'selected' : '' }}>Due Tomorrow</option>
@@ -138,16 +129,22 @@
                     </optgroup>
                 </select>
                 <div class="relative">
-                    <input type="text" name="search" value="{{ request('search') }}" placeholder="Search orders..." 
+                    <input type="text" 
+                           id="instantSearchInput" 
+                           data-instant-search="true"
+                           data-container="ordersTableContainer"
+                           data-loading="searchLoading"
+                           value="{{ request('search') }}" 
+                           placeholder="Search orders..." 
                            class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-maroon focus:border-maroon">
                     <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                    <div id="searchLoading" class="absolute right-3 top-1/2 transform -translate-y-1/2 hidden">
+                        <i class="fas fa-spinner fa-spin text-gray-400"></i>
+                    </div>
                 </div>
                 <input type="hidden" name="archived" value="{{ (isset($showArchived) && $showArchived) ? 1 : 0 }}">
                 <input type="hidden" name="start_date" value="{{ request('start_date') }}">
                 <input type="hidden" name="end_date" value="{{ request('end_date') }}">
-                <button type="submit" class="bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-lg transition-colors">
-                    <i class="fas fa-search"></i>
-                </button>
                 @if(request('search') || request('status') || request('start_date') || request('end_date') || request('archived'))
                     <a href="{{ route('admin.orders.index', ['archived' => (isset($showArchived) && $showArchived) ? 1 : 0]) }}" class="bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-lg transition-colors">
                         <i class="fas fa-times"></i>
@@ -162,200 +159,12 @@
 
     <!-- Orders Table -->
     <div class="bg-white rounded-lg shadow overflow-hidden">
-        <div class="px-6 py-3 bg-blue-50 border-b border-blue-200">
-            <p class="text-sm text-blue-700">
-                <i class="fas fa-info-circle mr-2"></i>
-                Click on any order row to view details
-            </p>
-        </div>
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
-                    <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order Info</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dates</th>   
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payment</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created By</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                    </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
-                    @forelse($orders as $order)
-                        <tr class="hover:bg-blue-50 hover:shadow-sm transition-all duration-200 cursor-pointer group" onclick="window.location.href='{{ route('admin.orders.show', $order) }}'">
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="flex items-center">
-                                    <div class="w-10 h-10 bg-maroon text-white rounded-full flex items-center justify-center font-bold text-sm">
-                                        {{ str_pad($order->order_id, 3, '0', STR_PAD_LEFT) }}
-                                    </div>
-                                    <div class="ml-4">
-                                        <div class="flex items-center gap-2">
-                                            <div class="text-sm font-medium text-gray-900 group-hover:text-blue-600">Order #{{ str_pad($order->order_id, 5, '0', STR_PAD_LEFT) }}</div>
-                                            <i class="fas fa-external-link-alt text-xs text-gray-400 group-hover:text-blue-600 transition-colors"></i>
-                                        </div>
-                                        <div class="text-sm text-gray-500">{{ $order->customer->display_name }}</div>
-                                    </div>
-                                </div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                <div class="space-y-1">
-                                    <div>
-                                        <span class="text-gray-500">Order:</span> {{ $order->order_date->format('M d, Y') }}
-                                    </div>
-                                    <div class="flex items-center">
-                                        <span class="text-gray-500">Due:</span> 
-                                        <span class="ml-1 {{ $order->deadline_date->isPast() && $order->order_status !== 'Completed' ? 'text-red-600 font-medium' : '' }}">
-                                            {{ $order->deadline_date->format('M d, Y') }}
-                                        </span>
-                                        @if($order->deadline_date->isPast() && $order->order_status !== 'Completed')
-                                            <i class="fas fa-exclamation-triangle text-red-500 ml-1 text-xs"></i>
-                                        @endif
-                                    </div>
-                                </div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm font-medium text-gray-900">₱{{ number_format($order->final_total_amount, 2) }}</div>
-                                <div class="text-sm text-gray-500">{{ $order->details->count() }} item(s)</div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                @php
-                                    $totalPaid = $order->total_paid ?? 0;
-                                    $remainingBalance = $order->final_total_amount - $totalPaid;
-                                    $paymentPercentage = $order->final_total_amount > 0 ? ($totalPaid / $order->final_total_amount) * 100 : 0;
-                                @endphp
-                                <div class="space-y-1">
-                                    <div class="text-sm">
-                                        <span class="font-medium text-green-600">₱{{ number_format($totalPaid, 2) }}</span>
-                                        <span class="text-gray-500">paid</span>
-                                    </div>
-                                    @if($remainingBalance > 0)
-                                        <div class="text-sm">
-                                            <span class="font-medium text-red-600">₱{{ number_format($remainingBalance, 2) }}</span>
-                                            <span class="text-gray-500">due</span>
-                                        </div>
-                                    @endif
-                                    <div class="w-full bg-gray-200 rounded-full h-2">
-                                        <div class="bg-green-500 h-2 rounded-full" style="width: {{ $paymentPercentage }}%"></div>
-                                    </div>
-                                </div>
-                            </td>
-                            
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="flex items-center">
-                                    <span class="px-3 py-1 text-xs font-medium rounded-full
-                                        @switch($order->order_status)
-                                            @case('On-Process')
-                                                bg-blue-100 text-blue-800
-                                                @break
-                                            @case('Designing')
-                                                bg-purple-100 text-purple-800
-                                                @break
-                                            @case('Production')
-                                                bg-yellow-100 text-yellow-800
-                                                @break
-                                            @case('For Releasing')
-                                                bg-orange-100 text-orange-800
-                                                @break
-                                            @case('Completed')
-                                                bg-green-100 text-green-800
-                                                @break
-                                            @case('Cancelled')
-                                                bg-red-100 text-red-800
-                                                @break
-                                            @case('Voided')
-                                                bg-gray-100 text-gray-800
-                                                @break
-                                            @default
-                                                bg-gray-100 text-gray-800
-                                        @endswitch
-                                    ">
-                                        {{ $order->order_status }}
-                                    </span>
-                                </div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm font-medium text-gray-900">
-                                    @if($order->creator)
-                                        {{ $order->creator->name }}
-                                    @else
-                                        Admin
-                                    @endif
-                                </div>
-                                <div class="text-sm text-gray-500">
-                                    @if($order->creator)
-                                        {{ $order->created_at->diffForHumans() }}
-                                    @endif
-                                </div>
-                                @if(isset($showArchived) && $showArchived && $order->order_status === 'Voided')
-                                    <div class="text-xs text-red-600 mt-1">
-                                        <i class="fas fa-ban mr-1"></i>
-                                        Voided by {{ $order->voidedBy ? $order->voidedBy->name : 'Admin' }}
-                                        @if($order->voided_at)
-                                            - {{ $order->voided_at->diffForHumans() }}
-                                        @endif
-                                    </div>
-                                    @if($order->void_reason)
-                                        <div class="text-xs text-gray-500 mt-1">
-                                            Reason: {{ Str::limit($order->void_reason, 50) }}
-                                        </div>
-                                    @endif
-                                @endif
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                <div class="flex items-center space-x-2">
-                                    <!-- Edit Order -->
-                                    <a href="{{ route('admin.orders.edit', $order) }}" class="text-red-600 hover:text-red-800 transition-colors" title="Edit Order" onclick="event.stopPropagation();">
-                                        <i class="fas fa-edit"></i>
-                                    </a>
-                                    
-                                    
-                                    @if(isset($showArchived) && $showArchived)
-                                        <!-- Restore Order -->
-                                        <form method="POST" action="{{ route('admin.orders.restore', $order->order_id) }}" onsubmit="return confirm('Restore this order?');" class="inline" onclick="event.stopPropagation();">
-                                            @csrf
-                                            @method('PATCH')
-                                            <button type="submit" class="text-green-600 hover:text-green-800 transition-colors" title="Restore Order">
-                                                <i class="fas fa-rotate-left"></i>
-                                            </button>
-                                        </form>
-                                    @else
-                                       
-                                        <!-- Archive Order -->
-                                        <form method="POST" action="{{ route('admin.orders.archive', $order) }}" onsubmit="return confirm('Archive this order? It will be moved to archives.');" class="inline" onclick="event.stopPropagation();">
-                                            @csrf
-                                            <button type="submit" class="text-gray-600 hover:text-gray-800 transition-colors" title="Archive Order">
-                                                <i class="fas fa-archive"></i>
-                                            </button>
-                                        </form>
-                                    @endif
-                                </div>
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="7" class="px-6 py-12 text-center">
-                                <div class="text-gray-400">
-                                    <i class="fas fa-shopping-cart text-6xl mb-4"></i>
-                                    <p class="text-xl font-medium mb-2">No orders found</p>
-                                    <p class="text-gray-500">Create your first job order to get started</p>
-                                </div>
-                            </td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
-        
-        <!-- Pagination -->
-        @if($orders->hasPages())
-            <div class="bg-white px-6 py-3 border-t border-gray-200">
-                {{ $orders->links() }}
-            </div>
-        @endif
+        @include('admin.orders.partials.orders-table')
     </div>
 </div>
 
 <!-- Alpine.js for dropdown functionality -->
 <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+
+<script src="{{ asset('js/instant-search.js') }}"></script>
 @endsection

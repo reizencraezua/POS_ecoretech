@@ -285,7 +285,7 @@
                             </div>
                         </div>
                         <div class="text-right">
-                            <p class="font-semibold text-red-600">₱{{ number_format($order->remaining_balance, 2) }}</p>
+                            <p class="font-semibold text-red-600">-₱{{ number_format($order->remaining_balance, 2) }}</p>
                             <p class="text-sm text-gray-600">Outstanding</p>
                             <p class="text-xs text-gray-500">of ₱{{ number_format($order->total_amount, 2) }}</p>
                         </div>

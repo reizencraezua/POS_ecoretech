@@ -2,78 +2,48 @@
 
 @section('title', 'Payments')
 @section('page-title', 'Payment Management')
-@section('page-description', 'Manage customer payments and track payment records')
-
-@section('header-actions')
-<div class="flex items-center space-x-4">
-    <a href="{{ route('cashier.payments.create') }}" class="bg-maroon hover:bg-maroon-dark text-white px-4 py-2 rounded-lg font-medium transition-colors inline-flex items-center">
-        <i class="fas fa-plus mr-2"></i>
-        Record Payment
-    </a>
-</div>
-@endsection
+@section('page-description', 'Track and manage customer payments')
 
 @section('content')
 <div class="space-y-6">
-    <!-- Filters -->
-    <div class="bg-white rounded-lg shadow p-6">
-        <div class="flex items-center justify-between mb-4">
-            <h3 class="text-lg font-medium text-gray-900">Payment Filters</h3>
-            <div class="flex items-center space-x-2">
-                <button onclick="openFilterModal()" class="bg-maroon hover:bg-maroon-dark text-white px-4 py-2 rounded-lg transition-colors inline-flex items-center">
-                    <i class="fas fa-filter mr-2"></i>
-                    Advanced Filters
-                </button>
-                <button onclick="openSummaryModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors inline-flex items-center">
-                    <i class="fas fa-chart-bar mr-2"></i>
-                    Payment Summary
-                </button>
-            </div>
+    <!-- Header Actions -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+        <div class="flex items-center space-x-4">
+            @if(!$showArchived)
+                <a href="{{ route('cashier.payments.create') }}" class="bg-maroon hover:bg-maroon-dark text-white px-4 py-2 rounded-lg font-medium inline-flex items-center">
+                    <i class="fas fa-plus mr-2"></i>
+                    Record Payment
+                </a>
+            @endif
+            <button onclick="openFilterModal()" class="bg-maroon hover:bg-maroon-dark text-white px-4 py-2 rounded-lg inline-flex items-center">
+                <i class="fas fa-filter mr-2"></i>
+                Advanced Filters
+            </button>
         </div>
         
-        <form method="GET" class="flex items-center space-x-4">
-            <div class="flex-1">
-                <label for="search" class="block text-sm font-medium text-gray-700 mb-1">Search</label>
+        <!-- Search and Archive Toggle -->
+        <div class="flex items-center space-x-4">
+            <!-- Archive Toggle -->
+            <a href="{{ route('cashier.payments.index', array_merge(request()->query(), ['archived' => isset($showArchived) && $showArchived ? 0 : 1])) }}"
+               class="px-4 py-2 rounded-lg font-medium inline-flex items-center border {{ (isset($showArchived) && $showArchived) ? 'border-green-600 text-green-700 hover:bg-green-50' : 'border-gray-300 text-gray-700 hover:bg-gray-50' }}">
+                <i class="fas fa-box-archive mr-2"></i>
+                {{ (isset($showArchived) && $showArchived) ? 'Show Active' : 'View Archives' }}
+            </a>
+            
+            <!-- Search -->
+            <form method="GET" id="searchForm" class="flex items-center space-x-2">
                 <div class="relative">
-                    <input type="text" name="search" value="{{ request('search') }}" placeholder="Search by payment ID or customer..." 
-                           class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-maroon focus:border-maroon">
+                    <input type="text" name="search" id="searchInput" value="{{ request('search') }}" placeholder="Search payments..." 
+                           class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-maroon focus:border-maroon">
                     <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
                 </div>
-            </div>
-            
-            <div class="flex items-end space-x-2">
-                <button type="submit" class="bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-lg transition-colors">
-                    <i class="fas fa-search"></i>
-                </button>
-                @if(request('search') || request('payment_method') || request('start_date') || request('end_date'))
-                    <a href="{{ route('cashier.payments.index') }}" class="bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-lg transition-colors">
+                @if(request('search') || request('method') || request('date_range') || request('start_date') || request('end_date'))
+                    <a href="{{ route('cashier.payments.index') }}" class="bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-lg">
                         <i class="fas fa-times"></i>
                     </a>
                 @endif
-            </div>
-        </form>
-        
-        <!-- Active Filters Display -->
-        @if(request('payment_method') || request('start_date') || request('end_date'))
-        <div class="mt-4 flex flex-wrap gap-2">
-            @if(request('payment_method'))
-                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-800">
-                    {{ request('payment_method') }}
-                    <button onclick="removeFilter('payment_method')" class="ml-2 text-blue-600 hover:text-blue-400">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </span>
-            @endif
-            @if(request('start_date') && request('end_date'))
-                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm bg-green-100 text-green-800">
-                    {{ request('start_date') }} to {{ request('end_date') }}
-                    <button onclick="removeFilter('date_range')" class="ml-2 text-green-600 hover:text-green-400">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </span>
-            @endif
+            </form>
         </div>
-        @endif
     </div>
 
     <!-- Payments Table -->
@@ -82,134 +52,222 @@
             <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">
                     <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payment #</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order #</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Receipt</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Method</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reference</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created By</th>
+                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                     </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
                     @forelse($payments as $payment)
-                    <tr class="hover:bg-gray-50">
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="text-sm font-medium text-gray-900">{{ $payment->payment_id }}</div>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="text-sm text-gray-900">{{ $payment->order->order_id }}</div>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="text-sm text-gray-900">{{ $payment->order->customer->customer_firstname }} {{ $payment->order->customer->customer_lastname }}</div>
-                            @if($payment->order->customer->business_name)
-                                <div class="text-sm text-gray-500">{{ $payment->order->customer->business_name }}</div>
-                            @endif
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                            <div class="flex items-center space-x-2">
-                                <span>₱{{ number_format($payment->amount_paid, 2) }}</span>
+                        <tr class="hover:bg-gray-50 cursor-pointer" onclick="window.location.href='{{ route('cashier.payments.show', $payment) }}'">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center">
+                                    <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                                        <i class="fas fa-receipt text-green-600"></i>
+                                    </div>
+                                    <div class="ml-4">
+                                        <div class="text-sm font-medium text-gray-900">{{ $payment->receipt_number }}</div>
+                                        <div class="text-sm text-gray-500">{{ $payment->payment_date->format('M d, Y') }}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
                                 @php
-                                    $deadlineDate = \Carbon\Carbon::parse($payment->order->deadline_date);
-                                    $today = \Carbon\Carbon::today();
-                                    $daysUntilDeadline = $today->diffInDays($deadlineDate, false);
+                                    $orderStatus = $payment->getOrderStatus();
+                                    $order = $payment->orderWithTrashed()->first();
                                 @endphp
-                                @if($daysUntilDeadline <= 3 && $daysUntilDeadline >= 0)
-                                    <i class="fas fa-exclamation-triangle text-yellow-500 animate-pulse" title="Due in {{ $daysUntilDeadline }} day(s)"></i>
-                                @elseif($daysUntilDeadline < 0)
-                                    <i class="fas fa-exclamation-triangle text-red-500 animate-pulse" title="Overdue by {{ abs($daysUntilDeadline) }} day(s)"></i>
+                                @if($orderStatus === 'active')
+                                    <div class="text-sm font-medium text-gray-900">Order #{{ str_pad($order->order_id, 5, '0', STR_PAD_LEFT) }}</div>
+                                    <div class="text-sm text-gray-500">₱{{ number_format($order->final_total_amount, 2) }} total</div>
+                                @elseif($orderStatus === 'deleted')
+                                    <div class="text-sm font-medium text-gray-900 text-orange-600">Order #{{ str_pad($order->order_id, 5, '0', STR_PAD_LEFT) }} (Deleted)</div>
+                                    <div class="text-sm text-gray-500">₱{{ number_format($order->final_total_amount, 2) }} total</div>
+                                @else
+                                    <div class="text-sm font-medium text-gray-900 text-red-600">Order Not Found</div>
+                                    <div class="text-sm text-gray-500">Payment ID: {{ $payment->payment_id }}</div>
                                 @endif
-                            </div>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-                                @if($payment->payment_method === 'Cash') bg-green-100 text-green-800
-                                @elseif($payment->payment_method === 'Check') bg-blue-100 text-blue-800
-                                @elseif($payment->payment_method === 'GCash') bg-purple-100 text-purple-800
-                                @elseif($payment->payment_method === 'PayMaya') bg-pink-100 text-pink-800
-                                @elseif($payment->payment_method === 'Bank Transfer') bg-indigo-100 text-indigo-800
-                                @else bg-gray-100 text-gray-800 @endif">
-                                {{ $payment->payment_method }}
-                            </span>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {{ $payment->payment_date->format('M d, Y') }}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {{ $payment->payment_reference ?? '-' }}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            <div class="flex items-center space-x-2">
-                                <a href="{{ route('cashier.payments.show', $payment) }}" 
-                                   class="text-maroon hover:text-maroon-dark" title="View Payment">
-                                    <i class="fas fa-eye"></i>
-                                </a>
-                                <a href="{{ route('cashier.payments.edit', $payment) }}" 
-                                   class="text-blue-600 hover:text-blue-900" title="Edit Payment">
-                                    <i class="fas fa-edit"></i>
-                                </a>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                @if($orderStatus === 'active' && $order && $order->customer)
+                                    <div class="text-sm font-medium text-gray-900">{{ $order->customer->display_name }}</div>
+                                    <div class="text-sm text-gray-500">{{ $order->customer->contact_number1 }}</div>
+                                @elseif($orderStatus === 'deleted' && $order && $order->customer)
+                                    <div class="text-sm font-medium text-gray-900 text-orange-600">{{ $order->customer->display_name }} (Deleted)</div>
+                                    <div class="text-sm text-gray-500">{{ $order->customer->contact_number1 }}</div>
+                                @else
+                                    <div class="text-sm font-medium text-gray-900 text-red-600">Customer Not Found</div>
+                                    <div class="text-sm text-gray-500">Payment ID: {{ $payment->payment_id }}</div>
+                                @endif
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="px-2 py-1 text-xs font-medium rounded-full
+                                    @switch($payment->payment_method)
+                                        @case('Cash')
+                                            bg-green-100 text-green-800
+                                            @break
+                                        @case('GCash')
+                                            bg-blue-100 text-blue-800
+                                            @break
+                                        @case('Bank Transfer')
+                                            bg-purple-100 text-purple-800
+                                            @break
+                                        @case('Check')
+                                            bg-yellow-100 text-yellow-800
+                                            @break
+                                        @case('Credit Card')
+                                            bg-gray-100 text-gray-800
+                                            @break
+                                        @default
+                                            bg-gray-100 text-gray-800
+                                    @endswitch
+                                ">
+                                    {{ $payment->payment_method }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center space-x-2">
+                                    <div class="text-lg font-bold text-maroon">₱{{ number_format($payment->amount_paid, 2) }}</div>
+                                    @if($orderStatus === 'active' && $order && $order->deadline_date)
+                                        @php
+                                            $deadlineDate = \Carbon\Carbon::parse($order->deadline_date);
+                                            $today = \Carbon\Carbon::today();
+                                            $daysUntilDeadline = $today->diffInDays($deadlineDate, false);
+                                        @endphp
+                                        @if($daysUntilDeadline <= 3 && $daysUntilDeadline >= 0)
+                                            <i class="fas fa-exclamation-triangle text-yellow-500" title="Due in {{ $daysUntilDeadline }} day(s)"></i>
+                                        @elseif($daysUntilDeadline < 0)
+                                            <i class="fas fa-exclamation-triangle text-red-500" title="Overdue by {{ abs($daysUntilDeadline) }} day(s)"></i>
+                                        @endif
+                                    @endif
+                                </div>
+                                @if($payment->change > 0)
+                                    <div class="text-sm text-gray-500">Change: ₱{{ number_format($payment->change, 2) }}</div>
+                                @endif
+                                @if($payment->balance > 0)
+                                    <div class="text-sm text-red-600 font-medium">Balance: -₱{{ number_format($payment->balance, 2) }}</div>
+                                @else
+                                    <div class="text-sm text-green-600 font-medium">Fully Paid</div>
+                                @endif
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                @if($payment->balance > 0)
+                                    <span class="px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800">Partial</span>
+                                @else
+                                    <span class="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">Complete</span>
+                                @endif
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm font-medium text-gray-900">
+                                    @if($payment->creator)
+                                        @if($payment->creator->employee)
+                                            EMP{{ $payment->creator->employee->employee_id }} : {{ $payment->creator->employee->employee_firstname }}
+                                        @else
+                                            {{ $payment->creator->name }}
+                                        @endif
+                                    @else
+                                        System
+                                    @endif
+                                </div>
+                                <div class="text-sm text-gray-500">
+                                    @if($payment->creator)
+                                        {{ $payment->created_at->diffForHumans() }}
+                                    @endif
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium" onclick="event.stopPropagation()">
+                                <div class="flex items-center justify-center space-x-3">
+                                    <!-- Print Button -->
                                 <button onclick="printReceipt({{ $payment->payment_id }})" 
-                                        class="text-green-600 hover:text-green-900" 
+                                            class="text-blue-600 hover:text-blue-900" 
                                         title="Print Receipt">
                                     <i class="fas fa-print"></i>
                                 </button>
-                            </div>
-                        </td>
-                    </tr>
+                                
+                                    <!-- Edit Button -->
+                                   
+                                    
+                                    @if($showArchived)
+                                        <x-archive-actions 
+                                            :item="$payment" 
+                                            :archiveRoute="'cashier.payments.archive'" 
+                                            :restoreRoute="'cashier.payments.restore'" 
+                                            :editRoute="'cashier.payments.edit'"
+                                            :showRestore="true" />
+                                    @else
+                                        <x-archive-actions 
+                                            :item="$payment" 
+                                            :archiveRoute="'cashier.payments.archive'" 
+                                            :restoreRoute="'cashier.payments.restore'" 
+                                            :editRoute="'cashier.payments.edit'"
+                                            :showRestore="false" />
+                                    @endif
+                                </div>
+                            </td>
+                        </tr>
                     @empty
-                    <tr>
-                        <td colspan="8" class="px-6 py-12 text-center">
-                            <div class="text-gray-500">
-                                <i class="fas fa-credit-card text-4xl mb-4"></i>
-                                <p class="text-lg font-medium">No payments found</p>
-                                <p class="text-sm">Get started by recording a new payment.</p>
-                            </div>
-                        </td>
-                    </tr>
+                        <tr>
+                            <td colspan="7" class="px-6 py-12 text-center">
+                                <div class="text-gray-400">
+                                    <i class="fas fa-credit-card text-6xl mb-4"></i>
+                                    <p class="text-xl font-medium mb-2">No payments found</p>
+                                    <p class="text-gray-500">Payment records will appear here</p>
+                                </div>
+                            </td>
+                        </tr>
                     @endforelse
                 </tbody>
             </table>
         </div>
         
+        <!-- Pagination -->
         @if($payments->hasPages())
-        <div class="px-6 py-4 border-t border-gray-200">
-            {{ $payments->links() }}
-        </div>
+            <div class="bg-white px-6 py-3 border-t border-gray-200">
+                {{ $payments->links() }}
+            </div>
         @endif
     </div>
 </div>
 
 <!-- Filter Modal -->
 <div id="filterModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
-    <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
+    <div class="relative top-10 mx-auto p-5 border w-11/12 md:w-4/5 lg:w-3/4 xl:w-2/3 shadow-lg rounded-md bg-white">
         <div class="mt-3">
             <div class="flex items-center justify-between mb-4">
-                <h3 class="text-lg font-medium text-gray-900">Advanced Payment Filters</h3>
+                <h3 class="text-lg font-medium text-gray-900">Advanced Payment Filters & Summary</h3>
                 <button onclick="closeFilterModal()" class="text-gray-400 hover:text-gray-600">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
             
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Filters Section -->
+                <div>
+                    <h4 class="text-md font-medium text-gray-900 mb-4">Filters</h4>
             <form id="filterForm" method="GET" action="{{ route('cashier.payments.index') }}">
                 <div class="space-y-4">
-                    <!-- Date Range Selection -->
+                    <!-- Date Range Filter -->
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Date Range</label>
-                        <div class="grid grid-cols-2 gap-2">
-                            <button type="button" onclick="setDateRange('today')" class="date-range-btn px-3 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50">Today</button>
-                            <button type="button" onclick="setDateRange('yesterday')" class="date-range-btn px-3 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50">Yesterday</button>
-                            <button type="button" onclick="setDateRange('this_week')" class="date-range-btn px-3 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50">This Week</button>
-                            <button type="button" onclick="setDateRange('last_week')" class="date-range-btn px-3 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50">Last Week</button>
-                            <button type="button" onclick="setDateRange('this_month')" class="date-range-btn px-3 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50">This Month</button>
-                            <button type="button" onclick="setDateRange('last_month')" class="date-range-btn px-3 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50">Last Month</button>
-                            <button type="button" onclick="setDateRange('this_year')" class="date-range-btn px-3 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50">This Year</button>
-                            <button type="button" onclick="setDateRange('last_year')" class="date-range-btn px-3 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50">Last Year</button>
-                        </div>
+                                <select name="date_range" id="date_range" 
+                                        class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-maroon focus:border-maroon">
+                                    <option value="">All Time</option>
+                                    <option value="today" {{ request('date_range') == 'today' ? 'selected' : '' }}>Today</option>
+                                    <option value="yesterday" {{ request('date_range') == 'yesterday' ? 'selected' : '' }}>Yesterday</option>
+                                    <option value="last_7_days" {{ request('date_range') == 'last_7_days' ? 'selected' : '' }}>Last 7 Days</option>
+                                    <option value="last_30_days" {{ request('date_range') == 'last_30_days' ? 'selected' : '' }}>Last 30 Days</option>
+                                    <option value="last_3_months" {{ request('date_range') == 'last_3_months' ? 'selected' : '' }}>Last 3 Months</option>
+                                    <option value="this_year" {{ request('date_range') == 'this_year' ? 'selected' : '' }}>This Year</option>
+                                    <option value="custom" {{ request('date_range') == 'custom' ? 'selected' : '' }}>Custom Range</option>
+                                </select>
                     </div>
 
-                    <!-- Custom Date Range -->
-                    <div>
+                            <!-- Custom Date Range (shown when "Custom Range" is selected) -->
+                            <div id="custom_date_range_div" class="hidden">
                         <label class="block text-sm font-medium text-gray-700 mb-2">Custom Date Range</label>
                         <div class="grid grid-cols-2 gap-4">
                             <div>
@@ -232,25 +290,104 @@
                                 class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-maroon focus:border-maroon">
                             <option value="">All Payment Methods</option>
                             <option value="Cash" {{ request('payment_method') == 'Cash' ? 'selected' : '' }}>Cash</option>
-                            <option value="Check" {{ request('payment_method') == 'Check' ? 'selected' : '' }}>Check</option>
                             <option value="GCash" {{ request('payment_method') == 'GCash' ? 'selected' : '' }}>GCash</option>
-                            <option value="PayMaya" {{ request('payment_method') == 'PayMaya' ? 'selected' : '' }}>PayMaya</option>
                             <option value="Bank Transfer" {{ request('payment_method') == 'Bank Transfer' ? 'selected' : '' }}>Bank Transfer</option>
+                            <option value="Check" {{ request('payment_method') == 'Check' ? 'selected' : '' }}>Check</option>
+                            <option value="Credit Card" {{ request('payment_method') == 'Credit Card' ? 'selected' : '' }}>Credit Card</option>
                         </select>
+                    </div>
+
+                    <!-- Payment Status Filter -->
+                    <div>
+                        <label for="payment_status" class="block text-sm font-medium text-gray-700 mb-2">Payment Status</label>
+                        <select name="payment_status" id="payment_status" 
+                                class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-maroon focus:border-maroon">
+                            <option value="">All Status</option>
+                            <option value="complete" {{ request('payment_status') == 'complete' ? 'selected' : '' }}>Complete</option>
+                            <option value="partial" {{ request('payment_status') == 'partial' ? 'selected' : '' }}>Partial</option>
+                        </select>
+                    </div>
+
+                    <!-- Summary Cards -->
+                    <div class="mb-4">
+                        <div class="bg-blue-50 p-3 rounded-lg mb-3">
+                            <div class="text-sm text-blue-600 font-medium">Total Amount</div>
+                            <div id="totalAmount" class="text-lg font-bold text-blue-800">₱0.00</div>
+                        </div>
+                        <div class="bg-green-50 p-3 rounded-lg">
+                            <div class="text-sm text-green-600 font-medium mb-2">Payment Methods</div>
+                            <div id="paymentMethodsSummary" class="space-y-1">
+                                <div class="text-xs text-gray-500">No payments found</div>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 
-                <div class="flex justify-end space-x-3 mt-6">
-                    <button type="button" onclick="closeFilterModal()" 
-                            class="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors">
-                        Cancel
+                <div class="flex justify-between items-center mt-6">
+                    <button type="button" onclick="printPaymentSummary()" 
+                            class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 inline-flex items-center">
+                        <i class="fas fa-print mr-2"></i>
+                        Print Summary
                     </button>
-                    <button type="submit" 
-                            class="px-4 py-2 bg-maroon text-white rounded-lg hover:bg-maroon-dark transition-colors">
-                        Apply Filters
-                    </button>
+                    <div class="flex space-x-3">
+                        <button type="button" onclick="closeFilterModal()" 
+                                class="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400">
+                            Cancel
+                        </button>
+                        <button type="submit" 
+                                class="px-4 py-2 bg-maroon text-white rounded-lg hover:bg-maroon-dark">
+                            Apply Filters
+                        </button>
+                    </div>
                 </div>
             </form>
+                </div>
+
+                <!-- Payments List Section -->
+                <div>
+                    <h4 class="text-md font-medium text-gray-900 mb-4">Filtered Payments</h4>
+                    
+                    <div id="filteredPaymentsList" class="bg-gray-50 rounded-lg p-4 max-h-100 overflow-y-auto">
+                        @if($payments->count() > 0)
+                            <div class="space-y-3">
+                                @foreach($payments->take(10) as $payment)
+                                    <div class="bg-white rounded-lg p-3 border border-gray-200">
+                                        <div class="flex items-center justify-between">
+                                            <div class="flex items-center space-x-3">
+                                                <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                                                    <i class="fas fa-receipt text-green-600 text-sm"></i>
+                                                </div>
+                                                <div>
+                                                    <div class="text-sm font-medium text-gray-900">{{ $payment->receipt_number }}</div>
+                                                    <div class="text-xs text-gray-500">{{ $payment->payment_date->format('M d, Y') }}</div>
+                                                </div>
+                                            </div>
+                                            <div class="text-right">
+                                                <div class="text-sm font-bold text-maroon">₱{{ number_format($payment->amount_paid, 2) }}</div>
+                                                <div class="text-xs text-gray-500">{{ $payment->payment_method }}</div>
+                                            </div>
+                                        </div>
+                                        @if($payment->balance > 0)
+                                            <div class="mt-2 text-xs text-red-600">
+                                                Balance: -₱{{ number_format($payment->balance, 2) }}
+                                            </div>
+                                        @else
+                                            <div class="mt-2 text-xs text-green-600">
+                                                Fully Paid
+                                            </div>
+                                        @endif
+                                    </div>
+                                @endforeach
+            </div>
+                        @else
+                <div class="text-center py-8">
+                                <i class="fas fa-credit-card text-2xl text-gray-400 mb-4"></i>
+                                <p class="text-gray-500">No payments found</p>
+                            </div>
+                        @endif
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -268,7 +405,7 @@
             
             <div id="summaryContent">
                 <div class="text-center py-8">
-                    <i class="fas fa-spinner fa-spin text-2xl text-gray-400 mb-4"></i>
+                    <i class="fas fa-circle text-2xl text-gray-400 mb-4"></i>
                     <p class="text-gray-500">Loading payment summary...</p>
                 </div>
             </div>
@@ -283,143 +420,332 @@ function printReceipt(paymentId) {
     printWindow.focus();
 }
 
+function printPaymentSummary() {
+    // Get current filter values
+    const dateRange = document.getElementById('date_range').value;
+    const startDate = document.getElementById('start_date').value;
+    const endDate = document.getElementById('end_date').value;
+    const paymentMethod = document.getElementById('payment_method').value;
+    const paymentStatus = document.getElementById('payment_status').value;
+    
+    // Build query parameters for the print URL
+    const params = new URLSearchParams();
+    if (dateRange) params.append('date_range', dateRange);
+    if (startDate) params.append('start_date', startDate);
+    if (endDate) params.append('end_date', endDate);
+    if (paymentMethod) params.append('payment_method', paymentMethod);
+    if (paymentStatus) params.append('payment_status', paymentStatus);
+    
+    // Open print window with filtered data
+    const printWindow = window.open(`/cashier/payments/print-summary?${params.toString()}`, '_blank', 'width=800,height=600');
+    printWindow.focus();
+}
+
 function openFilterModal() {
     document.getElementById('filterModal').classList.remove('hidden');
+    
+    // Initialize summary with current data
+    updateSummaryFromCurrentData();
+}
+
+function updateSummaryFromCurrentData() {
+    // Calculate totals from current page data
+    const paymentsTable = document.querySelector('tbody');
+    if (paymentsTable) {
+        const allRows = Array.from(paymentsTable.querySelectorAll('tr'));
+        
+        // Filter out the "No payments found" row
+        const allPayments = allRows.filter(row => {
+            const hasColspan = row.querySelector('td[colspan]');
+            return !hasColspan; // Exclude rows with colspan (like "No payments found")
+        });
+        
+        let totalAmount = 0;
+        let paymentMethods = {};
+        
+        allPayments.forEach(paymentRow => {
+            const amountCell = paymentRow.querySelector('td:nth-child(5)');
+            const methodCell = paymentRow.querySelector('td:nth-child(4)');
+            
+            if (amountCell) {
+                const amountText = amountCell.querySelector('.text-lg.font-bold')?.textContent || '₱0.00';
+                const amount = parseFloat(amountText.replace('₱', '').replace(',', '')) || 0;
+                totalAmount += amount;
+            }
+            
+            if (methodCell) {
+                const method = methodCell.textContent.trim();
+                if (method) {
+                    paymentMethods[method] = (paymentMethods[method] || 0) + 1;
+                }
+            }
+        });
+        
+        // Update summary cards
+        document.getElementById('totalAmount').textContent = `₱${totalAmount.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+        
+        // Update payment methods summary
+        const methodsSummary = document.getElementById('paymentMethodsSummary');
+        if (Object.keys(paymentMethods).length > 0) {
+            methodsSummary.innerHTML = Object.entries(paymentMethods)
+                .map(([method, count]) => 
+                    `<div class="flex justify-between items-center text-xs">
+                        <span class="text-gray-700">${method}:</span>
+                        <span class="font-medium text-green-800">${count}</span>
+                    </div>`
+                ).join('');
+        } else {
+            methodsSummary.innerHTML = '<div class="text-xs text-gray-500">No payments found</div>';
+        }
+    }
 }
 
 function closeFilterModal() {
     document.getElementById('filterModal').classList.add('hidden');
 }
 
-function openSummaryModal() {
-    document.getElementById('summaryModal').classList.remove('hidden');
-    loadPaymentSummary();
-}
-
-function closeSummaryModal() {
-    document.getElementById('summaryModal').classList.add('hidden');
-}
-
-function setDateRange(range) {
-    const today = new Date();
-    let startDate, endDate;
+function updateFilteredPayments() {
+    const dateRange = document.getElementById('date_range').value;
+    const startDate = document.getElementById('start_date').value;
+    const endDate = document.getElementById('end_date').value;
+    const paymentMethod = document.getElementById('payment_method').value;
+    const paymentStatus = document.getElementById('payment_status').value;
     
-    // Remove active class from all buttons
-    document.querySelectorAll('.date-range-btn').forEach(btn => {
-        btn.classList.remove('bg-maroon', 'text-white');
-        btn.classList.add('border-gray-300', 'hover:bg-gray-50');
-    });
+    // Build query parameters
+    const params = new URLSearchParams();
+    if (dateRange) params.append('date_range', dateRange);
+    if (startDate) params.append('start_date', startDate);
+    if (endDate) params.append('end_date', endDate);
+    if (paymentMethod) params.append('payment_method', paymentMethod);
+    if (paymentStatus) params.append('payment_status', paymentStatus);
     
-    // Add active class to clicked button
-    event.target.classList.add('bg-maroon', 'text-white');
-    event.target.classList.remove('border-gray-300', 'hover:bg-gray-50');
+    // Show loading state
+    document.getElementById('filteredPaymentsList').innerHTML = `
+        <div class="text-center py-8">
+            <i class="fas fa-circle text-2xl text-gray-400 mb-4"></i>
+            <p class="text-gray-500">Loading filtered payments...</p>
+        </div>
+    `;
     
-    switch(range) {
-        case 'today':
-            startDate = endDate = today.toISOString().split('T')[0];
-            break;
-        case 'yesterday':
-            const yesterday = new Date(today);
-            yesterday.setDate(yesterday.getDate() - 1);
-            startDate = endDate = yesterday.toISOString().split('T')[0];
-            break;
-        case 'this_week':
-            const startOfWeek = new Date(today);
-            startOfWeek.setDate(today.getDate() - today.getDay());
-            startDate = startOfWeek.toISOString().split('T')[0];
-            endDate = today.toISOString().split('T')[0];
-            break;
-        case 'last_week':
-            const lastWeekStart = new Date(today);
-            lastWeekStart.setDate(today.getDate() - today.getDay() - 7);
-            const lastWeekEnd = new Date(today);
-            lastWeekEnd.setDate(today.getDate() - today.getDay() - 1);
-            startDate = lastWeekStart.toISOString().split('T')[0];
-            endDate = lastWeekEnd.toISOString().split('T')[0];
-            break;
-        case 'this_month':
-            startDate = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0];
-            endDate = today.toISOString().split('T')[0];
-            break;
-        case 'last_month':
-            const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-            const lastMonthEnd = new Date(today.getFullYear(), today.getMonth(), 0);
-            startDate = lastMonth.toISOString().split('T')[0];
-            endDate = lastMonthEnd.toISOString().split('T')[0];
-            break;
-        case 'this_year':
-            startDate = new Date(today.getFullYear(), 0, 1).toISOString().split('T')[0];
-            endDate = today.toISOString().split('T')[0];
-            break;
-        case 'last_year':
-            const lastYear = new Date(today.getFullYear() - 1, 0, 1);
-            const lastYearEnd = new Date(today.getFullYear() - 1, 11, 31);
-            startDate = lastYear.toISOString().split('T')[0];
-            endDate = lastYearEnd.toISOString().split('T')[0];
-            break;
-    }
+    // Update summary cards to loading state
+    document.getElementById('totalAmount').textContent = 'Loading...';
+    document.getElementById('paymentMethodsSummary').innerHTML = '<div class="text-xs text-gray-500">Loading...</div>';
     
-    document.getElementById('start_date').value = startDate;
-    document.getElementById('end_date').value = endDate;
-}
-
-function loadPaymentSummary() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const params = {
-        start_date: urlParams.get('start_date') || '',
-        end_date: urlParams.get('end_date') || '',
-        payment_method: urlParams.get('payment_method') || ''
-    };
-    
-    fetch(`/cashier/payments/summary?${new URLSearchParams(params)}`)
-        .then(response => response.json())
-        .then(data => {
-            document.getElementById('summaryContent').innerHTML = `
-                <div class="space-y-6">
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div class="bg-blue-50 p-4 rounded-lg">
-                            <div class="text-sm text-blue-600 font-medium">Total Payments</div>
-                            <div class="text-2xl font-bold text-blue-800">₱${data.total_amount.toLocaleString()}</div>
-                        </div>
-                        <div class="bg-green-50 p-4 rounded-lg">
-                            <div class="text-sm text-green-600 font-medium">Payment Count</div>
-                            <div class="text-2xl font-bold text-green-800">${data.payment_count}</div>
-                        </div>
-                        <div class="bg-purple-50 p-4 rounded-lg">
-                            <div class="text-sm text-purple-600 font-medium">Average Payment</div>
-                            <div class="text-2xl font-bold text-purple-800">₱${data.average_payment.toLocaleString()}</div>
-                        </div>
-                    </div>
+    // Fetch filtered payments
+    fetch(`{{ route('cashier.payments.index') }}?${params.toString()}`)
+        .then(response => response.text())
+        .then(html => {
+            // Create a temporary DOM element to parse the response
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = html;
+            
+            // Extract the payments from the main table
+            const paymentsTable = tempDiv.querySelector('tbody');
+            if (paymentsTable) {
+                const allRows = Array.from(paymentsTable.querySelectorAll('tr'));
+                
+                // Filter out the "No payments found" row
+                const allPayments = allRows.filter(row => {
+                    const hasColspan = row.querySelector('td[colspan]');
+                    return !hasColspan; // Exclude rows with colspan (like "No payments found")
+                });
+                
+                const displayPayments = allPayments.slice(0, 10);
+                
+                // Calculate totals and payment methods from all payments
+                let totalAmount = 0;
+                let paymentMethods = {};
+                
+                allPayments.forEach(paymentRow => {
+                    const amountCell = paymentRow.querySelector('td:nth-child(5)');
+                    const methodCell = paymentRow.querySelector('td:nth-child(4)');
                     
-                    <div class="bg-white border rounded-lg p-4">
-                        <h4 class="font-medium text-gray-900 mb-4">Payment Methods Breakdown</h4>
-                        <div class="space-y-3">
-                            ${data.payment_methods.map(method => `
-                                <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                                    <div class="flex items-center space-x-3">
-                                        <div class="w-3 h-3 rounded-full" style="background-color: ${method.color}"></div>
-                                        <span class="font-medium">${method.method}</span>
-                                        <span class="text-sm text-gray-500">(${method.count} payments)</span>
-                                    </div>
-                                    <div class="text-right">
-                                        <div class="font-bold">₱${method.amount.toLocaleString()}</div>
-                                        <div class="text-sm text-gray-500">${method.percentage}%</div>
-                                    </div>
-                                </div>
-                            `).join('')}
+                    if (amountCell) {
+                        const amountText = amountCell.querySelector('.text-lg.font-bold')?.textContent || '₱0.00';
+                        const amount = parseFloat(amountText.replace('₱', '').replace(',', '')) || 0;
+                        totalAmount += amount;
+                    }
+                    
+                    if (methodCell) {
+                        const method = methodCell.textContent.trim();
+                        if (method) {
+                            paymentMethods[method] = (paymentMethods[method] || 0) + 1;
+                        }
+                    }
+                });
+                
+                // Update summary cards
+                document.getElementById('totalAmount').textContent = `₱${totalAmount.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+                
+                // Update payment methods summary
+                const methodsSummary = document.getElementById('paymentMethodsSummary');
+                if (Object.keys(paymentMethods).length > 0) {
+                    methodsSummary.innerHTML = Object.entries(paymentMethods)
+                        .map(([method, count]) => 
+                            `<div class="flex justify-between items-center text-xs">
+                                <span class="text-gray-700">${method}:</span>
+                                <span class="font-medium text-green-800">${count}</span>
+                            </div>`
+                        ).join('');
+                } else {
+                    methodsSummary.innerHTML = '<div class="text-xs text-gray-500">No payments found</div>';
+                }
+                
+                if (displayPayments.length > 0) {
+                    const paymentsHTML = displayPayments.map(paymentRow => {
+                        const receiptCell = paymentRow.querySelector('td:first-child');
+                        const amountCell = paymentRow.querySelector('td:nth-child(5)');
+                        
+                        if (receiptCell && amountCell) {
+                            const receiptInfo = receiptCell.querySelector('div');
+                            const receiptNumber = receiptInfo?.querySelector('.text-sm.font-medium')?.textContent || 'N/A';
+                            const receiptDate = receiptInfo?.querySelector('.text-sm.text-gray-500')?.textContent || 'N/A';
+                            const amount = amountCell.querySelector('.text-lg.font-bold')?.textContent || '₱0.00';
+                            const balance = amountCell.querySelector('.text-sm.text-red-600')?.textContent || 
+                                         amountCell.querySelector('.text-sm.text-green-600')?.textContent || '';
+                            
+                            return `
+                                <div class="bg-white rounded-lg p-3 border border-gray-200">
+                                    <div class="flex items-center justify-between">
+                                        <div class="flex items-center space-x-3">
+                                            <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                                                <i class="fas fa-receipt text-green-600 text-sm"></i>
+                        </div>
+                                            <div>
+                                                <div class="text-sm font-medium text-gray-900">${receiptNumber}</div>
+                                                <div class="text-xs text-gray-500">${receiptDate}</div>
                         </div>
                     </div>
+                                        <div class="text-right">
+                                            <div class="text-sm font-bold text-maroon">${amount}</div>
+                                    </div>
+                                    </div>
+                                    ${balance ? `<div class="mt-2 text-xs ${balance.includes('Fully Paid') ? 'text-green-600' : 'text-red-600'}">${balance}</div>` : ''}
+                                </div>
+                            `;
+                        }
+                        return '';
+                    }).filter(html => html).join('');
+                    
+                    document.getElementById('filteredPaymentsList').innerHTML = `
+                        <div class="space-y-3">
+                            ${paymentsHTML}
+                        </div>
+                    `;
+                } else {
+                    document.getElementById('filteredPaymentsList').innerHTML = `
+                        <div class="text-center py-8">
+                            <i class="fas fa-credit-card text-2xl text-gray-400 mb-4"></i>
+                            <p class="text-gray-500">No payments found for the selected filters</p>
                 </div>
             `;
+                }
+            }
         })
         .catch(error => {
-            document.getElementById('summaryContent').innerHTML = `
+            console.error('Error loading filtered payments:', error);
+            document.getElementById('filteredPaymentsList').innerHTML = `
                 <div class="text-center py-8">
                     <i class="fas fa-exclamation-triangle text-2xl text-red-400 mb-4"></i>
-                    <p class="text-red-500">Error loading payment summary</p>
+                    <p class="text-red-500">Error loading payments</p>
                 </div>
             `;
+            
+            // Reset summary cards on error
+            document.getElementById('totalAmount').textContent = 'Error';
+            document.getElementById('totalCount').textContent = 'Error';
         });
+}
+
+// Add event listeners for filter changes
+document.addEventListener('DOMContentLoaded', function() {
+    const filterInputs = ['start_date', 'end_date', 'payment_method', 'payment_status'];
+    
+    filterInputs.forEach(inputId => {
+        const input = document.getElementById(inputId);
+        if (input) {
+            input.addEventListener('change', updateFilteredPayments);
+            input.addEventListener('input', updateFilteredPayments);
+        }
+    });
+    
+    // Add date range dropdown handler
+    const dateRangeSelect = document.getElementById('date_range');
+    if (dateRangeSelect) {
+        dateRangeSelect.addEventListener('change', handleDateRangeChange);
+    }
+    
+    // Add auto-search functionality
+    const searchInput = document.getElementById('searchInput');
+    if (searchInput) {
+        let searchTimeout;
+        searchInput.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                document.getElementById('searchForm').submit();
+            }, 500); // 500ms delay to avoid too many requests
+        });
+    }
+});
+
+function handleDateRangeChange() {
+    const dateRange = document.getElementById('date_range').value;
+    const customDateRangeDiv = document.getElementById('custom_date_range_div');
+    
+    if (dateRange === 'custom') {
+        customDateRangeDiv.classList.remove('hidden');
+    } else {
+        customDateRangeDiv.classList.add('hidden');
+        
+        // Set dates based on selected range
+        let startDate = '';
+        let endDate = '';
+        
+        const today = new Date();
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+        
+        switch(dateRange) {
+            case 'today':
+                startDate = today.toISOString().split('T')[0];
+                endDate = today.toISOString().split('T')[0];
+                break;
+            case 'yesterday':
+                startDate = yesterday.toISOString().split('T')[0];
+                endDate = yesterday.toISOString().split('T')[0];
+                break;
+            case 'last_7_days':
+                const last7Days = new Date(today);
+                last7Days.setDate(today.getDate() - 7);
+                startDate = last7Days.toISOString().split('T')[0];
+                endDate = today.toISOString().split('T')[0];
+                break;
+            case 'last_30_days':
+                const last30Days = new Date(today);
+                last30Days.setDate(today.getDate() - 30);
+                startDate = last30Days.toISOString().split('T')[0];
+                endDate = today.toISOString().split('T')[0];
+                break;
+            case 'last_3_months':
+                const last3Months = new Date(today);
+                last3Months.setMonth(last3Months.getMonth() - 3);
+                startDate = last3Months.toISOString().split('T')[0];
+                endDate = today.toISOString().split('T')[0];
+                break;
+            case 'this_year':
+                const thisYear = new Date(today.getFullYear(), 0, 1);
+                startDate = thisYear.toISOString().split('T')[0];
+                endDate = today.toISOString().split('T')[0];
+                break;
+        }
+        
+        // Update the hidden date inputs
+        document.getElementById('start_date').value = startDate;
+        document.getElementById('end_date').value = endDate;
+    }
+    
+    // Update filtered payments
+    updateFilteredPayments();
 }
 </script>
 @endsection

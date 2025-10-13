@@ -52,15 +52,21 @@
 				{{ (isset($showArchived) && $showArchived) ? 'Show Active' : 'View Archives' }}
 			</a>
 			
-			<form method="GET" class="flex items-center space-x-2">
+			<form method="GET" class="flex items-center space-x-2" id="searchForm">
 				<div class="relative">
-					<input type="text" name="search" value="{{ request('search') }}" placeholder="Search products..." 
-						   class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-maroon focus:border-maroon">
+					<input type="text" 
+                           id="instantSearchInput" 
+                           data-instant-search="true"
+                           data-container="productsTableContainer"
+                           data-loading="searchLoading"
+                           value="{{ request('search') }}" 
+                           placeholder="Search products..." 
+                           class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-maroon focus:border-maroon">
 					<i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                    <div id="searchLoading" class="absolute right-3 top-1/2 transform -translate-y-1/2 hidden">
+                        <i class="fas fa-spinner fa-spin text-gray-400"></i>
+                    </div>
 				</div>
-				<button type="submit" class="bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-lg transition-colors">
-					<i class="fas fa-search"></i>
-				</button>
 				@if(request('search'))
 					<a href="{{ route('admin.products.index') }}" class="bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-lg transition-colors">
 						<i class="fas fa-times"></i>
@@ -457,4 +463,5 @@ document.getElementById('archiveModal').addEventListener('click', function(e) {
 }
 </style>
 
+<script src="{{ asset('js/instant-search.js') }}"></script>
 @endsection

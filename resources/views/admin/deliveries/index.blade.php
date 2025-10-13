@@ -29,22 +29,28 @@
             </a>
             
             <!-- Search and Filters -->
-            <form method="GET" class="flex items-center space-x-2">
+            <form method="GET" class="flex items-center space-x-2" id="searchForm">
                 <div class="relative">
-                    <input type="text" name="search" value="{{ request('search') }}" placeholder="Search deliveries..." 
+                    <input type="text" 
+                           id="instantSearchInput" 
+                           data-instant-search="true"
+                           data-container="deliveriesTableContainer"
+                           data-loading="searchLoading"
+                           value="{{ request('search') }}" 
+                           placeholder="Search deliveries..." 
                            class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-maroon focus:border-maroon">
                     <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                    <div id="searchLoading" class="absolute right-3 top-1/2 transform -translate-y-1/2 hidden">
+                        <i class="fas fa-spinner fa-spin text-gray-400"></i>
+                    </div>
                 </div>
-                <select name="status" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-maroon focus:border-maroon">
+                <select name="status" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-maroon focus:border-maroon" >
                     <option value="">All Status</option>
                     <option value="scheduled" {{ request('status') == 'scheduled' ? 'selected' : '' }}>Scheduled</option>
                     <option value="in_transit" {{ request('status') == 'in_transit' ? 'selected' : '' }}>In Transit</option>
                     <option value="delivered" {{ request('status') == 'delivered' ? 'selected' : '' }}>Delivered</option>
                     <option value="cancelled" {{ request('status') == 'cancelled' ? 'selected' : '' }}>Cancelled</option>
                 </select>
-                <button type="submit" class="bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-lg transition-colors">
-                    <i class="fas fa-search"></i>
-                </button>
                 @if(request('search') || request('status'))
                     <a href="{{ route('admin.deliveries.index') }}" class="bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-lg transition-colors">
                         <i class="fas fa-times"></i>
@@ -81,7 +87,7 @@
                                     </div>
                                     <div>
                                         <div class="text-sm font-medium text-gray-900">{{ $delivery->order->customer->customer_firstname }} {{ $delivery->order->customer->customer_lastname }}</div>
-                                        <div class="text-sm text-gray-500">{{ $delivery->order->customer->customer_contact ?? 'No contact' }}</div>
+                                        <div class="text-sm text-gray-500">{{ $delivery->order->customer->contact_number1 ?? 'No contact' }}</div>
                                     </div>
                                 </div>
                             </td>
@@ -159,4 +165,5 @@
         </div>
     </div>
 </div>
+<script src="{{ asset('js/instant-search.js') }}"></script>
 @endsection

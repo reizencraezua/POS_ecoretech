@@ -84,6 +84,7 @@ A comprehensive Point of Sale (POS) system built with Laravel 12 for printing an
    - Default admin credentials:
      - **Super Admin**: admin@ecoretech.com / admin123
      - **Admin**: admin@pos.com / password123
+   - **Cashier accounts**: Auto-generated when admin creates employee with "Cashier" job position
 
 ## Database
 

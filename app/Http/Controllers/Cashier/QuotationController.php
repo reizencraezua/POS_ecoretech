@@ -23,11 +23,7 @@ class QuotationController extends Controller
      */
     public function index(Request $request)
     {
-        // Check if user is cashier or admin
-        $user = auth('web')->user();
-        if (!$user || (!$user->isCashier() && !$user->isAdmin())) {
-            abort(403, 'Access denied. Cashier or Admin role required.');
-        }
+        // Allow all authenticated users to view quotations
 
         $query = Quotation::with(['customer', 'details']);
 
@@ -79,7 +75,7 @@ class QuotationController extends Controller
                 'items.*.type' => 'required|in:product,service',
                 'items.*.id' => 'required|integer',
                 'items.*.quantity' => 'required|integer|min:1',
-                'items.*.unit' => 'required|string',
+                'items.*.unit_id' => 'required|integer',
                 'items.*.size' => 'nullable|string',
                 'items.*.price' => 'required|numeric|min:0',
                 'items.*.layout' => 'nullable|in:on,1,true,false,0',
@@ -94,6 +90,7 @@ class QuotationController extends Controller
                 'valid_until' => $validated['valid_until'],
                 'status' => Quotation::STATUS_PENDING,
                 'total_amount' => 0, // Will be calculated after details
+                'created_by' => auth('web')->id() ?? App\Models\User::first()->id, // Fallback to first user if not authenticated
             ]);
 
             // Process quotation details
@@ -106,7 +103,7 @@ class QuotationController extends Controller
 
                 $quotation->details()->create([
                     'quantity' => $item['quantity'],
-                    'unit' => $item['unit'],
+                    'unit_id' => $item['unit_id'],
                     'size' => $item['size'],
                     'price' => $item['price'],
                     'subtotal' => $subtotal,
@@ -124,8 +121,9 @@ class QuotationController extends Controller
                 ->with('success', 'Quotation created successfully.');
         } catch (\Exception $e) {
             Log::error('Error creating quotation: ' . $e->getMessage());
+            Log::error('Stack trace: ' . $e->getTraceAsString());
             return redirect()->back()
-                ->with('error', 'Failed to create quotation. Please try again.')
+                ->with('error', 'Failed to create quotation: ' . $e->getMessage())
                 ->withInput();
         }
     }
@@ -145,7 +143,7 @@ class QuotationController extends Controller
     public function updateStatus(Request $request, Quotation $quotation)
     {
         $request->validate([
-            'status' => 'required|in:pending,approved,rejected'
+            'status' => 'required|in:Pending,Closed'
         ]);
 
         $quotation->update(['status' => $request->status]);
@@ -163,6 +161,30 @@ class QuotationController extends Controller
         $hasLayout = $quotation->details()->where('layout', true)->exists();
         
         return response()->json(['hasLayout' => $hasLayout]);
+    }
+
+    /**
+     * Get quotation data for conversion
+     */
+    public function getData(Quotation $quotation)
+    {
+        try {
+            $quotation->load(['details.product', 'details.service']);
+            
+            // Calculate if any items require layout
+            $hasLayout = $quotation->details->some(function ($detail) {
+                return ($detail->product && $detail->product->requires_layout) || 
+                       ($detail->service && $detail->service->requires_layout);
+            });
+
+            return response()->json([
+                'final_total_amount' => $quotation->final_total_amount,
+                'has_layout' => $hasLayout,
+                'quotation_id' => $quotation->quotation_id
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Failed to fetch quotation data'], 500);
+        }
     }
 
     /**
@@ -189,9 +211,9 @@ class QuotationController extends Controller
             // Get quotation with details
             $quotation = Quotation::with(['customer', 'details.product', 'details.service'])->findOrFail($validated['quotation_id']);
 
-            // Check if quotation is approved
-            if ($quotation->status !== 'approved') {
-                throw new \Exception('Only approved quotations can be converted to job orders.');
+            // Check if quotation is closed
+            if ($quotation->status !== 'Closed') {
+                throw new \Exception('Only closed quotations can be converted to job orders.');
             }
 
             // Create order from quotation
@@ -204,19 +226,18 @@ class QuotationController extends Controller
                 'deadline_date' => $validated['deadline_date'],
                 'order_status' => Order::STATUS_ON_PROCESS,
                 'total_amount' => 0, // Will be calculated after details
+                'created_by' => auth('web')->id() ?? App\Models\User::first()->id,
             ]);
 
             // Convert quotation details to order details
-            $totalAmount = 0;
             foreach ($quotation->details as $detail) {
                 $baseAmount = $detail->quantity * $detail->price;
                 $layoutPrice = $detail->layout ? $detail->layout_price : 0;
                 $subtotal = $baseAmount + $layoutPrice;
-                $totalAmount += $subtotal;
 
                 $order->details()->create([
                     'quantity' => $detail->quantity,
-                    'unit' => $detail->unit,
+                    'unit_id' => $detail->unit_id,
                     'size' => $detail->size,
                     'price' => $detail->price,
                     'subtotal' => $subtotal,
@@ -227,12 +248,29 @@ class QuotationController extends Controller
                 ]);
             }
 
+            // Use the quotation's final total amount for validation and order total
+            $totalAmount = $quotation->final_total_amount;
+            
             // Update order total amount
             $order->update(['total_amount' => $totalAmount]);
 
             // Create initial payment if provided
             if (!empty($validated['amount_paid']) && $validated['amount_paid'] > 0) {
                 $amountPaid = (float) $validated['amount_paid'];
+                
+                // Validate payment amount
+                if ($amountPaid > $totalAmount) {
+                    throw new \Exception('Payment amount cannot exceed the total amount of ₱' . number_format($totalAmount, 2) . '.');
+                }
+                
+                // For downpayments, ensure minimum 50% requirement
+                if ($validated['payment_term'] === 'Downpayment') {
+                    $requiredDownpayment = $totalAmount * 0.5;
+                    if ($amountPaid < $requiredDownpayment) {
+                        throw new \Exception('Downpayment must be at least 50% of the total amount (₱' . number_format($requiredDownpayment, 2) . ').');
+                    }
+                }
+                
                 $remaining = max(0, $totalAmount - $amountPaid);
                 $change = $amountPaid > $totalAmount ? ($amountPaid - $totalAmount) : 0;
 

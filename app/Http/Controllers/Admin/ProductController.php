@@ -18,13 +18,38 @@ class ProductController extends Controller
         if ($request->has('search')) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
-                $q->where('product_name', 'like', "%{$search_query}%")
-                    ->orWhere('product_description', 'like', "%{$search_query}%");
+                $q->where('product_id', 'like', "%{$search}%")
+                  ->orWhere('product_name', 'like', "%{$search}%")
+                  ->orWhere('product_description', 'like', "%{$search}%")
+                  ->orWhere('product_code', 'like', "%{$search}%")
+                  ->orWhere('unit_price', 'like', "%{$search}%")
+                  ->orWhere('stocks', 'like', "%{$search}%")
+                  ->orWhere('notes', 'like', "%{$search}%")
+                  // Search in category fields
+                  ->orWhereHas('category', function ($categoryQuery) use ($search) {
+                      $categoryQuery->where('category_name', 'like', "%{$search}%")
+                                   ->orWhere('description', 'like', "%{$search}%");
+                  })
+                  // Search in size fields
+                  ->orWhereHas('size', function ($sizeQuery) use ($search) {
+                      $sizeQuery->where('size_name', 'like', "%{$search}%")
+                               ->orWhere('description', 'like', "%{$search}%");
+                  })
+                  // Search in unit fields
+                  ->orWhereHas('unit', function ($unitQuery) use ($search) {
+                      $unitQuery->where('unit_name', 'like', "%{$search}%")
+                               ->orWhere('abbreviation', 'like', "%{$search}%");
+                  });
             });
         }
 
         $products = $query->orderBy('product_id', 'asc')->paginate(15);
         $products->appends($request->query());
+
+        // If it's an AJAX request, return only the table content
+        if ($request->ajax()) {
+            return view('admin.products.partials.products-table', compact('products', 'showArchived'));
+        }
 
         return view('admin.products.index', compact('products', 'showArchived'));
     }

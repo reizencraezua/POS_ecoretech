@@ -53,6 +53,14 @@ class Employee extends Model
     }
 
     /**
+     * Get the user account associated with this employee
+     */
+    public function user()
+    {
+        return $this->hasOne(User::class, 'employee_id', 'employee_id');
+    }
+
+    /**
      * Get the full name attribute
      */
     public function getFullNameAttribute()

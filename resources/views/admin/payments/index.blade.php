@@ -31,25 +31,35 @@
             </a>
             
             <!-- Search -->
-            <form method="GET" id="searchForm" class="flex items-center space-x-2">
+            <div class="flex items-center space-x-2">
                 <div class="relative">
-                    <input type="text" name="search" id="searchInput" value="{{ request('search') }}" placeholder="Search payments..." 
-                           class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-maroon focus:border-maroon">
+                    <input type="text" 
+                           id="instantSearchInput" 
+                           data-instant-search="true"
+                           data-container="paymentsTableContainer"
+                           data-loading="searchLoading"
+                           placeholder="Search payments..." 
+                           class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-maroon focus:border-maroon"
+                           value="{{ request('search') }}">
                     <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                    <div id="searchLoading" class="absolute right-3 top-1/2 transform -translate-y-1/2 hidden">
+                        <i class="fas fa-spinner fa-spin text-gray-400"></i>
+                    </div>
                 </div>
                 @if(request('search') || request('method') || request('date_range') || request('start_date') || request('end_date'))
                     <a href="{{ route('admin.payments.index') }}" class="bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-lg transition-colors">
                         <i class="fas fa-times"></i>
                     </a>
                 @endif
-            </form>
+            </div>
         </div>
     </div>
 
     <!-- Payments Table -->
     <div class="bg-white rounded-lg shadow overflow-hidden">
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
+        <div id="paymentsTableContainer">
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">
                     <tr>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Receipt</th>
@@ -95,9 +105,15 @@
                                 @if($orderStatus === 'active' && $order && $order->customer)
                                     <div class="text-sm font-medium text-gray-900">{{ $order->customer->display_name }}</div>
                                     <div class="text-sm text-gray-500">{{ $order->customer->contact_number1 }}</div>
+                                    @if($order->customer->customer_email)
+                                        <div class="text-xs text-gray-400">{{ $order->customer->customer_email }}</div>
+                                    @endif
                                 @elseif($orderStatus === 'deleted' && $order && $order->customer)
                                     <div class="text-sm font-medium text-gray-900 text-orange-600">{{ $order->customer->display_name }} (Deleted)</div>
                                     <div class="text-sm text-gray-500">{{ $order->customer->contact_number1 }}</div>
+                                    @if($order->customer->customer_email)
+                                        <div class="text-xs text-gray-400">{{ $order->customer->customer_email }}</div>
+                                    @endif
                                 @else
                                     <div class="text-sm font-medium text-gray-900 text-red-600">Customer Not Found</div>
                                     <div class="text-sm text-gray-500">Payment ID: {{ $payment->payment_id }}</div>
@@ -148,7 +164,7 @@
                                     <div class="text-sm text-gray-500">Change: ₱{{ number_format($payment->change, 2) }}</div>
                                 @endif
                                 @if($payment->balance > 0)
-                                    <div class="text-sm text-red-600 font-medium">Balance: ₱{{ number_format($payment->balance, 2) }}</div>
+                                    <div class="text-sm text-red-600 font-medium">Balance: -₱{{ number_format($payment->balance, 2) }}</div>
                                 @else
                                     <div class="text-sm text-green-600 font-medium">Fully Paid</div>
                                 @endif
@@ -203,6 +219,7 @@
                     @endforelse
                 </tbody>
             </table>
+            </div>
         </div>
         
         <!-- Pagination -->
@@ -306,15 +323,22 @@
                     </div>
                 </div>
                 
-                <div class="flex justify-end space-x-3 mt-6">
-                    <button type="button" onclick="closeFilterModal()" 
-                            class="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors">
-                        Cancel
+                <div class="flex justify-between items-center mt-6">
+                    <button type="button" onclick="printPaymentSummary()" 
+                            class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors inline-flex items-center">
+                        <i class="fas fa-print mr-2"></i>
+                        Print Summary
                     </button>
-                    <button type="submit" 
-                            class="px-4 py-2 bg-maroon text-white rounded-lg hover:bg-maroon-dark transition-colors">
-                        Apply Filters
-                    </button>
+                    <div class="flex space-x-3">
+                        <button type="button" onclick="closeFilterModal()" 
+                                class="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors">
+                            Cancel
+                        </button>
+                        <button type="submit" 
+                                class="px-4 py-2 bg-maroon text-white rounded-lg hover:bg-maroon-dark transition-colors">
+                            Apply Filters
+                        </button>
+                    </div>
                 </div>
             </form>
                 </div>
@@ -345,7 +369,7 @@
                                         </div>
                                         @if($payment->balance > 0)
                                             <div class="mt-2 text-xs text-red-600">
-                                                Balance: ₱{{ number_format($payment->balance, 2) }}
+                                                Balance: -₱{{ number_format($payment->balance, 2) }}
                                             </div>
                                         @else
                                             <div class="mt-2 text-xs text-green-600">
@@ -373,6 +397,27 @@
 function printReceipt(paymentId) {
     // Open receipt in new window for printing
     const printWindow = window.open(`/admin/payments/${paymentId}/print`, '_blank', 'width=800,height=600');
+    printWindow.focus();
+}
+
+function printPaymentSummary() {
+    // Get current filter values
+    const dateRange = document.getElementById('date_range').value;
+    const startDate = document.getElementById('start_date').value;
+    const endDate = document.getElementById('end_date').value;
+    const paymentMethod = document.getElementById('payment_method').value;
+    const paymentStatus = document.getElementById('payment_status').value;
+    
+    // Build query parameters for the print URL
+    const params = new URLSearchParams();
+    if (dateRange) params.append('date_range', dateRange);
+    if (startDate) params.append('start_date', startDate);
+    if (endDate) params.append('end_date', endDate);
+    if (paymentMethod) params.append('payment_method', paymentMethod);
+    if (paymentStatus) params.append('payment_status', paymentStatus);
+    
+    // Open print window with filtered data
+    const printWindow = window.open(`/admin/payments/print-summary?${params.toString()}`, '_blank', 'width=800,height=600');
     printWindow.focus();
 }
 
@@ -684,5 +729,8 @@ function handleDateRangeChange() {
     // Update filtered payments
     updateFilteredPayments();
 }
+
 </script>
+
+<script src="{{ asset('js/instant-search.js') }}"></script>
 @endsection

@@ -18,8 +18,8 @@ class OrderController extends Controller
     {
         $showArchived = $request->boolean('archived');
         $query = $showArchived
-            ? Order::onlyTrashed()->with(['customer', 'employee', 'details', 'payments', 'creator', 'voidedBy'])
-            : Order::with(['customer', 'employee', 'details', 'payments', 'creator']);
+            ? Order::onlyTrashed()->with(['customer', 'employee', 'details.unit', 'payments', 'creator', 'voidedBy'])
+            : Order::with(['customer', 'employee', 'details.unit', 'payments', 'creator', 'voidedBy']);
 
         if ($request->has('status') && $request->status !== '') {
             $status = $request->status;
@@ -28,19 +28,19 @@ class OrderController extends Controller
             if ($status === 'due_today') {
                 $query->whereNotNull('deadline_date')
                       ->whereDate('deadline_date', now()->toDateString())
-                      ->whereNotIn('order_status', ['Completed', 'Cancelled']);
+                      ->whereNotIn('order_status', ['Completed', 'Cancelled', 'Voided']);
             } elseif ($status === 'due_tomorrow') {
                 $query->whereNotNull('deadline_date')
                       ->whereDate('deadline_date', now()->addDay()->toDateString())
-                      ->whereNotIn('order_status', ['Completed', 'Cancelled']);
+                      ->whereNotIn('order_status', ['Completed', 'Cancelled', 'Voided']);
             } elseif ($status === 'due_3_days') {
                 $query->whereNotNull('deadline_date')
                       ->whereBetween('deadline_date', [now()->addDay(), now()->addDays(3)])
-                      ->whereNotIn('order_status', ['Completed', 'Cancelled']);
+                      ->whereNotIn('order_status', ['Completed', 'Cancelled', 'Voided']);
             } elseif ($status === 'overdue') {
                 $query->whereNotNull('deadline_date')
                       ->whereDate('deadline_date', '<', now()->toDateString())
-                      ->whereNotIn('order_status', ['Completed', 'Cancelled']);
+                      ->whereNotIn('order_status', ['Completed', 'Cancelled', 'Voided']);
             } else {
                 // Regular status filter
                 $query->where('order_status', $status);
@@ -49,10 +49,37 @@ class OrderController extends Controller
 
         if ($request->has('search')) {
             $search = $request->search;
-            $query->whereHas('customer', function ($q) use ($search) {
-                $q->where('customer_firstname', 'like', "%{$search}%")
-                    ->orWhere('customer_lastname', 'like', "%{$search}%")
-                    ->orWhere('business_name', 'like', "%{$search}%");
+            $query->where(function ($q) use ($search) {
+                // Search in order fields
+                $q->where('order_id', 'like', "%{$search}%")
+                  ->orWhere('order_status', 'like', "%{$search}%")
+                  ->orWhere('total_amount', 'like', "%{$search}%")
+                  ->orWhere('layout_design_fee', 'like', "%{$search}%")
+                  ->orWhere('void_reason', 'like', "%{$search}%")
+                  // Search in customer fields
+                  ->orWhereHas('customer', function ($customerQuery) use ($search) {
+                      $customerQuery->where('customer_firstname', 'like', "%{$search}%")
+                                   ->orWhere('customer_lastname', 'like', "%{$search}%")
+                                   ->orWhere('business_name', 'like', "%{$search}%")
+                                   ->orWhere('customer_email', 'like', "%{$search}%")
+                                   ->orWhere('customer_phone', 'like', "%{$search}%")
+                                   ->orWhere('customer_address', 'like', "%{$search}%");
+                  })
+                  // Search in employee fields
+                  ->orWhereHas('employee', function ($employeeQuery) use ($search) {
+                      $employeeQuery->where('first_name', 'like', "%{$search}%")
+                                   ->orWhere('last_name', 'like', "%{$search}%")
+                                   ->orWhere('email', 'like', "%{$search}%");
+                  })
+                  // Search in order details
+                  ->orWhereHas('details', function ($detailQuery) use ($search) {
+                      $detailQuery->where('product_name', 'like', "%{$search}%")
+                                 ->orWhere('service_name', 'like', "%{$search}%")
+                                 ->orWhere('description', 'like', "%{$search}%")
+                                 ->orWhere('quantity', 'like', "%{$search}%")
+                                 ->orWhere('unit_price', 'like', "%{$search}%")
+                                 ->orWhere('total_price', 'like', "%{$search}%");
+                  });
             });
         }
 
@@ -66,6 +93,11 @@ class OrderController extends Controller
         }
 
         $orders = $query->latest('order_date')->paginate(15)->appends($request->query());
+
+        // If it's an AJAX request, return only the table content
+        if ($request->ajax()) {
+            return view('admin.orders.partials.orders-table', compact('orders', 'showArchived'));
+        }
 
         return view('admin.orders.index', compact('orders', 'showArchived'));
     }
@@ -111,9 +143,9 @@ class OrderController extends Controller
                 'payment.amount_paid' => 'nullable|numeric|min:0',
                 'payment.reference_number' => 'nullable|string|max:255',
                 'payment.remarks' => 'nullable|string',
-            ]);
+        ]);
 
-            $totalAmount = 0;
+        $totalAmount = 0;
 
             $order = Order::create([
                 'customer_id' => $validated['customer_id'],
@@ -249,12 +281,19 @@ class OrderController extends Controller
 
     public function show(Order $order)
     {
+        // Prevent viewing voided orders
+        if ($order->order_status === Order::STATUS_VOIDED) {
+            return redirect()->route('admin.orders.index')
+                ->with('error', 'Cannot view voided orders.');
+        }
+
         $order->load([
             'customer',
             'employee.job',
             'layoutEmployee.job',
             'details.product',
             'details.service',
+            'details.unit',
             'payments',
             'deliveries'
         ]);
@@ -264,18 +303,51 @@ class OrderController extends Controller
 
     public function edit(Order $order)
     {
+        // Prevent editing voided orders
+        if ($order->order_status === Order::STATUS_VOIDED) {
+            return redirect()->route('admin.orders.index')
+                ->with('error', 'Cannot edit voided orders.');
+        }
+
         $customers = Customer::orderBy('customer_firstname')->get();
         $employees = Employee::with('job')->orderBy('employee_firstname')->get();
         $products = Product::with(['category.sizes'])->orderBy('product_name')->get();
         $services = Service::with(['category.sizes'])->orderBy('service_name')->get();
         $discountRules = DiscountRule::active()->validAt()->orderBy('min_quantity')->get();
-        $order->load(['details']);
+        $units = \App\Models\Unit::where('is_active', true)->orderBy('unit_name')->get();
+        $order->load(['details', 'payments']);
+        
+        // Check if order has payments
+        $hasPayments = $order->payments->count() > 0;
 
-        return view('admin.orders.edit', compact('order', 'customers', 'employees', 'products', 'services', 'discountRules'));
+        return view('admin.orders.edit', compact('order', 'customers', 'employees', 'products', 'services', 'discountRules', 'units', 'hasPayments'));
     }
 
     public function update(Request $request, Order $order)
     {
+        // Prevent updating voided orders
+        if ($order->order_status === Order::STATUS_VOIDED) {
+            return redirect()->route('admin.orders.index')
+                ->with('error', 'Cannot update voided orders.');
+        }
+
+        // Check if order has payments - if so, prevent updating existing items
+        $hasPayments = $order->payments()->count() > 0;
+        $hasPaymentInRequest = !empty($request->input('payment.amount_paid')) && $request->input('payment.amount_paid') > 0;
+        
+        // Only restrict item modifications if there are existing payments AND no new payment is being made
+        if ($hasPayments && $request->has('items') && !$hasPaymentInRequest) {
+            // Allow only adding new items, not modifying existing ones
+            $existingItemCount = $order->details()->count();
+            $submittedItemCount = count($request->input('items', []));
+            
+            // If trying to modify existing items (submitted count is less than existing count)
+            if ($submittedItemCount < $existingItemCount) {
+                return redirect()->back()
+                    ->with('error', 'Cannot remove existing items when payments exist. You can only add new items or process a payment.');
+            }
+        }
+
         $validated = $request->validate([
             'customer_id' => 'required|exists:customers,customer_id',
             'employee_id' => 'required|exists:employees,employee_id',
@@ -287,7 +359,7 @@ class OrderController extends Controller
             'items.*.type' => 'required|in:product,service',
             'items.*.id' => 'required|integer',
             'items.*.quantity' => 'required|integer|min:1',
-            'items.*.unit' => 'nullable|string',
+            'items.*.unit_id' => 'required|exists:units,unit_id',
             'items.*.size' => 'nullable|string',
             'items.*.price' => 'required|numeric|min:0',
             'items.*.layout' => 'nullable|in:on,1,true,false,0',
@@ -365,7 +437,7 @@ class OrderController extends Controller
 
             $order->details()->create([
                 'quantity' => $item['quantity'],
-                'unit' => $item['unit'],
+                'unit_id' => $item['unit_id'] ?? null,
                 'size' => $item['size'],
                 'price' => $item['price'],
                 'subtotal' => $baseAmount, // Store base amount (Quantity × Price)
@@ -378,27 +450,27 @@ class OrderController extends Controller
             ]);
         }
 
-        // Calculate using the new formula
-        // Formula 1: Total Amount = (Quantity × Unit Price)
-        $totalAmount = $order->details->sum(function ($detail) {
+        // Calculate using the correct formula
+        // Formula 1: Sub Total = (Quantity × Unit Price)
+        $subTotal = $order->details->sum(function ($detail) {
             return $detail->quantity * $detail->price;
         });
         
-        // Formula 2: Sub Total = Total Amount ÷ 1.12
-        $subTotal = $totalAmount / 1.12;
+        // Formula 2: VAT Tax = Sub Total × 0.12
+        $vatAmount = $subTotal * 0.12;
         
-        // Formula 3: VAT Tax = Total Amount × 0.12
-        $vatAmount = $totalAmount * 0.12;
+        // Formula 3: Base Amount = Sub Total - VAT
+        $baseAmount = $subTotal - $vatAmount;
         
-        // Formula 4: Discount Amount = Total Amount × Discount Rate
+        // Formula 4: Discount Amount = Sub Total × Discount Rate
         $totalQuantity = array_sum(array_column($validated['items'], 'quantity'));
-        $discountAmount = $this->calculateOrderDiscount($totalAmount, $totalQuantity);
+        $discountAmount = $this->calculateOrderDiscount($subTotal, $totalQuantity);
         
-        // Formula 5: Final Total Amount = (Total Amount - Discount Amount) + layout fee
+        // Formula 5: Final Total Amount = (Sub Total - Discount Amount) + layout fee
         $layoutFees = $order->details->sum(function ($detail) {
             return $detail->layout ? $detail->layout_price : 0;
         });
-        $finalTotalAmount = ($totalAmount - $discountAmount) + $layoutFees;
+        $finalTotalAmount = ($subTotal - $discountAmount) + $layoutFees;
         
         // Update order with final total amount
         $order->update(['total_amount' => $finalTotalAmount]);

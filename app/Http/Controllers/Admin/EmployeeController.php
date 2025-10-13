@@ -32,9 +32,32 @@ class EmployeeController extends Controller
         }
 
         $employees = $query->latest()->paginate(15)->appends($request->query());
+        
+        // Add order counts to each employee
+        $employees->getCollection()->transform(function ($employee) {
+            // Count orders where employee is either main employee or layout employee
+            $employee->orders_count = \App\Models\Order::where('employee_id', $employee->employee_id)
+                ->orWhere('layout_employee_id', $employee->employee_id)
+                ->count();
+            
+            $employee->active_orders_count = \App\Models\Order::where(function($query) use ($employee) {
+                    $query->where('employee_id', $employee->employee_id)
+                          ->orWhere('layout_employee_id', $employee->employee_id);
+                })
+                ->whereNotIn('order_status', ['Completed', 'Cancelled', 'Voided'])
+                ->count();
+            
+            return $employee;
+        });
+        
         $jobs = Job::orderBy('job_title', 'asc')->get();
 
-        return view('admin.employees.index', compact('employees', 'jobs', 'showArchived'));
+        // If it's an AJAX request, return only the table content
+        if ($request->ajax()) {
+            return view('admin.employees.partials.employees-table', compact('employees', 'showArchived'));
+        }
+
+        return view('admin.employees.index', compact('employees', 'showArchived', 'jobs'));
     }
 
     /**
@@ -83,7 +106,7 @@ class EmployeeController extends Controller
         }
 
         try {
-            Employee::create([
+            $employee = Employee::create([
                 'employee_firstname' => $request->employee_firstname,
                 'employee_middlename' => $request->employee_middlename,
                 'employee_lastname' => $request->employee_lastname,
@@ -94,8 +117,17 @@ class EmployeeController extends Controller
                 'job_id' => $request->job_id,
             ]);
 
+            // Check if employee is a cashier and create user account
+            $job = Job::find($request->job_id);
+            $message = 'Employee added successfully!';
+            
+            if ($job && strtolower($job->job_title) === 'cashier') {
+                $this->createCashierAccount($employee);
+                $message = 'Employee added successfully! Cashier account has been automatically created.';
+            }
+
             return redirect()->route('admin.employees.index')
-                ->with('success', 'Employee added successfully!');
+                ->with('success', $message);
         } catch (\Exception $e) {
             return redirect()->back()
                 ->with('error', 'Failed to add employee. Please try again.')
@@ -108,9 +140,17 @@ class EmployeeController extends Controller
      */
     public function show(Employee $employee)
     {
-        $employee->load(['job', 'orders' => function ($query) {
-            $query->with(['customer'])->orderBy('created_at', 'desc');
-        }]);
+        $employee->load(['job']);
+        
+        // Get all orders where employee is either main employee or layout employee
+        $orders = \App\Models\Order::where('employee_id', $employee->employee_id)
+            ->orWhere('layout_employee_id', $employee->employee_id)
+            ->with(['customer'])
+            ->orderBy('created_at', 'desc')
+            ->get();
+        
+        // Add orders to employee object for compatibility with view
+        $employee->setRelation('orders', $orders);
 
         return view('admin.employees.show', compact('employee'));
     }
@@ -161,6 +201,7 @@ class EmployeeController extends Controller
         }
 
         try {
+            $oldJobId = $employee->job_id;
             $employee->update([
                 'employee_firstname' => $request->employee_firstname,
                 'employee_middlename' => $request->employee_middlename,
@@ -172,8 +213,24 @@ class EmployeeController extends Controller
                 'job_id' => $request->job_id,
             ]);
 
+            // Check if job was changed to cashier and create account if needed
+            $newJob = Job::find($request->job_id);
+            $oldJob = Job::find($oldJobId);
+            
+            $message = 'Employee updated successfully!';
+            
+            if ($newJob && strtolower($newJob->job_title) === 'cashier' && 
+                (!$oldJob || strtolower($oldJob->job_title) !== 'cashier')) {
+                
+                // Check if user account already exists
+                if (!$employee->user) {
+                    $this->createCashierAccount($employee);
+                    $message = 'Employee updated successfully! Cashier account has been automatically created.';
+                }
+            }
+
             return redirect()->route('admin.employees.index')
-                ->with('success', 'Employee updated successfully!');
+                ->with('success', $message);
         } catch (\Exception $e) {
             return redirect()->back()
                 ->with('error', 'Failed to update employee. Please try again.')
@@ -281,5 +338,43 @@ class EmployeeController extends Controller
             'success' => true,
             'data' => $employees
         ]);
+    }
+
+    /**
+     * Create cashier account for employee
+     */
+    private function createCashierAccount(Employee $employee)
+    {
+        try {
+            // Generate email: (firstname)(zero-padded employeeID)@ecoretech.com
+            // Remove spaces and special characters from firstname
+            $firstname = preg_replace('/[^a-zA-Z]/', '', $employee->employee_firstname);
+            $email = strtolower($firstname) . str_pad($employee->employee_id, 4, '0', STR_PAD_LEFT) . '@ecoretech.com';
+            
+            // Generate password: (surname)(employeeID)
+            $password = strtolower($employee->employee_lastname) . $employee->employee_id;
+
+            \App\Models\User::create([
+                'name' => $employee->full_name,
+                'email' => $email,
+                'password' => bcrypt($password),
+                'role' => 'cashier',
+                'is_active' => true,
+                'employee_id' => $employee->employee_id,
+            ]);
+
+            // Log the account creation for reference
+            \Log::info("Cashier account created for employee {$employee->full_name} (#{$employee->employee_id})", [
+                'email' => $email,
+                'password' => $password,
+                'employee_id' => $employee->employee_id
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error("Failed to create cashier account for employee {$employee->full_name} (#{$employee->employee_id})", [
+                'error' => $e->getMessage(),
+                'employee_id' => $employee->employee_id
+            ]);
+        }
     }
 }

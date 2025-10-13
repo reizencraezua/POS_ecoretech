@@ -93,10 +93,7 @@
                     <span class="text-gray-600">Customer:</span>
                     <span class="font-medium">{{ $payment->order->customer->customer_firstname }} {{ $payment->order->customer->customer_lastname }}</span>
                 </div>
-                <div class="flex justify-between">
-                    <span class="text-gray-600">Amount Paid:</span>
-                    <span class="font-medium text-green-600">₱{{ number_format($payment->amount_paid, 2) }}</span>
-                </div>
+              
                 <div class="flex justify-between">
                     <span class="text-gray-600">Payment Method:</span>
                     <span class="font-medium">{{ $payment->payment_method }}</span>
@@ -124,11 +121,11 @@
                 </div>
                 <div class="flex justify-between">
                     <span class="text-gray-600">Previous Balance:</span>
-                    <span class="font-medium text-red-600">₱{{ number_format($payment->order->final_total_amount - ($payment->order->total_paid - $payment->amount_paid), 2) }}</span>
+                    <span class="font-medium text-black-600">₱{{ number_format($payment->order->final_total_amount - ($payment->order->total_paid - $payment->amount_paid), 2) }}</span>
                 </div>
                 <div class="flex justify-between">
                     <span class="text-gray-600">Amount Paid:</span>
-                    <span class="font-medium text-green-600">₱{{ number_format($payment->amount_paid, 2) }}</span>
+                    <span class="font-medium text-red-600">-₱{{ number_format($payment->amount_paid, 2) }}</span>
                 </div>
                 <div class="flex justify-between">
                     <span class="text-gray-600">Total Paid:</span>
@@ -143,7 +140,7 @@
                 @if($payment->balance > 0)
                 <div class="flex justify-between">
                     <span class="text-gray-600">Remaining Balance:</span>
-                    <span class="font-medium text-red-600">₱{{ number_format($payment->balance, 2) }}</span>
+                    <span class="font-medium text-green-600">₱{{ number_format($payment->balance, 2) }}</span>
                 </div>
                 @else
                 <div class="flex justify-between">

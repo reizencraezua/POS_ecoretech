@@ -57,6 +57,8 @@
                     <div>
                         <label for="contact_number1" class="block text-sm font-medium text-gray-700 mb-1">Primary Contact *</label>
                         <input type="text" name="contact_number1" id="contact_number1" required
+                               pattern="[0-9]{11}" maxlength="11" minlength="11"
+                               title="Contact number must be exactly 11 digits"
                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-maroon focus:border-maroon @error('contact_number1') border-red-500 @enderror"
                                value="{{ old('contact_number1') }}">
                         @error('contact_number1')
@@ -67,6 +69,8 @@
                     <div>
                         <label for="contact_number2" class="block text-sm font-medium text-gray-700 mb-1">Secondary Contact</label>
                         <input type="text" name="contact_number2" id="contact_number2"
+                               pattern="[0-9]{11}" maxlength="11" minlength="11"
+                               title="Contact number must be exactly 11 digits"
                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-maroon focus:border-maroon @error('contact_number2') border-red-500 @enderror"
                                value="{{ old('contact_number2') }}">
                         @error('contact_number2')
@@ -135,11 +139,11 @@
             <!-- Form Actions -->
             <div class="flex items-center justify-end space-x-3 mt-8 pt-6 border-t border-gray-200">
                 <a href="{{ route('cashier.customers.index') }}" 
-                   class="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors">
+                   class="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400">
                     Cancel
                 </a>
                 <button type="submit" 
-                        class="px-4 py-2 bg-maroon text-white rounded-lg hover:bg-maroon-dark transition-colors">
+                        class="px-4 py-2 bg-maroon text-white rounded-lg hover:bg-maroon-dark">
                     Create Customer
                 </button>
             </div>

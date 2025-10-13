@@ -22,8 +22,8 @@
         .hover-maroon:hover { background-color: var(--primary-maroon); }
         .sidebar-gradient { background: linear-gradient(180deg, #ffffff 0%, #fafafa 100%); }
         .sidebar-active { background-color: rgba(128, 0, 32, 0.08); border-right: 3px solid var(--primary-maroon); color: var(--primary-maroon); }
-        .sidebar-link { display:flex; align-items:center; gap:12px; padding:10px 12px; border-radius:10px; color:#374151; transition: all .2s; }
-        .sidebar-link-collapsed { display:flex; align-items:center; justify-center; padding:10px; border-radius:10px; color:#374151; transition: all .2s; width:100%; }
+        .sidebar-link { display:flex; align-items:center; gap:12px; padding:10px 12px; border-radius:10px; color:#374151; }
+        .sidebar-link-collapsed { display:flex; align-items:center; justify-center; padding:10px; border-radius:10px; color:#374151; width:100%; }
         .sidebar-link:hover { background:#F3F4F6; color:#111827; }
         .sidebar-icon { width:20px; text-align:center; }
         .sidebar-tooltip { position:absolute; left:68px; background:#111827; color:#fff; padding:4px 8px; border-radius:6px; font-size:12px; white-space:nowrap; transform: translateY(-50%); top:50%; opacity:0; pointer-events:none; transition:opacity .15s; }
@@ -43,28 +43,29 @@
     </script>
 </head>
 <body class="bg-gray-100 font-sans">
-    <div class="flex h-screen" x-data="{
+<div class="flex h-screen" x-data="{
         sidebarOpen: true,
         mobileOpen: false,
         toggleSidebar() { this.sidebarOpen = !this.sidebarOpen; localStorage.setItem('ecore_sidebar_open', this.sidebarOpen ? '1' : '0'); },
         init() { const v = localStorage.getItem('ecore_sidebar_open'); if (v !== null) { this.sidebarOpen = v === '1'; } }
     }" x-init="init()">
         <!-- Sidebar -->
-        <div :class="sidebarOpen ? 'w-64' : 'w-16'" class="sidebar-gradient shadow-lg transition-all duration-300 flex-shrink-0 relative">
+        <div :class="sidebarOpen ? 'w-64' : 'w-16'" class="sidebar-gradient shadow-lg flex-shrink-0 relative" style="transition: width 0.3s ease;">
             <div class="flex flex-col h-full">
                 <!-- Brand / Toggle -->
                 <div :class="sidebarOpen ? 'p-4' : 'p-3'" class="border-b border-gray-200">
                     <div class="flex items-center justify-center">
-                        <div :class="sidebarOpen ? 'w-12 h-12' : 'w-10 h-10'" class="bg-maroon rounded-2xl flex items-center justify-center text-white font-bold transition-all duration-300"
-                             :class="sidebarOpen ? 'text-xl' : 'text-lg'">
-                            E
+                        <div :class="sidebarOpen ? 'w-16 h-16' : 'w-12 h-12'" class="bg-maroon flex items-center justify-center overflow-hidden">
+                            <img src="{{ asset('images/logo/ecoretech.png') }}" 
+                                 alt="Ecoretech Logo" 
+                                 class="w-full h-full object-cover">
                         </div>
-                        <div x-show="sidebarOpen" class="ml-3 transition-opacity duration-300">
-                            <h1 class="text-lg font-bold text-maroon">Ecoretech Printing Shop</h1>
+                        <div x-show="sidebarOpen" class="ml-3">
+                            <h1 class="text-lg font-bold text-maroon">Ecoretech</h1>
                             <p class="text-xs text-gray-500">Admin Panel</p>
                         </div>
                     </div>
-                    <div :class="sidebarOpen ? 'mt-4 flex items-center gap-2' : 'mt-3 flex justify-center'" class="transition-all duration-300">
+                    <div :class="sidebarOpen ? 'mt-4 flex items-center gap-2' : 'mt-3 flex justify-center'" >
                         <button
                             @click="toggleSidebar()"
                             class="p-2 rounded-lg hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-maroon"
@@ -72,7 +73,7 @@
                             :aria-label="sidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'"
                             :title="sidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'"
                         >
-                            <i class="fas text-gray-600 transition-transform duration-200"
+                            <i class="fas text-gray-600"
                                :class="sidebarOpen ? 'fa-angles-left' : 'fa-angles-right'"></i>
                         </button>
                         <button x-show="sidebarOpen" class="md:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors" @click="mobileOpen = !mobileOpen" title="Open menu">
@@ -82,7 +83,7 @@
                 </div>
 
                 <!-- Navigation Menu -->
-                <nav :class="sidebarOpen ? 'p-4' : 'p-2'" class="flex-1 overflow-y-auto transition-all duration-300">
+                <nav :class="sidebarOpen ? 'p-4' : 'p-2'" class="flex-1 overflow-y-auto">
                     <div class="space-y-6">
                         <div>
                             <p x-show="sidebarOpen" class="px-2 text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2">Overview</p>
@@ -103,7 +104,7 @@
                         <div x-data="{ transactionsOpen: {{ request()->routeIs('admin.quotations.*') || request()->routeIs('admin.orders.*') || request()->routeIs('admin.payments.*') || request()->routeIs('admin.deliveries.*') ? 'true' : 'false' }} }">
                             <button @click.stop="transactionsOpen = !transactionsOpen" class="w-full flex items-center justify-between px-2 py-2 text-xs font-semibold uppercase tracking-wider text-gray-400 hover:text-gray-600 transition-colors">
                                 <span x-show="sidebarOpen">Transactions</span>
-                                <i x-show="sidebarOpen" class="fas fa-chevron-down text-xs transition-transform duration-200" :class="transactionsOpen ? 'rotate-180' : ''"></i>
+                                <i x-show="sidebarOpen" class="fas fa-chevron-down text-xs" :class="transactionsOpen ? 'rotate-180' : ''"></i>
                             </button>
                             <div x-show="transactionsOpen" x-transition class="mt-2">
                                 <ul class="space-y-1">
@@ -143,7 +144,7 @@
                         <div x-data="{ inventoryOpen: {{ request()->routeIs('admin.products.*') || request()->routeIs('admin.services.*') || request()->routeIs('admin.categories.*') || request()->routeIs('admin.inventories.*') ? 'true' : 'false' }} }">
                             <button @click.stop="inventoryOpen = !inventoryOpen" class="w-full flex items-center justify-between px-2 py-2 text-xs font-semibold uppercase tracking-wider text-gray-400 hover:text-gray-600 transition-colors">
                                 <span x-show="sidebarOpen">Inventory & Services</span>
-                                <i x-show="sidebarOpen" class="fas fa-chevron-down text-xs transition-transform duration-200" :class="inventoryOpen ? 'rotate-180' : ''"></i>
+                                <i x-show="sidebarOpen" class="fas fa-chevron-down text-xs" :class="inventoryOpen ? 'rotate-180' : ''"></i>
                             </button>
                             <div x-show="inventoryOpen" x-transition class="mt-2">
                                 <ul class="space-y-1">
@@ -183,7 +184,7 @@
                         <div x-data="{ peopleOpen: {{ request()->routeIs('admin.customers.*') || request()->routeIs('admin.employees.*') || request()->routeIs('admin.jobs.*') || request()->routeIs('admin.suppliers.*') ? 'true' : 'false' }} }">
                             <button @click.stop="peopleOpen = !peopleOpen" class="w-full flex items-center justify-between px-2 py-2 text-xs font-semibold uppercase tracking-wider text-gray-400 hover:text-gray-600 transition-colors">
                                 <span x-show="sidebarOpen">People & Resources</span>
-                                <i x-show="sidebarOpen" class="fas fa-chevron-down text-xs transition-transform duration-200" :class="peopleOpen ? 'rotate-180' : ''"></i>
+                                <i x-show="sidebarOpen" class="fas fa-chevron-down text-xs" :class="peopleOpen ? 'rotate-180' : ''"></i>
                             </button>
                             <div x-show="peopleOpen" x-transition class="mt-2">
                                 <ul class="space-y-1">
@@ -223,7 +224,7 @@
                         <div x-data="{ settingsOpen: {{ request()->routeIs('admin.discount-rules.*') ? 'true' : 'false' }} }">
                             <button @click.stop="settingsOpen = !settingsOpen" class="w-full flex items-center justify-between px-2 py-2 text-xs font-semibold uppercase tracking-wider text-gray-400 hover:text-gray-600 transition-colors">
                                 <span x-show="sidebarOpen">Settings</span>
-                                <i x-show="sidebarOpen" class="fas fa-chevron-down text-xs transition-transform duration-200" :class="settingsOpen ? 'rotate-180' : ''"></i>
+                                <i x-show="sidebarOpen" class="fas fa-chevron-down text-xs" :class="settingsOpen ? 'rotate-180' : ''"></i>
                             </button>
                             <div x-show="settingsOpen" x-transition class="mt-2">
                                 <ul class="space-y-1">
@@ -241,12 +242,12 @@
                 </nav>
 
                 <!-- User Section -->
-                <div :class="sidebarOpen ? 'p-4' : 'p-2'" class="border-t border-gray-200 transition-all duration-300" x-data="{ userMenuOpen: false }">
+                <div :class="sidebarOpen ? 'p-4' : 'p-2'" class="border-t border-gray-200" x-data="{ userMenuOpen: false }">
                     <div class="relative">
                         <button @click.stop="userMenuOpen = !userMenuOpen" 
                                 :class="sidebarOpen ? 'flex items-center w-full p-2' : 'flex items-center justify-center w-full p-2'"
                                 class="rounded-lg hover:bg-gray-100 transition-colors">
-                            <div :class="sidebarOpen ? 'w-8 h-8' : 'w-10 h-10'" class="bg-maroon rounded-full flex items-center justify-center text-white transition-all duration-300"
+                            <div :class="sidebarOpen ? 'w-8 h-8' : 'w-10 h-10'" class="bg-maroon rounded-full flex items-center justify-center text-white"
                                  :class="sidebarOpen ? 'text-sm' : 'text-base'">
                                 {{ substr(Auth::user()->name, 0, 1) }}
                             </div>
@@ -305,12 +306,10 @@
                 @if ($flashMessage)
                     <div
                         x-data="{ show: true }"
-                        x-init="setTimeout(() => show = false, 5000)"
+                        x-init="setTimeout(() => show = false, 3000)"
                         x-show="show"
-                        x-transition:enter="transition ease-out duration-300"
                         x-transition:enter-start="opacity-0 transform scale-95"
                         x-transition:enter-end="opacity-100 transform scale-100"
-                        x-transition:leave="transition ease-in duration-200"
                         x-transition:leave-start="opacity-100 transform scale-100"
                         x-transition:leave-end="opacity-0 transform scale-95"
                         class="mb-4 rounded-lg relative px-4 py-3 border shadow-lg {{ $flashType==='success' ? 'bg-green-50 border-green-200 text-green-800' : 'bg-red-50 border-red-200 text-red-800' }}"

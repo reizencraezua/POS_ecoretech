@@ -23,15 +23,47 @@ class DeliveryController extends Controller
 
         if ($request->has('search')) {
             $search = $request->search;
-            $query->whereHas('order.customer', function ($q) use ($search) {
-                $q->where('customer_firstname', 'like', "%{$search}%")
-                    ->orWhere('customer_lastname', 'like', "%{$search}%")
-                    ->orWhere('business_name', 'like', "%{$search}%");
+            $query->where(function ($q) use ($search) {
+                // Search in delivery fields
+                $q->where('delivery_id', 'like', "%{$search}%")
+                  ->orWhere('status', 'like', "%{$search}%")
+                  ->orWhere('delivery_address', 'like', "%{$search}%")
+                  ->orWhere('notes', 'like', "%{$search}%")
+                  ->orWhere('tracking_number', 'like', "%{$search}%")
+                  // Search in order fields
+                  ->orWhereHas('order', function ($orderQuery) use ($search) {
+                      $orderQuery->where('order_id', 'like', "%{$search}%")
+                                ->orWhere('order_status', 'like', "%{$search}%");
+                  })
+                  // Search in customer fields
+                  ->orWhereHas('order.customer', function ($customerQuery) use ($search) {
+                      $customerQuery->where('customer_firstname', 'like', "%{$search}%")
+                                   ->orWhere('customer_lastname', 'like', "%{$search}%")
+                                   ->orWhere('business_name', 'like', "%{$search}%")
+                                   ->orWhere('customer_email', 'like', "%{$search}%")
+                                   ->orWhere('customer_phone', 'like', "%{$search}%");
+                  })
+                  // Search in employee fields
+                  ->orWhereHas('employee', function ($employeeQuery) use ($search) {
+                      $employeeQuery->where('first_name', 'like', "%{$search}%")
+                                   ->orWhere('last_name', 'like', "%{$search}%")
+                                   ->orWhere('email', 'like', "%{$search}%");
+                  });
             });
         }
 
         $deliveries = $query->latest('delivery_date')->paginate(15);
         $deliveries->appends($request->query());
+
+        // If it's an AJAX request, return only the table content
+        if ($request->ajax()) {
+            return view('admin.deliveries.partials.deliveries-table', compact('deliveries', 'showArchived'));
+        }
+
+        // If it's an AJAX request, return only the table content
+        if ($request->ajax()) {
+            return view('admin.deliveries.partials.deliveries-table', compact('deliveries', 'showArchived'));
+        }
 
         return view('admin.deliveries.index', compact('deliveries', 'showArchived'));
     }

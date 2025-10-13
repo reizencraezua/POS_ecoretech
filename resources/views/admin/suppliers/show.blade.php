@@ -31,13 +31,13 @@
                     </div>
                 </div>
                 <div class="flex items-center space-x-3">
-                    <a href="{{ route('admin.suppliers.edit', $supplier) }}" class="bg-maroon text-white px-4 py-2 rounded-lg hover:bg-maroon-dark transition-colors inline-flex items-center">
+                    <a href="{{ route('admin.suppliers.edit', $supplier) }}" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md transition-colors">
                         <i class="fas fa-edit mr-2"></i>Edit Supplier
                     </a>
                     <form method="POST" action="{{ route('admin.suppliers.archive', $supplier) }}" 
                           class="inline-block" onsubmit="return confirm('Are you sure you want to archive this supplier?')">
                         @csrf
-                        <button type="submit" class="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors inline-flex items-center">
+                        <button type="submit" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md transition-color">
                             <i class="fas fa-archive mr-2"></i>Archive
                         </button>
                     </form>
@@ -112,51 +112,93 @@
                 </div>
             </div>
 
-            <!-- Quick Actions -->
+            <!-- Transaction History -->
             <div class="bg-white rounded-lg shadow-sm border border-gray-200">
                 <div class="px-6 py-4 border-b border-gray-200">
-                    <h3 class="text-lg font-semibold text-gray-900 flex items-center">
-                        <i class="fas fa-bolt mr-2 text-maroon"></i>
-                        Quick Actions
-                    </h3>
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-lg font-semibold text-gray-900 flex items-center">
+                            <i class="fas fa-history mr-2 text-maroon"></i>
+                            Transaction History
+                        </h3>
+                        <div class="flex items-center space-x-2">
+                            <span class="text-sm text-gray-500">{{ $transactions->count() }} transactions</span>
+                        </div>
+                    </div>
                 </div>
                 <div class="p-6">
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        @if($supplier->supplier_email)
-                        <a href="mailto:{{ $supplier->supplier_email }}" 
-                           class="flex items-center p-4 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors group">
-                            <div class="w-10 h-10 bg-maroon text-white rounded-lg flex items-center justify-center mr-4 group-hover:bg-maroon-dark transition-colors">
-                                <i class="fas fa-envelope"></i>
+                    @if($transactions->count() > 0)
+                        <div class="space-y-4">
+                            @foreach($transactions as $transaction)
+                                <div class="flex items-center justify-between p-4 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors">
+                                    <div class="flex items-center space-x-4">
+                                        <div class="w-10 h-10 rounded-lg flex items-center justify-center
+                                            @if($transaction['type'] === 'inventory') bg-blue-100 text-blue-600
+                                            @elseif($transaction['type'] === 'stock_usage') bg-orange-100 text-orange-600
+                                            @elseif($transaction['type'] === 'order') bg-green-100 text-green-600
+                                            @else bg-gray-100 text-gray-600 @endif">
+                                            @if($transaction['type'] === 'inventory')
+                                                <i class="fas fa-boxes"></i>
+                                            @elseif($transaction['type'] === 'stock_usage')
+                                                <i class="fas fa-arrow-right"></i>
+                                            @elseif($transaction['type'] === 'order')
+                                                <i class="fas fa-shopping-cart"></i>
+                                            @else
+                                                <i class="fas fa-circle"></i>
+                                            @endif
+                                        </div>
+                                        <div class="flex-1">
+                                            <div class="flex items-center space-x-2">
+                                                <h4 class="text-sm font-medium text-gray-900">{{ $transaction['description'] }}</h4>
+                                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium
+                                                    @if($transaction['type'] === 'inventory') bg-blue-100 text-blue-800
+                                                    @elseif($transaction['type'] === 'stock_usage') bg-orange-100 text-orange-800
+                                                    @elseif($transaction['type'] === 'order') bg-green-100 text-green-800
+                                                    @else bg-gray-100 text-gray-800 @endif">
+                                                    @if($transaction['type'] === 'inventory') Stock In
+                                                    @elseif($transaction['type'] === 'stock_usage') Stock Used
+                                                    @elseif($transaction['type'] === 'order') Order
+                                                    @else {{ ucfirst($transaction['type']) }} @endif
+                                                </span>
+                                                @if($transaction['status'])
+                                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium
+                                                        @if($transaction['status'] === 'active' || $transaction['status'] === 'Completed') bg-green-100 text-green-800
+                                                        @elseif($transaction['status'] === 'inactive' || $transaction['status'] === 'Cancelled') bg-red-100 text-red-800
+                                                        @elseif($transaction['status'] === 'used') bg-blue-100 text-blue-800
+                                                        @else bg-yellow-100 text-yellow-800 @endif">
+                                                        {{ $transaction['status'] }}
+                                                    </span>
+                                                @endif
+                                            </div>
+                                            <p class="text-sm text-gray-500 mt-1">{{ $transaction['details'] }}</p>
+                                            <div class="flex items-center space-x-4 mt-2 text-xs text-gray-500">
+                                                <span><i class="fas fa-calendar mr-1"></i>{{ $transaction['date']->format('M d, Y') }}</span>
+                                                @if($transaction['quantity'])
+                                                    <span><i class="fas fa-hashtag mr-1"></i>{{ number_format($transaction['quantity']) }} {{ $transaction['unit'] }}</span>
+                                                @endif
+                                                @if($transaction['amount'])
+                                                    <span><i class="fas fa-peso-sign mr-1"></i>₱{{ number_format($transaction['amount'], 2) }}</span>
+                                                @endif
+                                                <span><i class="fas fa-tag mr-1"></i>{{ $transaction['reference'] }}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    @else
+                        <div class="text-center py-12">
+                            <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <i class="fas fa-history text-gray-400 text-2xl"></i>
                             </div>
-                            <div>
-                                <p class="font-medium text-gray-900">Send Email</p>
-                                <p class="text-sm text-gray-500">Contact via email</p>
-                            </div>
-                        </a>
-                        @endif
-                        
-                        <a href="tel:{{ $supplier->supplier_contact }}" 
-                           class="flex items-center p-4 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors group">
-                            <div class="w-10 h-10 bg-maroon text-white rounded-lg flex items-center justify-center mr-4 group-hover:bg-maroon-dark transition-colors">
-                                <i class="fas fa-phone"></i>
-                            </div>
-                            <div>
-                                <p class="font-medium text-gray-900">Call Supplier</p>
-                                <p class="text-sm text-gray-500">Make a phone call</p>
-                            </div>
-                        </a>
-                        
-                        <a href="{{ route('admin.suppliers.edit', $supplier) }}" 
-                           class="flex items-center p-4 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors group">
-                            <div class="w-10 h-10 bg-maroon text-white rounded-lg flex items-center justify-center mr-4 group-hover:bg-maroon-dark transition-colors">
-                                <i class="fas fa-edit"></i>
-                            </div>
-                            <div>
-                                <p class="font-medium text-gray-900">Edit Information</p>
-                                <p class="text-sm text-gray-500">Update details</p>
-                            </div>
-                        </a>
-                    </div>
+                            <h3 class="text-lg font-medium text-gray-900 mb-2">No Transactions Yet</h3>
+                            <p class="text-gray-500">This supplier doesn't have any transactions yet. Transactions will appear here when:</p>
+                            <ul class="text-sm text-gray-500 mt-2 space-y-1">
+                                <li>• Inventory items are added from this supplier</li>
+                                <li>• Stock is used in orders</li>
+                                <li>• Products from this supplier are included in orders</li>
+                            </ul>
+                        </div>
+                    @endif
                 </div>
             </div>
         </div>
@@ -193,21 +235,86 @@
                 </div>
             </div>
 
-            <!-- Statistics Placeholder -->
+            <!-- Transaction Statistics -->
             <div class="bg-white rounded-lg shadow-sm border border-gray-200">
                 <div class="px-4 py-3 border-b border-gray-200">
                     <h3 class="text-sm font-semibold text-gray-900 flex items-center">
                         <i class="fas fa-chart-bar mr-2 text-maroon"></i>
-                        Statistics
+                        Transaction Summary
                     </h3>
                 </div>
-                <div class="p-4">
-                    <div class="text-center text-gray-500">
-                        <div class="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center mx-auto mb-3">
-                            <i class="fas fa-chart-line text-gray-400"></i>
+                <div class="p-4 space-y-4">
+                    @php
+                        $inventoryCount = $transactions->where('type', 'inventory')->count();
+                        $stockUsageCount = $transactions->where('type', 'stock_usage')->count();
+                        $orderCount = $transactions->where('type', 'order')->count();
+                        $totalAmount = $transactions->where('type', 'order')->sum('amount');
+                    @endphp
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="text-center">
+                            <div class="text-2xl font-bold text-blue-600">{{ $inventoryCount }}</div>
+                            <div class="text-xs text-gray-500">Stock Ins</div>
                         </div>
-                        <p class="text-xs">Statistics will be available when products are linked to this supplier.</p>
+                        <div class="text-center">
+                            <div class="text-2xl font-bold text-orange-600">{{ $stockUsageCount }}</div>
+                            <div class="text-xs text-gray-500">Stock Used</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-2xl font-bold text-green-600">{{ $orderCount }}</div>
+                            <div class="text-xs text-gray-500">Orders</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-2xl font-bold text-maroon">₱{{ number_format($totalAmount, 0) }}</div>
+                            <div class="text-xs text-gray-500">Total Value</div>
+                        </div>
                     </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+                <div class="px-4 py-3 border-b border-gray-200">
+                    <h3 class="text-sm font-semibold text-gray-900 flex items-center">
+                        <i class="fas fa-bolt mr-2 text-maroon"></i>
+                        Quick Actions
+                    </h3>
+                </div>
+                <div class="p-4 space-y-3">
+                    @if($supplier->supplier_email)
+                    <a href="mailto:{{ $supplier->supplier_email }}" 
+                       class="flex items-center p-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors group">
+                        <div class="w-8 h-8 bg-maroon text-white rounded-lg flex items-center justify-center mr-3 group-hover:bg-maroon-dark transition-colors">
+                            <i class="fas fa-envelope text-sm"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm font-medium text-gray-900">Send Email</p>
+                            <p class="text-xs text-gray-500">Contact via email</p>
+                        </div>
+                    </a>
+                    @endif
+                    
+                    <a href="tel:{{ $supplier->supplier_contact }}" 
+                       class="flex items-center p-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors group">
+                        <div class="w-8 h-8 bg-maroon text-white rounded-lg flex items-center justify-center mr-3 group-hover:bg-maroon-dark transition-colors">
+                            <i class="fas fa-phone text-sm"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm font-medium text-gray-900">Call Supplier</p>
+                            <p class="text-xs text-gray-500">Make a phone call</p>
+                        </div>
+                    </a>
+                    
+                    <a href="{{ route('admin.suppliers.edit', $supplier) }}" 
+                       class="flex items-center p-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors group">
+                        <div class="w-8 h-8 bg-maroon text-white rounded-lg flex items-center justify-center mr-3 group-hover:bg-maroon-dark transition-colors">
+                            <i class="fas fa-edit text-sm"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm font-medium text-gray-900">Edit Information</p>
+                            <p class="text-xs text-gray-500">Update details</p>
+                        </div>
+                    </a>
                 </div>
             </div>
         </div>

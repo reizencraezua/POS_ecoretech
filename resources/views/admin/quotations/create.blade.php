@@ -40,6 +40,11 @@
                                    autocomplete="off" oninput="filterCustomers(this)" onfocus="showCustomerDropdown()" onblur="hideCustomerDropdown()">
                             <input type="hidden" name="customer_id" id="customer_id" value="{{ old('customer_id') }}">
                             <div id="customer_dropdown" class="absolute z-10 w-full bg-white border border-gray-300 rounded-md shadow-lg hidden max-h-60 overflow-y-auto">
+                              
+                                <div class="px-3 py-2 hover:bg-gray-100 cursor-pointer text-green-600 font-semibold border-t border-gray-200" 
+                                     onclick="showAddCustomerModal()">
+                                    + Add New Customer
+                                </div>
                                 @foreach($customers as $customer)
                                     <div class="px-3 py-2 hover:bg-gray-100 cursor-pointer customer-option" 
                                          data-id="{{ $customer->customer_id }}" 
@@ -48,10 +53,7 @@
                                         {{ $customer->display_name }}
                                     </div>
                                 @endforeach
-                                <div class="px-3 py-2 hover:bg-gray-100 cursor-pointer text-green-600 font-semibold border-t border-gray-200" 
-                                     onclick="showAddCustomerModal()">
-                                    + Add New Customer
-                                </div>
+                               
                             </div>
                         </div>
                         @error('customer_id')
@@ -650,6 +652,8 @@ function showAddCustomerModal() {
                     <div>
                         <label for="contact_number1" class="block text-sm font-medium text-gray-700">Contact Number *</label>
                         <input type="text" name="contact_number1" id="contact_number1" required
+                               pattern="[0-9]{11}" maxlength="11" minlength="11"
+                               title="Contact number must be exactly 11 digits"
                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon">
                     </div>
                     <div>
@@ -660,6 +664,8 @@ function showAddCustomerModal() {
                     <div>
                         <label for="contact_number2" class="block text-sm font-medium text-gray-700">Secondary Contact Number</label>
                         <input type="text" name="contact_number2" id="contact_number2"
+                               pattern="[0-9]{11}" maxlength="11" minlength="11"
+                               title="Contact number must be exactly 11 digits"
                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon">
                     </div>
                     <div>

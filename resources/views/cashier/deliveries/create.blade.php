@@ -1,118 +1,166 @@
 @extends('layouts.cashier')
 
-@section('title', 'Schedule Delivery')
-@section('page-title', 'Schedule New Delivery')
-@section('page-description', 'Schedule a delivery for an order')
-
-@section('header-actions')
-<div class="flex items-center space-x-4">
-    <a href="{{ route('cashier.deliveries.index') }}" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-medium transition-colors inline-flex items-center">
-        <i class="fas fa-arrow-left mr-2"></i>
-        Back to Deliveries
-    </a>
-</div>
-@endsection
+@section('title', 'Create Delivery')    
+@section('page-title', 'Create Delivery')
+@section('page-description', 'Create a new delivery schedule') 
 
 @section('content')
-<div class="max-w-2xl mx-auto">
-    <form method="POST" action="{{ route('cashier.deliveries.store') }}" class="space-y-6">
-        @csrf
-        
-        <!-- Order Selection -->
-        <div class="bg-white rounded-lg shadow p-6">
-            <h3 class="text-lg font-semibold text-gray-900 mb-4">Order Information</h3>
-            <div>
-                <label for="order_id" class="block text-sm font-medium text-gray-700 mb-1">Select Order *</label>
-                <select name="order_id" id="order_id" required
-                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-cashier-blue focus:border-cashier-blue @error('order_id') border-red-500 @enderror">
-                    <option value="">Select an order</option>
-                    @foreach($orders as $order)
-                        <option value="{{ $order->order_id }}" 
-                                {{ (old('order_id', $selectedOrder ? $selectedOrder->order_id : '') == $order->order_id) ? 'selected' : '' }}>
-                            {{ $order->order_id }} - {{ $order->customer->customer_firstname }} {{ $order->customer->customer_lastname }}
-                            @if($order->customer->business_name) ({{ $order->customer->business_name }}) @endif
-                            - ₱{{ number_format($order->total_amount, 2) }}
-                        </option>
-                    @endforeach
-                </select>
-                @error('order_id')
-                    <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
-                @enderror
-                <p class="text-xs text-gray-500 mt-1">Only orders without existing deliveries are shown</p>
-            </div>
-        </div>
-
-        <!-- Delivery Details -->
-        <div class="bg-white rounded-lg shadow p-6">
-            <h3 class="text-lg font-semibold text-gray-900 mb-4">Delivery Details</h3>
-            <div class="space-y-4">
-                <div>
-                    <label for="delivery_date" class="block text-sm font-medium text-gray-700 mb-1">Delivery Date *</label>
-                    <input type="date" name="delivery_date" id="delivery_date" value="{{ old('delivery_date', date('Y-m-d')) }}" required
-                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-cashier-blue focus:border-cashier-blue @error('delivery_date') border-red-500 @enderror">
-                    @error('delivery_date')
-                        <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
-                    @enderror
-                </div>
-                
-                <div>
-                    <label for="employee_id" class="block text-sm font-medium text-gray-700 mb-1">Assigned Employee</label>
-                    <select name="employee_id" id="employee_id"
-                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-cashier-blue focus:border-cashier-blue @error('employee_id') border-red-500 @enderror">
-                        <option value="">Select Employee (Optional)</option>
-                        @foreach($employees as $employee)
-                            <option value="{{ $employee->employee_id }}" {{ old('employee_id') == $employee->employee_id ? 'selected' : '' }}>
-                                {{ $employee->full_name }} - {{ $employee->job->job_title ?? 'No Job Title' }}
-                            </option>
-                        @endforeach
-                    </select>
-                    @error('employee_id')
-                        <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
-                    @enderror
-                </div>
-                
-                <div>
-                    <label for="delivery_address" class="block text-sm font-medium text-gray-700 mb-1">Delivery Address *</label>
-                    <textarea name="delivery_address" id="delivery_address" rows="3" required
-                              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-cashier-blue focus:border-cashier-blue @error('delivery_address') border-red-500 @enderror"
-                              placeholder="Enter complete delivery address">{{ old('delivery_address', $selectedOrder ? $selectedOrder->customer->address : '') }}</textarea>
-                    @error('delivery_address')
-                        <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
-                    @enderror
-                </div>
-                
-                <div>
-                    <label for="delivery_contact" class="block text-sm font-medium text-gray-700 mb-1">Contact Number *</label>
-                    <input type="text" name="delivery_contact" id="delivery_contact" value="{{ old('delivery_contact', $selectedOrder ? $selectedOrder->customer->contact_number1 : '') }}" required
-                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-cashier-blue focus:border-cashier-blue @error('delivery_contact') border-red-500 @enderror"
-                           placeholder="Enter contact number">
-                    @error('delivery_contact')
-                        <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
-                    @enderror
-                </div>
-                
-                <div>
-                    <label for="delivery_notes" class="block text-sm font-medium text-gray-700 mb-1">Delivery Notes</label>
-                    <textarea name="delivery_notes" id="delivery_notes" rows="3"
-                              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-cashier-blue focus:border-cashier-blue @error('delivery_notes') border-red-500 @enderror"
-                              placeholder="Enter any special delivery instructions">{{ old('delivery_notes') }}</textarea>
-                    @error('delivery_notes')
-                        <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
-                    @enderror
-                </div>
-            </div>
-        </div>
-
-        <!-- Submit Button -->
-        <div class="flex justify-end space-x-4">
-            <a href="{{ route('cashier.deliveries.index') }}" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-6 py-2 rounded-lg font-medium transition-colors">
-                Cancel
+<div class="max-w-6xl mx-auto space-y-6">
+    <!-- Back Button & Title -->
+    <div class="flex items-center justify-between">
+        <div class="flex items-center gap-4">
+            <a href="{{ route('cashier.deliveries.index') }}" 
+               class="p-2 text-gray-600 hover:text-maroon hover:bg-gray-100 rounded-lg">
+                <i class="fas fa-arrow-left text-xl"></i>
             </a>
-            <button type="submit" class="bg-cashier-blue hover:bg-cashier-blue-dark text-white px-6 py-2 rounded-lg font-medium transition-colors">
-                Schedule Delivery
-            </button>
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">Schedule Delivery</h1>
+                <p class="text-sm text-gray-500">Create a new delivery schedule</p>
+            </div>
         </div>
-    </form>
+    </div>
+
+    <!-- Form -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+        <form action="{{ route('cashier.deliveries.store') }}" method="POST">
+            @csrf
+            
+            <!-- Main Content Grid -->
+            <div class="grid grid-cols-1 xl:grid-cols-3 gap-6 p-6">
+                <!-- Left Column -->
+                <div class="space-y-6">
+                    <!-- Order Information -->
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Order Information</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <label for="order_id" class="block text-sm font-medium text-gray-700 mb-1">Order *</label>
+                                <select name="order_id" id="order_id" required
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon @error('order_id') border-red-500 @enderror">
+                                    <option value="">Select order</option>
+                                    @foreach($orders as $order)
+                                        <option value="{{ $order->order_id }}" 
+                                                {{ (old('order_id', $selectedOrder ? $selectedOrder->order_id : '') == $order->order_id) ? 'selected' : '' }}>
+                                            Order #{{ $order->order_id }} - {{ $order->customer->customer_firstname }} {{ $order->customer->customer_lastname }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                @error('order_id')
+                                    <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                                @enderror
+                            </div>
+                            
+                            <div>
+                                <label for="delivery_date" class="block text-sm font-medium text-gray-700 mb-1">Delivery Date *</label>
+                                <input type="date" name="delivery_date" id="delivery_date" value="{{ old('delivery_date') }}" required
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon @error('delivery_date') border-red-500 @enderror">
+                                @error('delivery_date')
+                                    <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                                @enderror
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Delivery Information -->
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Delivery Information</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <label for="driver_name" class="block text-sm font-medium text-gray-700 mb-1">Driver Name</label>
+                                <input type="text" name="driver_name" id="driver_name" value="{{ old('driver_name') }}"
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon @error('driver_name') border-red-500 @enderror">
+                                @error('driver_name')
+                                    <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                                @enderror
+                            </div>
+                            
+                            <div>
+                                <label for="driver_contact" class="block text-sm font-medium text-gray-700 mb-1">Driver Contact</label>
+                                <input type="tel" name="driver_contact" id="driver_contact" value="{{ old('driver_contact') }}"
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon @error('driver_contact') border-red-500 @enderror">
+                                @error('driver_contact')
+                                    <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                                @enderror
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Middle Column -->
+                <div class="space-y-6">
+                    <!-- Delivery Address -->
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Delivery Address</h3>
+                        <div>
+                            <label for="delivery_address" class="block text-sm font-medium text-gray-700 mb-1">Address *</label>
+                            <textarea name="delivery_address" id="delivery_address" rows="4" required
+                                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon @error('delivery_address') border-red-500 @enderror">{{ old('delivery_address', $selectedOrder ? $selectedOrder->customer->address : '') }}</textarea>
+                            @error('delivery_address')
+                                <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                            @enderror
+                        </div>
+                    </div>
+
+                    <!-- Notes -->
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Notes</h3>
+                        <div>
+                            <label for="notes" class="block text-sm font-medium text-gray-700 mb-1">Additional Notes</label>
+                            <textarea name="notes" id="notes" rows="4"
+                                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon @error('notes') border-red-500 @enderror">{{ old('notes') }}</textarea>
+                            @error('notes')
+                                <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                            @enderror
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column -->
+                <div class="space-y-6">
+                    <!-- Status & Fee -->
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Status & Fee</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <label for="status" class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                                <select name="status" id="status"
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon @error('status') border-red-500 @enderror">
+                                    <option value="scheduled" {{ old('status', 'scheduled') == 'scheduled' ? 'selected' : '' }}>Scheduled</option>
+                                    <option value="in_transit" {{ old('status') == 'in_transit' ? 'selected' : '' }}>In Transit</option>
+                                    <option value="delivered" {{ old('status') == 'delivered' ? 'selected' : '' }}>Delivered</option>
+                                    <option value="cancelled" {{ old('status') == 'cancelled' ? 'selected' : '' }}>Cancelled</option>
+                                </select>
+                                @error('status')
+                                    <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                                @enderror
+                            </div>
+                            
+                            <div>
+                                <label for="delivery_fee" class="block text-sm font-medium text-gray-700 mb-1">Delivery Fee</label>
+                                <input type="number" name="delivery_fee" id="delivery_fee" value="{{ old('delivery_fee', 0) }}" step="0.01" min="0"
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon @error('delivery_fee') border-red-500 @enderror">
+                                @error('delivery_fee')
+                                    <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                                @enderror
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-end space-x-3">
+                <a href="{{ route('cashier.deliveries.index') }}" 
+                   class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+                    Cancel
+                </a>
+                <button type="submit" 
+                        class="px-4 py-2 bg-maroon text-white rounded-lg hover:bg-maroon-dark">
+                    Schedule Delivery
+                </button>
+            </div>
+        </form>
+    </div>
 </div>
 
 <script>

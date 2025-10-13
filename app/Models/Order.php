@@ -41,6 +41,7 @@ class Order extends Model
     const STATUS_FOR_RELEASING = 'For Releasing';
     const STATUS_COMPLETED = 'Completed';
     const STATUS_CANCELLED = 'Cancelled';
+    const STATUS_VOIDED = 'Voided';
 
     public function customer()
     {
@@ -84,6 +85,10 @@ class Order extends Model
 
     public function getTotalPaidAttribute()
     {
+        // Exclude payments from voided orders
+        if ($this->order_status === self::STATUS_VOIDED) {
+            return 0;
+        }
         return $this->payments()->sum('amount_paid');
     }
 

@@ -38,16 +38,6 @@ class UserSeeder extends Seeder
             ]
         );
 
-        // Create default cashier account
-        User::updateOrCreate(
-            ['email' => 'cashier@ecoretech.com'],
-            [
-                'name' => 'Cashier User',
-                'password' => Hash::make('cashier123'),
-                'role' => 'cashier',
-                'is_active' => true,
-                'email_verified_at' => now(),
-            ]
-        );
+        // Default cashier account removed - only auto-generated cashier accounts are allowed
     }
 }

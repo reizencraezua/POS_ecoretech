@@ -36,7 +36,7 @@
                     @endif
                     @if($payment->balance > 0)
                     <div class="text-right">
-                        <div class="text-lg font-semibold text-red-600">₱{{ number_format($payment->balance, 2) }}</div>
+                        <div class="text-lg font-semibold text-red-600">-₱{{ number_format($payment->balance, 2) }}</div>
                         <div class="text-sm text-gray-600">Balance</div>
                     </div>
                     @else
@@ -119,7 +119,7 @@
                                     @if($payment->balance > 0)
                                     <div class="flex justify-between">
                                         <span class="text-sm text-gray-600">Balance</span>
-                                        <span class="text-sm font-medium text-red-600">₱{{ number_format($payment->balance, 2) }}</span>
+                                        <span class="text-sm font-medium text-red-600">-₱{{ number_format($payment->balance, 2) }}</span>
                                     </div>
                                     @else
                                     <div class="flex justify-between">
@@ -233,7 +233,7 @@
                                 <i class="fas fa-exclamation-circle text-red-500"></i>
                             </div>
                             <p class="text-sm font-medium text-red-600">Partial Payment</p>
-                            <p class="text-xs text-gray-500">Balance: ₱{{ number_format($payment->balance, 2) }}</p>
+                            <p class="text-xs text-gray-500">Balance: -₱{{ number_format($payment->balance, 2) }}</p>
                         </div>
                     @else
                         <div class="text-center">

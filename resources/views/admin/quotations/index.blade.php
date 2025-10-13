@@ -5,20 +5,21 @@
 @section('page-description', 'Manage customer quotations and proposals')
 
 @section('header-actions')
-<form method="GET" action="{{ route('admin.quotations.index') }}" class="flex items-end gap-3">
+<form method="GET" action="{{ route('admin.quotations.index') }}" class="flex items-end gap-3" id="dateFilterForm">
     <div>
         <label for="start_date" class="block text-xs font-medium text-gray-600 mb-1">Start date</label>
         <input type="date" id="start_date" name="start_date" value="{{ request('start_date') }}"
-            class="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon">
+               class="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon"
+               onchange="document.getElementById('dateFilterForm').submit();">
     </div>
     <div>
         <label for="end_date" class="block text-xs font-medium text-gray-600 mb-1">End date</label>
         <input type="date" id="end_date" name="end_date" value="{{ request('end_date') }}"
-            class="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon">
+               class="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon"
+               onchange="document.getElementById('dateFilterForm').submit();">
     </div>
     <div class="flex items-center gap-2">
         <input type="hidden" name="archived" value="{{ (isset($showArchived) && $showArchived) ? 1 : 0 }}">
-        <button type="submit" class="bg-maroon hover:bg-maroon-dark text-white px-4 py-2 rounded-md">Filter</button>
         <a href="{{ route('admin.quotations.index', ['archived' => (isset($showArchived) && $showArchived) ? 1 : 0]) }}" class="px-3 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">Reset</a>
     </div>
 </form>
@@ -33,154 +34,51 @@
                 <i class="fas fa-plus mr-2"></i>
                 Create Quotation
             </a>
-            <a href="{{ route('admin.quotations.index', array_merge(request()->query(), ['archived' => isset($showArchived) && $showArchived ? 0 : 1])) }}"
-                class="px-4 py-2 rounded-lg font-medium transition-colors inline-flex items-center border {{ (isset($showArchived) && $showArchived) ? 'border-green-600 text-green-700 hover:bg-green-50' : 'border-gray-300 text-gray-700 hover:bg-gray-50' }}">
-                <i class="fas fa-box-archive mr-2"></i>
-                {{ (isset($showArchived) && $showArchived) ? 'Show Active' : 'View Archives' }}
-            </a>
         </div>
 
         <!-- Search and Filters -->
         <div class="flex items-center space-x-4">
-            <form method="GET" class="flex items-center space-x-2">
-                <select name="status" class="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-maroon focus:border-maroon">
+            <form method="GET" class="flex items-center space-x-2" id="searchForm">
+                 <!-- Archive Button -->
+                <a href="{{ route('admin.quotations.index', array_merge(request()->query(), ['archived' => isset($showArchived) && $showArchived ? 0 : 1])) }}"
+                   class="px-4 py-2 rounded-lg font-medium transition-colors inline-flex items-center border {{ (isset($showArchived) && $showArchived) ? 'border-green-600 text-green-700 hover:bg-green-50' : 'border-gray-300 text-gray-700 hover:bg-gray-50' }}">
+                    <i class="fas fa-box-archive mr-2"></i>
+                    {{ (isset($showArchived) && $showArchived) ? 'Show Active' : 'View Archives' }}
+                </a>
+                <select name="status" class="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-maroon focus:border-maroon" onchange="document.getElementById('searchForm').submit();">
                     <option value="">All Status</option>
                     <option value="Pending" {{ request('status') == 'Pending' ? 'selected' : '' }}>Pending</option>
                     <option value="Closed" {{ request('status') == 'Closed' ? 'selected' : '' }}>Closed</option>
                 </select>
                 <div class="relative">
-                    <input type="text" name="search" value="{{ request('search') }}" placeholder="Search quotations..."
-                        class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-maroon focus:border-maroon">
+                    <input type="text" 
+                           id="instantSearchInput" 
+                           data-instant-search="true"
+                           data-container="quotationsTableContainer"
+                           data-loading="searchLoading"
+                           value="{{ request('search') }}" 
+                           placeholder="Search quotations..."
+                           class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-maroon focus:border-maroon">
                     <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                    <div id="searchLoading" class="absolute right-3 top-1/2 transform -translate-y-1/2 hidden">
+                        <i class="fas fa-spinner fa-spin text-gray-400"></i>
+                    </div>
                 </div>
                 <input type="hidden" name="archived" value="{{ (isset($showArchived) && $showArchived) ? 1 : 0 }}">
                 <input type="hidden" name="start_date" value="{{ request('start_date') }}">
                 <input type="hidden" name="end_date" value="{{ request('end_date') }}">
-                <button type="submit" class="bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-lg transition-colors">
-                    <i class="fas fa-search"></i>
-                </button>
                 @if(request('search') || request('status') || request('start_date') || request('end_date') || request('archived'))
-                <a href="{{ route('admin.quotations.index', ['archived' => (isset($showArchived) && $showArchived) ? 1 : 0]) }}" class="bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-lg transition-colors">
-                    <i class="fas fa-times"></i>
-                </a>
+                    <a href="{{ route('admin.quotations.index', ['archived' => (isset($showArchived) && $showArchived) ? 1 : 0]) }}" class="bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-lg transition-colors">
+                        <i class="fas fa-times"></i>
+                    </a>
                 @endif
             </form>
+            
+           
         </div>
     </div>
 
-    <!-- Quotations Grid -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        @forelse($quotations as $quotation)
-        <div class="bg-white rounded-lg shadow hover:shadow-lg hover:scale-105 transition-all duration-200 border border-gray-200 cursor-pointer group" onclick="window.location.href='{{ route('admin.quotations.show', $quotation) }}'">
-            <!-- Card Header -->
-            <div class="p-4 border-b border-gray-200">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <h3 class="text-lg font-semibold text-gray-900 group-hover:text-maroon transition-colors">Quote #{{ str_pad($quotation->quotation_id, 5, '0', STR_PAD_LEFT) }}</h3>
-                        <p class="text-sm text-gray-600">{{ $quotation->quotation_date->format('M d, Y') }}</p>
-                    </div>
-                    <div class="flex items-center space-x-2">
-                        <span class="px-2 py-1 text-xs font-medium rounded-full
-                                @if($quotation->status === 'Pending')
-                                    bg-yellow-100 text-yellow-800
-                                @else
-                                    bg-green-100 text-green-800
-                                @endif
-                            ">
-                            {{ $quotation->status }}
-                        </span>
-                        <i class="fas fa-arrow-right text-gray-400 group-hover:text-maroon transition-colors"></i>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Card Content -->
-            <div class="p-4">
-                <div class="space-y-3">
-                    <!-- Customer Info -->
-                    <div class="flex items-center space-x-3">
-                        <div class="w-8 h-8 bg-maroon text-white rounded-full flex items-center justify-center text-sm font-bold">
-                            {{ substr($quotation->customer->customer_firstname, 0, 1) }}{{ substr($quotation->customer->customer_lastname, 0, 1) }}
-                        </div>
-                        <div>
-                            <p class="text-sm font-medium text-gray-900">{{ $quotation->customer->display_name }}</p>
-                            <p class="text-xs text-gray-500">{{ $quotation->customer->customer_contact }}</p>
-                        </div>
-                    </div>
-
-                    <!-- Items Count -->
-                    <div class="flex items-center justify-between text-sm">
-                        <span class="text-gray-600">Items:</span>
-                        <span class="font-medium">{{ $quotation->details->count() }} item(s)</span>
-                    </div>
-
-                    <!-- Total Quantity -->
-                    <div class="flex items-center justify-between text-sm">
-                        <span class="text-gray-600">Total Qty:</span>
-                        <span class="font-medium">{{ $quotation->details->sum('quantity') }} pcs</span>
-                    </div>
-
-                    <!-- Total Amount -->
-                    <div class="flex items-center justify-between">
-                        <span class="text-gray-600">Total Amount:</span>
-                        <span class="text-lg font-bold text-maroon">₱{{ number_format($quotation->final_total_amount, 2) }}</span>
-                    </div>
-
-                    <!-- Notes Preview -->
-                    @if($quotation->notes)
-                    <div class="text-xs text-gray-500">
-                        <p class="truncate">{{ \Illuminate\Support\Str::limit($quotation->notes, 50) }}</p>
-                    </div>
-                    @endif
-                </div>
-            </div>
-
-            <!-- Card Actions -->
-            <div class="px-4 py-3 bg-gray-50 border-t border-gray-200 flex items-center justify-between" onclick="event.stopPropagation()">
-                <div class="flex items-center space-x-2">
-                    @if($quotation->status === 'Pending')
-                    <form method="POST" action="{{ route('admin.quotations.status', $quotation) }}" class="inline">
-                        @csrf
-                        @method('PATCH')
-                        <input type="hidden" name="status" value="Closed">
-                        <button type="submit" class="text-green-600 hover:text-green-800 text-sm transition-colors">
-                            <i class="fas fa-check mr-1"></i>Close
-                        </button>
-                    </form>
-                    @endif
-
-                    @if($quotation->status === 'Closed')
-                    <button onclick="openConvertModal({{ $quotation->quotation_id }})"
-                        class="text-blue-600 hover:text-blue-800 text-sm transition-colors">
-                        <i class="fas fa-exchange-alt mr-1"></i>Convert
-                    </button>
-                    @endif
-                </div>
-
-                <div class="flex items-center">
-                    <a href="{{ route('admin.quotations.edit', $quotation) }}" class="text-maroon hover:text-maroon-dark text-sm transition-colors">
-                        <i class="fas fa-edit mr-1"></i>Edit
-                    </a>
-                </div>
-            </div>
-        </div>
-        @empty
-        <div class="col-span-full bg-white rounded-lg shadow p-12 text-center">
-            <div class="text-gray-400">
-                <i class="fas fa-file-alt text-6xl mb-4"></i>
-                <p class="text-xl font-medium mb-2">No quotations found</p>
-                <p class="text-gray-500 mb-4">Create your first quotation to get started</p>
-            </div>
-        </div>
-        @endforelse
-    </div>
-
-    <!-- Pagination -->
-    @if($quotations->hasPages())
-    <div class="bg-white rounded-lg shadow p-4">
-        {{ $quotations->links() }}
-    </div>
-    @endif
+    @include('admin.quotations.partials.quotations-table')
 </div>
 
 <!-- Convert to Job Order Modal -->
@@ -207,32 +105,33 @@
                         </h4>
 
                         <div class="space-y-4">
-                            <!-- Production Staff -->
-                            <div>
-                                <label for="employee_id" class="block text-sm font-medium text-gray-700 mb-2">Assign Production Staff *</label>
-                                <select name="employee_id" id="employee_id" required
-                                    class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-maroon focus:border-maroon">
-                                    <option value="">Select Production Staff</option>
-                                    @foreach(\App\Models\Employee::with('job')->get() as $employee)
-                                    @if($employee->job && in_array(strtolower($employee->job->job_title), ['production staff', 'production worker', 'production', 'staff']))
-                                    <option value="{{ $employee->employee_id }}">{{ $employee->full_name }} ({{ $employee->job->job_title }})</option>
-                                    @endif
-                                    @endforeach
-                                </select>
-                            </div>
+                            <!-- Production Staff and Graphics Designer -->
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label for="employee_id" class="block text-sm font-medium text-gray-700 mb-2">Assign Production Staff *</label>
+                                    <select name="employee_id" id="employee_id" required
+                                        class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-maroon focus:border-maroon">
+                                        <option value="">Select Production Staff</option>
+                                        @foreach(\App\Models\Employee::with('job')->get() as $employee)
+                                        @if($employee->job && in_array(strtolower($employee->job->job_title), ['production staff', 'production worker', 'production', 'staff']))
+                                        <option value="{{ $employee->employee_id }}">{{ $employee->full_name }} ({{ $employee->job->job_title }})</option>
+                                        @endif
+                                        @endforeach
+                                    </select>
+                                </div>
 
-                            <!-- Layout Employee Assignment (shown if layout is required) -->
-                            <div id="layout_employee_div" class="hidden">
-                                <label for="layout_employee_id" class="block text-sm font-medium text-gray-700 mb-2">Assign Graphics Designer *</label>
-                                <select name="layout_employee_id" id="layout_employee_id"
-                                    class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-maroon focus:border-maroon">
-                                    <option value="">Select Graphics Designer</option>
-                                    @foreach(\App\Models\Employee::with('job')->get() as $employee)
-                                    @if($employee->job && in_array(strtolower($employee->job->job_title), ['graphics designer', 'designer', 'graphic designer', 'layout designer']))
-                                    <option value="{{ $employee->employee_id }}">{{ $employee->full_name }} ({{ $employee->job->job_title }})</option>
-                                    @endif
-                                    @endforeach
-                                </select>
+                                <div id="layout_employee_div" class="hidden">
+                                    <label for="layout_employee_id" class="block text-sm font-medium text-gray-700 mb-2">Assign Graphics Designer *</label>
+                                    <select name="layout_employee_id" id="layout_employee_id"
+                                        class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-maroon focus:border-maroon">
+                                        <option value="">Select Graphics Designer</option>
+                                        @foreach(\App\Models\Employee::with('job')->get() as $employee)
+                                        @if($employee->job && in_array(strtolower($employee->job->job_title), ['graphics designer', 'designer', 'graphic designer', 'layout designer']))
+                                        <option value="{{ $employee->employee_id }}">{{ $employee->full_name }} ({{ $employee->job->job_title }})</option>
+                                        @endif
+                                        @endforeach
+                                    </select>
+                                </div>
                             </div>
 
                             <!-- Deadline Date -->
@@ -255,16 +154,34 @@
                         </h4>
 
                         <div class="space-y-4">
-                            <!-- Payment Term -->
-                            <div>
-                                <label for="payment_term" class="block text-sm font-medium text-gray-700 mb-2">Payment Term</label>
-                                <select name="payment_term" id="payment_term"
-                                    class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-maroon focus:border-maroon">
-                                    <option value="">Select Payment Term</option>
-                                    <option value="Full">Full Payment</option>
-                                    <option value="Downpayment">Downpayment (50%)</option>
-                                    <option value="Initial">Initial Payment</option>
-                                </select>
+                            <!-- Payment Term and Payment Method -->
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label for="payment_term" class="block text-sm font-medium text-gray-700 mb-2">Payment Term</label>
+                                    <select name="payment_term" id="payment_term"
+                                        class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-maroon focus:border-maroon">
+                                        <option value="">Select Payment Term</option>
+                                        <option value="Full">Full Payment</option>
+                                        <option value="Downpayment">Downpayment (50%)</option>
+                                        <option value="Initial">Initial Payment</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label for="payment_method" class="block text-sm font-medium text-gray-700 mb-2">
+                                        Payment Method
+                                        <span id="payment_method_required" class="text-red-500 hidden">*</span>
+                                    </label>
+                                    <select name="payment_method" id="payment_method"
+                                        class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-maroon focus:border-maroon">
+                                        <option value="">Select Payment Method</option>
+                                        <option value="Cash">Cash</option>
+                                        <option value="GCash">GCash</option>
+                                        <option value="Bank Transfer">Bank Transfer</option>
+                                        <option value="Check">Check</option>
+                                        <option value="Credit Card">Credit Card</option>
+                                    </select>
+                                </div>
                             </div>
 
                             <!-- Downpayment Information Box -->
@@ -287,6 +204,11 @@
                                             <span class="text-gray-700">Required Downpayment (50%):</span>
                                             <span class="text-blue-800 font-bold text-lg" id="downpayment_amount_display">₱0.00</span>
                                         </div>
+                                        
+                                        <div class="flex justify-between items-center text-xs text-gray-500">
+                                            <span>Note: You can pay more than the downpayment</span>
+                                            <span>Max: <span id="max_payment_display">₱0.00</span></span>
+                                        </div>
 
                                         <hr class="border-blue-200 my-2">
 
@@ -304,46 +226,27 @@
                             </div>
 
                             
-                          <!-- Payment Method -->
-                          <div>
-                                <label for="payment_method" class="block text-sm font-medium text-gray-700 mb-2">
-                                    Payment Method
-                                    <span id="payment_method_required" class="text-red-500 hidden">*</span>
-                                </label>
-                                <select name="payment_method" id="payment_method"
-                                    class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-maroon focus:border-maroon">
-                                    <option value="">Select Payment Method</option>
-                                    <option value="Cash">Cash</option>
-                                    <option value="GCash">GCash</option>
-                                    <option value="Bank Transfer">Bank Transfer</option>
-                                    <option value="Check">Check</option>
-                                    <option value="Credit Card">Credit Card</option>
-                                </select>
-                            </div>
+                            <!-- Amount Paid and Reference Number -->
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label for="amount_paid" class="block text-sm font-medium text-gray-700 mb-2">
+                                        Amount Paid
+                                        <span id="amount_paid_required" class="text-red-500 hidden">*</span>
+                                    </label>
+                                    <input type="number" name="amount_paid" id="amount_paid" step="0.01" min="0"
+                                        class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-maroon focus:border-maroon"
+                                        placeholder="Enter amount paid (can exceed downpayment)">
+                                </div>
 
-
-                            <!-- Amount Paid -->
-                            <div>
-                                <label for="amount_paid" class="block text-sm font-medium text-gray-700 mb-2">
-                                    Amount Paid
-                                    <span id="amount_paid_required" class="text-red-500 hidden">*</span>
-                                </label>
-                                <input type="number" name="amount_paid" id="amount_paid" step="0.01" min="0"
-                                    class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-maroon focus:border-maroon"
-                                    placeholder="Enter amount paid">
-                            </div>
-
-                          
-
-                            <!-- Reference Number (shown for GCash and Bank Transfer) -->
-                            <div id="reference_number_div" class="hidden">
-                                <label for="reference_number" class="block text-sm font-medium text-gray-700 mb-2">
-                                    Reference Number *
-                                </label>
-                                <input type="text" name="reference_number" id="reference_number"
-                                    class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-maroon focus:border-maroon"
-                                    placeholder="Enter reference number">
-                                <p class="text-xs text-gray-500 mt-1">Required for GCash and Bank Transfer payments</p>
+                                <div id="reference_number_div" class="hidden">
+                                    <label for="reference_number" class="block text-sm font-medium text-gray-700 mb-2">
+                                        Reference Number *
+                                    </label>
+                                    <input type="text" name="reference_number" id="reference_number"
+                                        class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-maroon focus:border-maroon"
+                                        placeholder="Enter reference number">
+                                    <p class="text-xs text-gray-500 mt-1">Required for GCash and Bank Transfer payments</p>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -447,6 +350,7 @@
             downpaymentAmountDisplay.textContent = 'Loading...';
             alreadyPaidDisplay.textContent = '₱0.00';
             remainingBalanceDisplay.textContent = 'Loading...';
+            document.getElementById('max_payment_display').textContent = 'Loading...';
 
             // Fetch quotation details to get total amount and layout info
             fetch(`/admin/quotations/${quotationId}/data`)
@@ -468,6 +372,9 @@
                         downpaymentAmountDisplay.textContent = '₱' + downpaymentAmount.toFixed(2);
                         alreadyPaidDisplay.textContent = '₱' + alreadyPaid.toFixed(2);
                         remainingBalanceDisplay.textContent = '₱' + remainingBalance.toFixed(2);
+                        
+                        // Update maximum payment display
+                        document.getElementById('max_payment_display').textContent = '₱' + totalAmount.toFixed(2);
 
                         // Check if layout is required and show/hide layout employee field
                         if (data.has_layout) {
@@ -488,6 +395,7 @@
                     totalAmountDisplay.textContent = 'Error';
                     downpaymentAmountDisplay.textContent = 'Error';
                     remainingBalanceDisplay.textContent = 'Error';
+                    document.getElementById('max_payment_display').textContent = 'Error';
 
                     // Show user-friendly error message
                     showErrorMessage('Failed to load quotation amount. Please try again.');
@@ -498,10 +406,39 @@
     function updateDownpaymentInfo() {
         const amountPaid = parseFloat(document.getElementById('amount_paid').value) || 0;
         const downpaymentAmount = parseFloat(document.getElementById('downpayment_amount_display').textContent.replace('₱', '').replace(',', '')) || 0;
-        const remainingBalance = downpaymentAmount - amountPaid;
+        const totalAmount = parseFloat(document.getElementById('total_amount_display').textContent.replace('₱', '').replace(',', '')) || 0;
+        
+        // Calculate remaining balance based on total amount, not just downpayment
+        const remainingBalance = totalAmount - amountPaid;
 
         document.getElementById('already_paid_display').textContent = '₱' + amountPaid.toFixed(2);
         document.getElementById('remaining_balance_display').textContent = '₱' + remainingBalance.toFixed(2);
+        
+        // Show visual feedback based on payment amount
+        const remainingElement = document.getElementById('remaining_balance_display');
+        const amountPaidInput = document.getElementById('amount_paid');
+        
+        if (amountPaid > totalAmount) {
+            // Amount exceeds total - show error
+            remainingElement.style.color = '#dc2626'; // Red color for overpayment
+            remainingElement.title = 'Amount paid exceeds total quotation amount';
+            amountPaidInput.style.borderColor = '#dc2626';
+        } else if (amountPaid > downpaymentAmount && amountPaid <= totalAmount) {
+            // Amount exceeds downpayment but within total - show success
+            remainingElement.style.color = '#059669'; // Green color for overpayment
+            remainingElement.title = 'Amount paid exceeds downpayment but is within total amount';
+            amountPaidInput.style.borderColor = '#059669';
+        } else if (amountPaid > 0 && amountPaid <= downpaymentAmount) {
+            // Normal downpayment range
+            remainingElement.style.color = '#2563eb'; // Blue color for normal
+            remainingElement.title = 'Amount paid is within downpayment range';
+            amountPaidInput.style.borderColor = '#2563eb';
+        } else {
+            // Reset colors for zero amount
+            remainingElement.style.color = '';
+            remainingElement.title = '';
+            amountPaidInput.style.borderColor = '';
+        }
     }
 
     function validateConvertForm() {
@@ -528,10 +465,10 @@
                 return false;
             }
 
-            // Check if amount paid exceeds downpayment
-            const downpaymentAmount = parseFloat(document.getElementById('downpayment_amount_display').textContent.replace('₱', '').replace(',', '')) || 0;
-            if (parseFloat(amountPaid) > downpaymentAmount) {
-                showErrorMessage('Amount paid cannot exceed the required downpayment amount.');
+            // Check if amount paid exceeds total amount
+            const totalAmount = parseFloat(document.getElementById('total_amount_display').textContent.replace('₱', '').replace(',', '')) || 0;
+            if (parseFloat(amountPaid) > totalAmount) {
+                showErrorMessage('Amount paid cannot exceed the total quotation amount.');
                 return false;
             }
 
@@ -584,4 +521,6 @@
         });
     });
 </script>
+
+<script src="{{ asset('js/instant-search.js') }}"></script>
 @endsection

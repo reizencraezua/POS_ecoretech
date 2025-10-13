@@ -41,13 +41,16 @@ class CustomerController extends Controller
             'customer_firstname' => 'required|string|max:255',
             'customer_lastname' => 'required|string|max:255',
             'business_name' => 'nullable|string|max:255',
-            'contact_number1' => 'required|string|max:20',
-            'contact_number2' => 'nullable|string|max:20',
+            'contact_number1' => 'required|string|regex:/^[0-9]{11}$/',
+            'contact_number2' => 'nullable|string|regex:/^[0-9]{11}$/',
             'email' => 'nullable|email|max:255',
             'address' => 'required|string|max:500',
             'city' => 'required|string|max:100',
             'province' => 'required|string|max:100',
             'postal_code' => 'nullable|string|max:10',
+        ], [
+            'contact_number1.regex' => 'Primary contact number must be exactly 11 digits.',
+            'contact_number2.regex' => 'Secondary contact number must be exactly 11 digits.',
         ]);
 
         Customer::create($validated);
@@ -80,13 +83,16 @@ class CustomerController extends Controller
             'customer_firstname' => 'required|string|max:255',
             'customer_lastname' => 'required|string|max:255',
             'business_name' => 'nullable|string|max:255',
-            'contact_number1' => 'required|string|max:20',
-            'contact_number2' => 'nullable|string|max:20',
+            'contact_number1' => 'required|string|regex:/^[0-9]{11}$/',
+            'contact_number2' => 'nullable|string|regex:/^[0-9]{11}$/',
             'email' => 'nullable|email|max:255',
             'address' => 'required|string|max:500',
             'city' => 'required|string|max:100',
             'province' => 'required|string|max:100',
             'postal_code' => 'nullable|string|max:10',
+        ], [
+            'contact_number1.regex' => 'Primary contact number must be exactly 11 digits.',
+            'contact_number2.regex' => 'Secondary contact number must be exactly 11 digits.',
         ]);
 
         $customer->update($validated);

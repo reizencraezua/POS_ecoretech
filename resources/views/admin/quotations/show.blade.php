@@ -125,7 +125,7 @@
                                     </div>
                                 </td>
                                 <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ $detail->quantity }}</td>
-                                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ $detail->unit }}</td>
+                                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ $detail->unit ? $detail->unit->unit_name : '-' }}</td>
                                 <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ $detail->size }}</td>
                                 <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">₱{{ number_format($detail->price, 2) }}</td>
                                 <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">

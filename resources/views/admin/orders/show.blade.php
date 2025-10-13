@@ -38,7 +38,32 @@
                         </div>
                         <div class="text-sm text-gray-600">Balance</div>
                     </div>
-                    <span class="px-3 py-1 rounded-md text-sm font-medium bg-gray-100 text-gray-800">
+                    <span id="statusBadge" class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium
+                        @switch($order->order_status)
+                            @case('On-Process')
+                                bg-blue-100 text-blue-800
+                                @break
+                            @case('Designing')
+                                bg-purple-100 text-purple-800
+                                @break
+                            @case('Production')
+                                bg-yellow-100 text-yellow-800
+                                @break
+                            @case('For Releasing')
+                                bg-orange-100 text-orange-800
+                                @break
+                            @case('Completed')
+                                bg-green-100 text-green-800
+                                @break
+                            @case('Cancelled')
+                                bg-red-100 text-red-800
+                                @break
+                            @case('Voided')
+                                bg-gray-100 text-gray-800
+                                @break
+                            @default
+                                bg-gray-100 text-gray-800
+                        @endswitch">
                         {{ $order->order_status }}
                     </span>
                 </div>
@@ -175,7 +200,7 @@
                                     </div>
                                 </td>
                                 <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ $detail->quantity }}</td>
-                                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ $detail->unit }}</td>
+                                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ $detail->unit ? $detail->unit->unit_name : 'N/A' }}</td>
                                 <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ $detail->size }}</td>
                                 <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">₱{{ number_format($detail->price, 2) }}</td>
                                 <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
@@ -779,12 +804,65 @@ function showNotification(message, type = 'info') {
     
     document.body.appendChild(notification);
     
-    // Remove notification after 5 seconds
+    // Remove notification after 3 seconds
     setTimeout(() => {
         if (notification.parentElement) {
             notification.remove();
         }
-    }, 5000);
+    }, 3000);
 }
+
+// Status badge update functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const statusSelect = document.querySelector('select[name="order_status"]');
+    const statusBadge = document.getElementById('statusBadge');
+    
+    if (statusSelect && statusBadge) {
+        statusSelect.addEventListener('change', function() {
+            const currentStatus = '{{ $order->order_status }}';
+            
+            // Only proceed if status is different and not empty
+            if (this.value !== '' && this.value !== currentStatus) {
+                // Update status badge immediately for better UX
+                updateStatusBadge(this.value);
+            }
+        });
+    }
+    
+    function updateStatusBadge(status) {
+        // Remove all existing classes
+        statusBadge.className = 'inline-flex items-center px-3 py-1 rounded-full text-sm font-medium';
+        
+        // Add appropriate classes based on status
+        switch(status) {
+            case 'On-Process':
+                statusBadge.classList.add('bg-blue-100', 'text-blue-800');
+                break;
+            case 'Designing':
+                statusBadge.classList.add('bg-purple-100', 'text-purple-800');
+                break;
+            case 'Production':
+                statusBadge.classList.add('bg-yellow-100', 'text-yellow-800');
+                break;
+            case 'For Releasing':
+                statusBadge.classList.add('bg-orange-100', 'text-orange-800');
+                break;
+            case 'Completed':
+                statusBadge.classList.add('bg-green-100', 'text-green-800');
+                break;
+            case 'Cancelled':
+                statusBadge.classList.add('bg-red-100', 'text-red-800');
+                break;
+            case 'Voided':
+                statusBadge.classList.add('bg-gray-100', 'text-gray-800');
+                break;
+            default:
+                statusBadge.classList.add('bg-gray-100', 'text-gray-800');
+        }
+        
+        // Update the text content
+        statusBadge.textContent = status;
+    }
+});
 </script>
 @endsection

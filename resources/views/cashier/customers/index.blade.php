@@ -6,7 +6,7 @@
 
 @section('header-actions')
 <div class="flex items-center space-x-4">
-    <a href="{{ route('cashier.customers.create') }}" class="bg-maroon hover:bg-maroon-dark text-white px-4 py-2 rounded-lg font-medium transition-colors inline-flex items-center">
+    <a href="{{ route('cashier.customers.create') }}" class="bg-maroon hover:bg-maroon-dark text-white px-4 py-2 rounded-lg font-medium inline-flex items-center">
         <i class="fas fa-plus mr-2"></i>
         Add Customer
     </a>
@@ -28,11 +28,11 @@
             </div>
             
             <div class="flex items-end space-x-2">
-                <button type="submit" class="bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-lg transition-colors">
+                <button type="submit" class="bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-lg">
                     <i class="fas fa-search"></i>
                 </button>
                 @if(request('search'))
-                    <a href="{{ route('cashier.customers.index') }}" class="bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-lg transition-colors">
+                    <a href="{{ route('cashier.customers.index') }}" class="bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-lg">
                         <i class="fas fa-times"></i>
                     </a>
                 @endif

@@ -33,7 +33,7 @@ Route::get('/customers/search', function (Request $request) {
     $customers = Customer::where(function($q) use ($query) {
         $q->where('customer_firstname', 'like', "%{$query}%")
           ->orWhere('customer_lastname', 'like', "%{$query}%")
-          ->orWhere('customer_contact', 'like', "%{$query}%");
+          ->orWhere('contact_number1', 'like', "%{$query}%");
     })
     ->where('is_active', true)
     ->limit(10)

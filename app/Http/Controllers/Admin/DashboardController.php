@@ -20,13 +20,17 @@ class DashboardController extends Controller
         $startDate = $startDateParam ? Carbon::parse($startDateParam)->startOfDay() : null;
         $endDate = $endDateParam ? Carbon::parse($endDateParam)->endOfDay() : null;
 
-        // Calculate total sales - all payments regardless of date
-        $totalSales = Payment::sum('amount_paid');
+        // Calculate total sales - exclude payments from voided orders
+        $totalSales = Payment::whereHas('order', function($query) {
+            $query->where('order_status', '!=', Order::STATUS_VOIDED);
+        })->sum('amount_paid');
         
         // Calculate period sales for display (if date range is provided, show that range; otherwise show all-time)
         $periodSales = $totalSales;
         if ($startDate && $endDate) {
-            $periodSales = Payment::whereBetween('payment_date', [$startDate, $endDate])->sum('amount_paid');
+            $periodSales = Payment::whereHas('order', function($query) {
+                $query->where('order_status', '!=', Order::STATUS_VOIDED);
+            })->whereBetween('payment_date', [$startDate, $endDate])->sum('amount_paid');
         }
 
         // Inventory statistics
@@ -42,7 +46,7 @@ class DashboardController extends Controller
         $stats = [
             'total_customers' => Customer::count(),
             'pending_quotations' => Quotation::where('status', Quotation::STATUS_PENDING)->count(),
-            'active_orders' => Order::whereNotIn('order_status', [Order::STATUS_COMPLETED, Order::STATUS_CANCELLED])->count(),
+            'active_orders' => Order::whereNotIn('order_status', [Order::STATUS_COMPLETED, Order::STATUS_CANCELLED, Order::STATUS_VOIDED])->count(),
             'monthly_sales' => $periodSales,
             'total_sales' => $totalSales,
             'total_inventory_items' => $totalInventoryItems,

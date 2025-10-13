@@ -22,6 +22,7 @@ class Delivery extends Model
         'status',
         'delivery_fee',
         'notes',
+        'created_by',
     ];
 
     protected $casts = [
@@ -37,5 +38,20 @@ class Delivery extends Model
     public function employee()
     {
         return $this->belongsTo(Employee::class, 'employee_id');
+    }
+
+    public function creator()
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    /**
+     * Generate a unique delivery ID
+     */
+    public static function generateDeliveryId()
+    {
+        $lastDelivery = self::orderBy('delivery_id', 'desc')->first();
+        $lastId = $lastDelivery ? (int) $lastDelivery->delivery_id : 0;
+        return str_pad($lastId + 1, 5, '0', STR_PAD_LEFT);
     }
 }

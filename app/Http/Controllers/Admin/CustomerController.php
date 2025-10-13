@@ -30,6 +30,11 @@ class CustomerController extends Controller
             ->paginate(15)
             ->appends($request->query());
 
+        // If it's an AJAX request, return only the table content
+        if ($request->ajax()) {
+            return view('admin.customers.partials.customers-table', compact('customers', 'showArchived'));
+        }
+
         return view('admin.customers.index', compact('customers', 'showArchived'));
     }
 

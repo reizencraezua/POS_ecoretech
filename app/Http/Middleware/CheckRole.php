@@ -21,7 +21,7 @@ class CheckRole
 
         $user = auth()->user();
         
-        if ($role === 'admin' && !$user->isAdmin()) {
+        if ($role === 'admin' && !$user->isAdmin() && !$user->isSuperAdmin()) {
             abort(403, 'Access denied. Admin role required.');
         }
         

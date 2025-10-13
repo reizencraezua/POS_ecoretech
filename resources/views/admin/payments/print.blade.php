@@ -124,7 +124,7 @@
                 </div>
                 <div class="flex justify-between">
                     <span class="text-gray-600">Previous Balance:</span>
-                    <span class="font-medium text-red-600">₱{{ number_format($payment->order->final_total_amount - ($payment->order->total_paid - $payment->amount_paid), 2) }}</span>
+                    <span class="font-medium text-red-600">-₱{{ number_format($payment->order->final_total_amount - ($payment->order->total_paid - $payment->amount_paid), 2) }}</span>
                 </div>
                 <div class="flex justify-between">
                     <span class="text-gray-600">Amount Paid:</span>
@@ -143,7 +143,7 @@
                 @if($payment->balance > 0)
                 <div class="flex justify-between">
                     <span class="text-gray-600">Remaining Balance:</span>
-                    <span class="font-medium text-red-600">₱{{ number_format($payment->balance, 2) }}</span>
+                    <span class="font-medium text-red-600">-₱{{ number_format($payment->balance, 2) }}</span>
                 </div>
                 @else
                 <div class="flex justify-between">

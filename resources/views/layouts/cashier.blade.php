@@ -22,11 +22,11 @@
         .hover-maroon:hover { background-color: var(--primary-maroon); }
         .sidebar-gradient { background: linear-gradient(180deg, #ffffff 0%, #fafafa 100%); }
         .sidebar-active { background-color: rgba(128, 0, 32, 0.08); border-right: 3px solid var(--primary-maroon); color: var(--primary-maroon); }
-        .sidebar-link { display:flex; align-items:center; gap:12px; padding:10px 12px; border-radius:10px; color:#374151; transition: all .2s; }
-        .sidebar-link-collapsed { display:flex; align-items:center; justify-center; padding:10px; border-radius:10px; color:#374151; transition: all .2s; width:100%; }
+        .sidebar-link { display:flex; align-items:center; gap:12px; padding:10px 12px; border-radius:10px; color:#374151; }
+        .sidebar-link-collapsed { display:flex; align-items:center; justify-center; padding:10px; border-radius:10px; color:#374151; width:100%; }
         .sidebar-link:hover { background:#F3F4F6; color:#111827; }
         .sidebar-icon { width:20px; text-align:center; }
-        .sidebar-tooltip { position:absolute; left:68px; background:#111827; color:#fff; padding:4px 8px; border-radius:6px; font-size:12px; white-space:nowrap; transform: translateY(-50%); top:50%; opacity:0; pointer-events:none; transition:opacity .15s; }
+        .sidebar-tooltip { position:absolute; left:68px; background:#111827; color:#fff; padding:4px 8px; border-radius:6px; font-size:12px; white-space:nowrap; transform: translateY(-50%); top:50%; opacity:0; pointer-events:none; }
         .sidebar-item:hover .sidebar-tooltip { opacity:1; }
     </style>
     <script>
@@ -50,22 +50,23 @@
         init() { const v = localStorage.getItem('ecore_sidebar_open'); if (v !== null) { this.sidebarOpen = v === '1'; } }
     }">
         <!-- Sidebar -->
-        <div class="sidebar-gradient shadow-lg transition-all duration-300 ease-in-out" 
+        <div class="sidebar-gradient shadow-lg" 
              :class="sidebarOpen ? 'w-64' : 'w-16'">
             <div class="flex flex-col h-full">
                 <!-- Logo -->
                 <div :class="sidebarOpen ? 'p-4' : 'p-3'" class="border-b border-gray-200">
                     <div class="flex items-center justify-center">
-                        <div :class="sidebarOpen ? 'w-12 h-12' : 'w-10 h-10'" class="bg-maroon rounded-2xl flex items-center justify-center text-white font-bold transition-all duration-300"
-                             :class="sidebarOpen ? 'text-xl' : 'text-lg'">
-                            E
+                        <div :class="sidebarOpen ? 'w-16 h-16' : 'w-12 h-12'" class="bg-maroon flex items-center justify-center overflow-hidden">
+                            <img src="{{ asset('images/logo/ecoretech.png') }}" 
+                                 alt="Ecoretech Logo" 
+                                 class="w-full h-full object-cover">
                         </div>
-                        <div x-show="sidebarOpen" class="ml-3 transition-opacity duration-300">
-                            <h1 class="text-lg font-bold text-maroon">Ecoretech Printing Shop</h1>
+                        <div x-show="sidebarOpen" class="ml-3">
+                            <h1 class="text-lg font-bold text-maroon">Ecoretech Printshop</h1>
                             <p class="text-xs text-gray-500">Cashier Panel</p>
                         </div>
                     </div>
-                    <div :class="sidebarOpen ? 'mt-4 flex items-center gap-2' : 'mt-3 flex justify-center'" class="transition-all duration-300">
+                    <div :class="sidebarOpen ? 'mt-4 flex items-center gap-2' : 'mt-3 flex justify-center'">
                         <button
                             @click="toggleSidebar()"
                             class="p-2 rounded-lg hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-maroon"
@@ -73,7 +74,7 @@
                             :aria-label="sidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'"
                             :title="sidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'"
                         >
-                            <i class="fas text-gray-600 transition-transform duration-200"
+                            <i class="fas text-gray-600"
                                :class="sidebarOpen ? 'fa-angles-left' : 'fa-angles-right'"></i>
                         </button>
                         <button x-show="sidebarOpen" class="md:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors" @click="mobileOpen = !mobileOpen" title="Open menu">
@@ -90,7 +91,7 @@
                            :class="sidebarOpen ? 'sidebar-link' : 'sidebar-link-collapsed'"
                            class="{{ request()->routeIs('cashier.dashboard') ? 'sidebar-active' : '' }}">
                             <i class="fas fa-tachometer-alt sidebar-icon"></i>
-                            <span x-show="sidebarOpen" class="transition-opacity duration-300">Dashboard</span>
+                            <span x-show="sidebarOpen">Dashboard</span>
                         </a>
                         <div x-show="!sidebarOpen" class="sidebar-tooltip">Dashboard</div>
                     </div>
@@ -101,7 +102,7 @@
                            :class="sidebarOpen ? 'sidebar-link' : 'sidebar-link-collapsed'"
                            class="{{ request()->routeIs('cashier.quotations.*') ? 'sidebar-active' : '' }}">
                             <i class="fas fa-file-invoice sidebar-icon"></i>
-                            <span x-show="sidebarOpen" class="transition-opacity duration-300">Quotations</span>
+                            <span x-show="sidebarOpen">Quotations</span>
                         </a>
                         <div x-show="!sidebarOpen" class="sidebar-tooltip">Quotations</div>
                     </div>
@@ -112,7 +113,7 @@
                            :class="sidebarOpen ? 'sidebar-link' : 'sidebar-link-collapsed'"
                            class="{{ request()->routeIs('cashier.orders.*') ? 'sidebar-active' : '' }}">
                             <i class="fas fa-shopping-cart sidebar-icon"></i>
-                            <span x-show="sidebarOpen" class="transition-opacity duration-300">Job Orders</span>
+                            <span x-show="sidebarOpen">Job Orders</span>
                         </a>
                         <div x-show="!sidebarOpen" class="sidebar-tooltip">Job Orders</div>
                     </div>
@@ -123,7 +124,7 @@
                            :class="sidebarOpen ? 'sidebar-link' : 'sidebar-link-collapsed'"
                            class="{{ request()->routeIs('cashier.deliveries.*') ? 'sidebar-active' : '' }}">
                             <i class="fas fa-truck sidebar-icon"></i>
-                            <span x-show="sidebarOpen" class="transition-opacity duration-300">Deliveries</span>
+                            <span x-show="sidebarOpen">Deliveries</span>
                         </a>
                         <div x-show="!sidebarOpen" class="sidebar-tooltip">Deliveries</div>
                     </div>
@@ -134,19 +135,19 @@
                            :class="sidebarOpen ? 'sidebar-link' : 'sidebar-link-collapsed'"
                            class="{{ request()->routeIs('cashier.payments.*') ? 'sidebar-active' : '' }}">
                             <i class="fas fa-credit-card sidebar-icon"></i>
-                            <span x-show="sidebarOpen" class="transition-opacity duration-300">Payments</span>
+                            <span x-show="sidebarOpen">Payments</span>
                         </a>
                         <div x-show="!sidebarOpen" class="sidebar-tooltip">Payments</div>
                     </div>
                 </nav>
 
                 <!-- User Section -->
-                <div :class="sidebarOpen ? 'p-4' : 'p-2'" class="border-t border-gray-200 transition-all duration-300" x-data="{ userMenuOpen: false }">
+                <div :class="sidebarOpen ? 'p-4' : 'p-2'" class="border-t border-gray-200 " x-data="{ userMenuOpen: false }">
                     <div class="relative">
                         <button @click.stop="userMenuOpen = !userMenuOpen" 
                                 :class="sidebarOpen ? 'flex items-center w-full p-2' : 'flex items-center justify-center w-full p-2'"
-                                class="rounded-lg hover:bg-gray-100 transition-colors">
-                            <div :class="sidebarOpen ? 'w-8 h-8' : 'w-10 h-10'" class="bg-maroon rounded-full flex items-center justify-center text-white transition-all duration-300"
+                                class="rounded-lg hover:bg-gray-100">
+                            <div :class="sidebarOpen ? 'w-8 h-8' : 'w-10 h-10'" class="bg-maroon rounded-full flex items-center justify-center text-white"
                                  :class="sidebarOpen ? 'text-sm' : 'text-base'">
                                 {{ substr(Auth::user()->name, 0, 1) }}
                             </div>
@@ -155,10 +156,15 @@
                                 <p class="text-xs text-gray-500">Cashier</p>
                             </div>
                         </button>
-                        <div x-show="userMenuOpen" @click.away="userMenuOpen = false" x-transition 
+                        <div x-show="userMenuOpen" @click.away="userMenuOpen = false" 
                              :class="sidebarOpen ? 'absolute bottom-full left-0 right-0 mb-2' : 'absolute bottom-full left-0 mb-2'"
                              class="bg-white rounded-lg shadow-lg border border-gray-200 py-2"
                              :style="sidebarOpen ? '' : 'width: 200px;'">
+                            <a href="{{ route('cashier.change-password') }}" 
+                               class="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                <i class="fas fa-key mr-3"></i>
+                                Change Password
+                            </a>
                             <form method="POST" action="{{ route('cashier.logout') }}">
                                 @csrf
                                 <button type="submit" class="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
@@ -197,23 +203,56 @@
             <main class="flex-1 overflow-y-auto bg-gray-50">
                 <div class="p-6">
                     @if(session('success'))
-                        <div class="mb-4 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded">
+                        <div 
+                            x-data="{ show: true }"
+                            x-init="setTimeout(() => show = false, 3000)"
+                            x-show="show"
+                            x-transition:enter-start="opacity-0 transform scale-95"
+                            x-transition:enter-end="opacity-100 transform scale-100"
+                            x-transition:leave-start="opacity-100 transform scale-100"
+                            x-transition:leave-end="opacity-0 transform scale-95"
+                            class="mb-4 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative">
                             <i class="fas fa-check-circle mr-2"></i>
                             {{ session('success') }}
+                            <button type="button" @click="show = false" class="absolute top-0 right-0 p-2 text-green-700 hover:text-green-900">
+                                <i class="fas fa-times"></i>
+                            </button>
                         </div>
                     @endif
 
                     @if(session('error'))
-                        <div class="mb-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+                        <div 
+                            x-data="{ show: true }"
+                            x-init="setTimeout(() => show = false, 3000)"
+                            x-show="show"
+                            x-transition:enter-start="opacity-0 transform scale-95"
+                            x-transition:enter-end="opacity-100 transform scale-100"
+                            x-transition:leave-start="opacity-100 transform scale-100"
+                            x-transition:leave-end="opacity-0 transform scale-95"
+                            class="mb-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">
                             <i class="fas fa-exclamation-circle mr-2"></i>
                             {{ session('error') }}
+                            <button type="button" @click="show = false" class="absolute top-0 right-0 p-2 text-red-700 hover:text-red-900">
+                                <i class="fas fa-times"></i>
+                            </button>
                         </div>
                     @endif
 
                     @if(session('warning'))
-                        <div class="mb-4 bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded">
+                        <div 
+                            x-data="{ show: true }"
+                            x-init="setTimeout(() => show = false, 3000)"
+                            x-show="show"
+                            x-transition:enter-start="opacity-0 transform scale-95"
+                            x-transition:enter-end="opacity-100 transform scale-100"
+                            x-transition:leave-start="opacity-100 transform scale-100"
+                            x-transition:leave-end="opacity-0 transform scale-95"
+                            class="mb-4 bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded relative">
                             <i class="fas fa-exclamation-triangle mr-2"></i>
                             {{ session('warning') }}
+                            <button type="button" @click="show = false" class="absolute top-0 right-0 p-2 text-yellow-700 hover:text-yellow-900">
+                                <i class="fas fa-times"></i>
+                            </button>
                         </div>
                     @endif
 

@@ -28,7 +28,7 @@
                 </div>
                 <div class="flex items-center space-x-3">
                     <a href="{{ route('cashier.customers.edit', $customer) }}" 
-                       class="bg-maroon hover:bg-maroon-dark text-white px-4 py-2 rounded-lg font-medium transition-colors inline-flex items-center">
+                       class="bg-maroon hover:bg-maroon-dark text-white px-4 py-2 rounded-lg font-medium inline-flex items-center">
                         <i class="fas fa-edit mr-2"></i>
                         Edit Customer
                     </a>
