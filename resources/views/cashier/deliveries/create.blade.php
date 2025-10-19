@@ -77,10 +77,14 @@
                             <div>
                                 <label for="driver_contact" class="block text-sm font-medium text-gray-700 mb-1">Driver Contact</label>
                                 <input type="tel" name="driver_contact" id="driver_contact" value="{{ old('driver_contact') }}"
-                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon @error('driver_contact') border-red-500 @enderror">
+                                       pattern="[0-9]{11}" maxlength="11" 
+                                       placeholder="099-9999-999"
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon @error('driver_contact') border-red-500 @enderror"
+                                       oninput="this.value = this.value.replace(/[^0-9]/g, '')">
                                 @error('driver_contact')
                                     <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
                                 @enderror
+                                <p class="text-xs text-gray-500 mt-1">Enter exactly 11 digits (numbers only)</p>
                             </div>
                         </div>
                     </div>

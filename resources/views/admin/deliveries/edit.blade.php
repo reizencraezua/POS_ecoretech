@@ -6,19 +6,7 @@
 
 @section('content')
 <div class="max-w-6xl mx-auto space-y-6">
-    <!-- Back Button & Title -->
-    <div class="flex items-center justify-between">
-        <div class="flex items-center gap-4">
-            <a href="{{ route('admin.deliveries.show', $delivery) }}" 
-               class="p-2 text-gray-600 hover:text-maroon hover:bg-gray-100 rounded-lg transition-all">
-                <i class="fas fa-arrow-left text-xl"></i>
-            </a>
-            <div>
-                <h1 class="text-2xl font-bold text-gray-900">Edit Delivery</h1>
-                <p class="text-sm text-gray-500">Update delivery information</p>
-            </div>
-        </div>
-    </div>
+   
 
     <!-- Form -->
     <div class="bg-white rounded-xl shadow-sm border border-gray-100">

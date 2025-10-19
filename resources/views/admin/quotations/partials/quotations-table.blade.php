@@ -13,9 +13,9 @@
                     <div class="flex items-center space-x-2">
                         <span class="px-2 py-1 text-xs font-medium rounded-full
                                 @if($quotation->status === 'Pending')
-                                    bg-yellow-100 text-yellow-800
+                                     text-yellow-800
                                 @else
-                                    bg-green-100 text-green-800
+                                     text-green-800
                                 @endif
                             ">
                             {{ $quotation->status }}

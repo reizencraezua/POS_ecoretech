@@ -1,4 +1,4 @@
-<div id="paymentsTableContainer">
+<!-- <div id="paymentsTableContainer">
     <div class="overflow-x-auto">
         <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-50">
@@ -64,22 +64,22 @@
                             <span class="px-2 py-1 text-xs font-medium rounded-full
                                 @switch($payment->payment_method)
                                     @case('Cash')
-                                        bg-green-100 text-green-800
+                                        text-green-800
                                         @break
                                     @case('GCash')
-                                        bg-blue-100 text-blue-800
+                                        text-blue-800
                                         @break
                                     @case('Bank Transfer')
-                                        bg-purple-100 text-purple-800
+                                        text-purple-800
                                         @break
                                     @case('Check')
-                                        bg-yellow-100 text-yellow-800
+                                        text-yellow-800
                                         @break
                                     @case('Credit Card')
-                                        bg-indigo-100 text-indigo-800
+                                        text-indigo-800
                                         @break
                                     @default
-                                        bg-gray-100 text-gray-800
+                                        text-gray-800
                                 @endswitch
                             ">
                                 {{ $payment->payment_method }}
@@ -93,11 +93,11 @@
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
                             @if($payment->balance > 0)
-                                <span class="px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800">
+                                <span class="px-2 py-1 text-xs font-medium rounded-full text-yellow-800">
                                     Partial Payment
                                 </span>
                             @else
-                                <span class="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
+                                <span class="px-2 py-1 text-xs font-medium rounded-full text-green-800">
                                     Paid in Full
                                 </span>
                             @endif
@@ -159,10 +159,10 @@
         </table>
     </div>
     
-    <!-- Pagination -->
-    @if($payments->hasPages())
+    Pagination
+    <!-- @if($payments->hasPages())
         <div class="bg-white px-6 py-3 border-t border-gray-200">
             {{ $payments->links() }}
         </div>
-    @endif
-</div>
+    @endif -->
+<!-- </div> --> -->

@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Product;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class ProductController extends Controller
 {
@@ -15,41 +17,8 @@ class ProductController extends Controller
             ? Product::with(['category', 'size', 'unit'])->onlyTrashed()
             : Product::with(['category', 'size', 'unit']);
 
-        if ($request->has('search')) {
-            $search = $request->search;
-            $query->where(function ($q) use ($search) {
-                $q->where('product_id', 'like', "%{$search}%")
-                  ->orWhere('product_name', 'like', "%{$search}%")
-                  ->orWhere('product_description', 'like', "%{$search}%")
-                  ->orWhere('product_code', 'like', "%{$search}%")
-                  ->orWhere('unit_price', 'like', "%{$search}%")
-                  ->orWhere('stocks', 'like', "%{$search}%")
-                  ->orWhere('notes', 'like', "%{$search}%")
-                  // Search in category fields
-                  ->orWhereHas('category', function ($categoryQuery) use ($search) {
-                      $categoryQuery->where('category_name', 'like', "%{$search}%")
-                                   ->orWhere('description', 'like', "%{$search}%");
-                  })
-                  // Search in size fields
-                  ->orWhereHas('size', function ($sizeQuery) use ($search) {
-                      $sizeQuery->where('size_name', 'like', "%{$search}%")
-                               ->orWhere('description', 'like', "%{$search}%");
-                  })
-                  // Search in unit fields
-                  ->orWhereHas('unit', function ($unitQuery) use ($search) {
-                      $unitQuery->where('unit_name', 'like', "%{$search}%")
-                               ->orWhere('abbreviation', 'like', "%{$search}%");
-                  });
-            });
-        }
 
         $products = $query->orderBy('product_id', 'asc')->paginate(15);
-        $products->appends($request->query());
-
-        // If it's an AJAX request, return only the table content
-        if ($request->ajax()) {
-            return view('admin.products.partials.products-table', compact('products', 'showArchived'));
-        }
 
         return view('admin.products.index', compact('products', 'showArchived'));
     }
@@ -61,22 +30,57 @@ class ProductController extends Controller
 
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'product_name' => 'required|string|max:255',
-            'base_price' => 'required|numeric|min:0',
-            'layout_price' => 'nullable|numeric|min:0',
-            'requires_layout' => 'nullable|boolean',
-            'layout_description' => 'nullable|string',
-            'product_description' => 'nullable|string',
-            'category_id' => 'nullable|exists:categories,category_id',
-            'size_id' => 'nullable|exists:sizes,size_id',
-            'unit_id' => 'nullable|exists:units,unit_id',
-        ]);
+        try {
+            $validated = $request->validate([
+                'product_name' => 'required|string|max:255|unique:products,product_name',
+                'base_price' => 'required|numeric|min:0|max:999999.99',
+                'layout_price' => 'nullable|numeric|min:0|max:999999.99',
+                'requires_layout' => 'nullable|boolean',
+                'layout_description' => 'nullable|string|max:1000',
+                'product_description' => 'nullable|string|max:2000',
+                'category_id' => 'nullable|exists:categories,category_id',
+                'size_id' => 'nullable|exists:sizes,size_id',
+                'unit_id' => 'nullable|exists:units,unit_id',
+            ], [
+                'product_name.required' => 'Product name is required.',
+                'product_name.unique' => 'A product with this name already exists.',
+                'product_name.max' => 'Product name cannot exceed 255 characters.',
+                'base_price.required' => 'Base price is required.',
+                'base_price.numeric' => 'Base price must be a number.',
+                'base_price.min' => 'Base price cannot be negative.',
+                'base_price.max' => 'Base price cannot exceed ₱999,999.99.',
+                'layout_price.numeric' => 'Layout price must be a number.',
+                'layout_price.min' => 'Layout price cannot be negative.',
+                'layout_price.max' => 'Layout price cannot exceed ₱999,999.99.',
+                'category_id.exists' => 'Selected category does not exist.',
+                'size_id.exists' => 'Selected size does not exist.',
+                'unit_id.exists' => 'Selected unit does not exist.',
+                'layout_description.max' => 'Layout description cannot exceed 1000 characters.',
+                'product_description.max' => 'Product description cannot exceed 2000 characters.',
+            ]);
 
-        Product::create($validated);
+            DB::beginTransaction();
 
-        return redirect()->route('admin.products.index')
-            ->with('success', 'Product created successfully.');
+            Product::create($validated);
+
+            DB::commit();
+
+            return redirect()->route('admin.products.index')
+                ->with('success', 'Product created successfully.');
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            DB::rollBack();
+            Log::error('Product validation error: ' . json_encode($e->errors()));
+            return redirect()->back()
+                ->withErrors($e->errors())
+                ->withInput();
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error creating product: ' . $e->getMessage());
+            Log::error('Stack trace: ' . $e->getTraceAsString());
+            return redirect()->back()
+                ->with('error', 'Failed to create product: ' . $e->getMessage())
+                ->withInput();
+        }
     }
 
     public function show(Product $product)
@@ -114,22 +118,57 @@ class ProductController extends Controller
 
     public function update(Request $request, Product $product)
     {
-        $validated = $request->validate([
-            'product_name' => 'required|string|max:255',
-            'base_price' => 'required|numeric|min:0',
-            'layout_price' => 'nullable|numeric|min:0',
-            'requires_layout' => 'nullable|boolean',
-            'layout_description' => 'nullable|string',
-            'product_description' => 'nullable|string',
-            'category_id' => 'nullable|exists:categories,category_id',
-            'size_id' => 'nullable|exists:sizes,size_id',
-            'unit_id' => 'nullable|exists:units,unit_id',
-        ]);
+        try {
+            $validated = $request->validate([
+                'product_name' => 'required|string|max:255|unique:products,product_name,' . $product->product_id . ',product_id',
+                'base_price' => 'required|numeric|min:0|max:999999.99',
+                'layout_price' => 'nullable|numeric|min:0|max:999999.99',
+                'requires_layout' => 'nullable|boolean',
+                'layout_description' => 'nullable|string|max:1000',
+                'product_description' => 'nullable|string|max:2000',
+                'category_id' => 'nullable|exists:categories,category_id',
+                'size_id' => 'nullable|exists:sizes,size_id',
+                'unit_id' => 'nullable|exists:units,unit_id',
+            ], [
+                'product_name.required' => 'Product name is required.',
+                'product_name.unique' => 'A product with this name already exists.',
+                'product_name.max' => 'Product name cannot exceed 255 characters.',
+                'base_price.required' => 'Base price is required.',
+                'base_price.numeric' => 'Base price must be a number.',
+                'base_price.min' => 'Base price cannot be negative.',
+                'base_price.max' => 'Base price cannot exceed ₱999,999.99.',
+                'layout_price.numeric' => 'Layout price must be a number.',
+                'layout_price.min' => 'Layout price cannot be negative.',
+                'layout_price.max' => 'Layout price cannot exceed ₱999,999.99.',
+                'category_id.exists' => 'Selected category does not exist.',
+                'size_id.exists' => 'Selected size does not exist.',
+                'unit_id.exists' => 'Selected unit does not exist.',
+                'layout_description.max' => 'Layout description cannot exceed 1000 characters.',
+                'product_description.max' => 'Product description cannot exceed 2000 characters.',
+            ]);
 
-        $product->update($validated);
+            DB::beginTransaction();
 
-        return redirect()->route('admin.products.index')
-            ->with('success', 'Product updated successfully.');
+            $product->update($validated);
+
+            DB::commit();
+
+            return redirect()->route('admin.products.index')
+                ->with('success', 'Product updated successfully.');
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            DB::rollBack();
+            Log::error('Product validation error: ' . json_encode($e->errors()));
+            return redirect()->back()
+                ->withErrors($e->errors())
+                ->withInput();
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error updating product: ' . $e->getMessage());
+            Log::error('Stack trace: ' . $e->getTraceAsString());
+            return redirect()->back()
+                ->with('error', 'Failed to update product: ' . $e->getMessage())
+                ->withInput();
+        }
     }
 
     public function destroy(Product $product)

@@ -1,25 +1,12 @@
 @extends('layouts.admin')
 
+@section('page-title', 'Edit Supplier')
+@section('page-description', 'Update supplier information')
 @section('title', 'Edit Supplier')
 
 @section('content')
 <div class="bg-white rounded-lg shadow-sm">
-    <div class="p-6 border-b border-gray-200">
-        <div class="flex items-center justify-between">
-            <div>
-                <h1 class="text-2xl font-bold text-gray-900">Edit Supplier</h1>
-                <p class="text-sm text-gray-600 mt-1">Update supplier information</p>
-            </div>
-            <div class="flex items-center space-x-2">
-                <a href="{{ route('admin.suppliers.show', $supplier) }}" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
-                    <i class="fas fa-external-link-alt mr-2"></i>View
-                </a>
-                <a href="{{ route('admin.suppliers.index') }}" class="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors">
-                    <i class="fas fa-arrow-left mr-2"></i>Back
-                </a>
-            </div>
-        </div>
-    </div>
+   
 
     <div class="p-6">
         <form method="POST" action="{{ route('admin.suppliers.update', $supplier) }}" class="space-y-6">

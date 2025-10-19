@@ -44,127 +44,120 @@
 </head>
 <body class="bg-gray-100 font-sans">
     <div class="flex h-screen" x-data="{
-        sidebarOpen: true,
+        sidebarOpen: false,
         mobileOpen: false,
-        toggleSidebar() { this.sidebarOpen = !this.sidebarOpen; localStorage.setItem('ecore_sidebar_open', this.sidebarOpen ? '1' : '0'); },
-        init() { const v = localStorage.getItem('ecore_sidebar_open'); if (v !== null) { this.sidebarOpen = v === '1'; } }
+        showSidebar() { this.sidebarOpen = true; },
+        hideSidebar() { this.sidebarOpen = false; }
     }">
         <!-- Sidebar -->
-        <div class="sidebar-gradient shadow-lg" 
-             :class="sidebarOpen ? 'w-64' : 'w-16'">
+        <div class="sidebar-gradient shadow-lg transition-all duration-300 ease-in-out" 
+             :class="sidebarOpen ? 'w-64' : 'w-16'"
+             @mouseenter="showSidebar()"
+             @mouseleave="hideSidebar()">
             <div class="flex flex-col h-full">
                 <!-- Logo -->
-                <div :class="sidebarOpen ? 'p-4' : 'p-3'" class="border-b border-gray-200">
-                    <div class="flex items-center justify-center">
-                        <div :class="sidebarOpen ? 'w-16 h-16' : 'w-12 h-12'" class="bg-maroon flex items-center justify-center overflow-hidden">
+                <div class="transition-all duration-300 ease-in-out border-b border-gray-200" :class="sidebarOpen ? 'p-4' : 'p-3'">
+                    <div class="flex items-center transition-all duration-300 ease-in-out" :class="sidebarOpen ? 'justify-between' : 'flex-col'">
+                        <a href="{{ route('cashier.dashboard') }}" class="flex items-center justify-center transition-all duration-300 ease-in-out" 
+                           :class="sidebarOpen ? 'mb-0' : 'mb-3'">
                             <img src="{{ asset('images/logo/ecoretech.png') }}" 
                                  alt="Ecoretech Logo" 
-                                 class="w-full h-full object-cover">
+                                 class="w-auto object-contain transition-all duration-300 ease-in-out"
+                                 :class="sidebarOpen ? 'h-24' : 'h-12'">
+                        </a>
+                        <div class="flex items-center gap-2">
+                            <button x-show="sidebarOpen" class="md:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors" @click="mobileOpen = !mobileOpen" title="Open menu">
+                                <i class="fas fa-ellipsis-vertical text-gray-600"></i>
+                            </button>
                         </div>
-                        <div x-show="sidebarOpen" class="ml-3">
-                            <h1 class="text-lg font-bold text-maroon">Ecoretech Printshop</h1>
-                            <p class="text-xs text-gray-500">Cashier Panel</p>
-                        </div>
-                    </div>
-                    <div :class="sidebarOpen ? 'mt-4 flex items-center gap-2' : 'mt-3 flex justify-center'">
-                        <button
-                            @click="toggleSidebar()"
-                            class="p-2 rounded-lg hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-maroon"
-                            :aria-pressed="sidebarOpen.toString()"
-                            :aria-label="sidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'"
-                            :title="sidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'"
-                        >
-                            <i class="fas text-gray-600"
-                               :class="sidebarOpen ? 'fa-angles-left' : 'fa-angles-right'"></i>
-                        </button>
-                        <button x-show="sidebarOpen" class="md:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors" @click="mobileOpen = !mobileOpen" title="Open menu">
-                            <i class="fas fa-ellipsis-vertical text-gray-600"></i>
-                        </button>
                     </div>
                 </div>
 
-                <!-- Navigation -->
-                <nav class="flex-1 px-3 py-4 space-y-1">
-                    <!-- Dashboard -->
-                    <div class="sidebar-item relative">
-                        <a href="{{ route('cashier.dashboard') }}" 
-                           :class="sidebarOpen ? 'sidebar-link' : 'sidebar-link-collapsed'"
-                           class="{{ request()->routeIs('cashier.dashboard') ? 'sidebar-active' : '' }}">
-                            <i class="fas fa-tachometer-alt sidebar-icon"></i>
-                            <span x-show="sidebarOpen">Dashboard</span>
-                        </a>
-                        <div x-show="!sidebarOpen" class="sidebar-tooltip">Dashboard</div>
-                    </div>
+                <!-- Navigation Menu -->
+                <nav class="flex-1 transition-all duration-300 ease-in-out" :class="sidebarOpen ? 'p-4' : 'p-2'">
+                    <div class="space-y-4 transition-all duration-300 ease-in-out">
+                        <div class="transition-all duration-300 ease-in-out">
+                            <p x-show="sidebarOpen" class="px-2 text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2 transition-all duration-300 ease-in-out">Overview</p>
+                            <ul class="space-y-1 transition-all duration-300 ease-in-out">
+                                <li class="relative sidebar-item transition-all duration-300 ease-in-out">
+                                    <a href="{{ route('cashier.dashboard') }}" 
+                                       :class="sidebarOpen ? 'sidebar-link' : 'sidebar-link-collapsed'"
+                                       class="{{ request()->routeIs('cashier.dashboard') ? 'sidebar-active' : '' }} transition-all duration-300 ease-in-out">
+                                        <i class="fas fa-gauge sidebar-icon transition-all duration-300 ease-in-out"></i>
+                                        <span x-show="sidebarOpen" class="transition-all duration-300 ease-in-out">Dashboard</span>
+                                    </a>
+                                    <span x-show="!sidebarOpen" class="sidebar-tooltip transition-all duration-300 ease-in-out">Dashboard</span>
+                                </li>
+                            </ul>
+                        </div>
 
-                    <!-- Quotations -->
-                    <div class="sidebar-item relative">
-                        <a href="{{ route('cashier.quotations.index') }}" 
-                           :class="sidebarOpen ? 'sidebar-link' : 'sidebar-link-collapsed'"
-                           class="{{ request()->routeIs('cashier.quotations.*') ? 'sidebar-active' : '' }}">
-                            <i class="fas fa-file-invoice sidebar-icon"></i>
-                            <span x-show="sidebarOpen">Quotations</span>
-                        </a>
-                        <div x-show="!sidebarOpen" class="sidebar-tooltip">Quotations</div>
-                    </div>
+                        <div class="transition-all duration-300 ease-in-out">
+                            <p x-show="sidebarOpen" class="px-2 text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2 transition-all duration-300 ease-in-out">Transactions</p>
+                            <ul class="space-y-1 transition-all duration-300 ease-in-out">
+                                <li class="relative sidebar-item transition-all duration-300 ease-in-out">
+                                    <a href="{{ route('cashier.quotations.index') }}" 
+                                       :class="sidebarOpen ? 'sidebar-link' : 'sidebar-link-collapsed'"
+                                       class="{{ request()->routeIs('cashier.quotations.*') ? 'sidebar-active' : '' }} transition-all duration-300 ease-in-out">
+                                        <i class="fas fa-file-invoice sidebar-icon transition-all duration-300 ease-in-out"></i>
+                                        <span x-show="sidebarOpen" class="transition-all duration-300 ease-in-out">Quotations</span>
+                                    </a>
+                                    <span x-show="!sidebarOpen" class="sidebar-tooltip transition-all duration-300 ease-in-out">Quotations</span>
+                                </li>
 
-                    <!-- Job Orders -->
-                    <div class="sidebar-item relative">
-                        <a href="{{ route('cashier.orders.index') }}" 
-                           :class="sidebarOpen ? 'sidebar-link' : 'sidebar-link-collapsed'"
-                           class="{{ request()->routeIs('cashier.orders.*') ? 'sidebar-active' : '' }}">
-                            <i class="fas fa-shopping-cart sidebar-icon"></i>
-                            <span x-show="sidebarOpen">Job Orders</span>
-                        </a>
-                        <div x-show="!sidebarOpen" class="sidebar-tooltip">Job Orders</div>
-                    </div>
+                                <li class="relative sidebar-item transition-all duration-300 ease-in-out">
+                                    <a href="{{ route('cashier.orders.index') }}" 
+                                       :class="sidebarOpen ? 'sidebar-link' : 'sidebar-link-collapsed'"
+                                       class="{{ request()->routeIs('cashier.orders.*') ? 'sidebar-active' : '' }} transition-all duration-300 ease-in-out">
+                                        <i class="fas fa-shopping-cart sidebar-icon transition-all duration-300 ease-in-out"></i>
+                                        <span x-show="sidebarOpen" class="transition-all duration-300 ease-in-out">Job Orders</span>
+                                    </a>
+                                    <span x-show="!sidebarOpen" class="sidebar-tooltip transition-all duration-300 ease-in-out">Job Orders</span>
+                                </li>
 
-                    <!-- Deliveries -->
-                    <div class="sidebar-item relative">
-                        <a href="{{ route('cashier.deliveries.index') }}" 
-                           :class="sidebarOpen ? 'sidebar-link' : 'sidebar-link-collapsed'"
-                           class="{{ request()->routeIs('cashier.deliveries.*') ? 'sidebar-active' : '' }}">
-                            <i class="fas fa-truck sidebar-icon"></i>
-                            <span x-show="sidebarOpen">Deliveries</span>
-                        </a>
-                        <div x-show="!sidebarOpen" class="sidebar-tooltip">Deliveries</div>
-                    </div>
+                                <li class="relative sidebar-item transition-all duration-300 ease-in-out">
+                                    <a href="{{ route('cashier.deliveries.index') }}" 
+                                       :class="sidebarOpen ? 'sidebar-link' : 'sidebar-link-collapsed'"
+                                       class="{{ request()->routeIs('cashier.deliveries.*') ? 'sidebar-active' : '' }} transition-all duration-300 ease-in-out">
+                                        <i class="fas fa-truck sidebar-icon transition-all duration-300 ease-in-out"></i>
+                                        <span x-show="sidebarOpen" class="transition-all duration-300 ease-in-out">Deliveries</span>
+                                    </a>
+                                    <span x-show="!sidebarOpen" class="sidebar-tooltip transition-all duration-300 ease-in-out">Deliveries</span>
+                                </li>
 
-                    <!-- Payments -->
-                    <div class="sidebar-item relative">
-                        <a href="{{ route('cashier.payments.index') }}" 
-                           :class="sidebarOpen ? 'sidebar-link' : 'sidebar-link-collapsed'"
-                           class="{{ request()->routeIs('cashier.payments.*') ? 'sidebar-active' : '' }}">
-                            <i class="fas fa-credit-card sidebar-icon"></i>
-                            <span x-show="sidebarOpen">Payments</span>
-                        </a>
-                        <div x-show="!sidebarOpen" class="sidebar-tooltip">Payments</div>
+                                <li class="relative sidebar-item transition-all duration-300 ease-in-out">
+                                    <a href="{{ route('cashier.payments.index') }}" 
+                                       :class="sidebarOpen ? 'sidebar-link' : 'sidebar-link-collapsed'"
+                                       class="{{ request()->routeIs('cashier.payments.*') ? 'sidebar-active' : '' }} transition-all duration-300 ease-in-out">
+                                        <i class="fas fa-credit-card sidebar-icon transition-all duration-300 ease-in-out"></i>
+                                        <span x-show="sidebarOpen" class="transition-all duration-300 ease-in-out">Payments</span>
+                                    </a>
+                                    <span x-show="!sidebarOpen" class="sidebar-tooltip transition-all duration-300 ease-in-out">Payments</span>
+                                </li>
+                            </ul>
+                        </div>
                     </div>
                 </nav>
 
                 <!-- User Section -->
-                <div :class="sidebarOpen ? 'p-4' : 'p-2'" class="border-t border-gray-200 " x-data="{ userMenuOpen: false }">
-                    <div class="relative">
-                        <button @click.stop="userMenuOpen = !userMenuOpen" 
-                                :class="sidebarOpen ? 'flex items-center w-full p-2' : 'flex items-center justify-center w-full p-2'"
-                                class="rounded-lg hover:bg-gray-100">
-                            <div :class="sidebarOpen ? 'w-8 h-8' : 'w-10 h-10'" class="bg-maroon rounded-full flex items-center justify-center text-white"
-                                 :class="sidebarOpen ? 'text-sm' : 'text-base'">
+                <div class="border-t border-gray-200 transition-all duration-300 ease-in-out" :class="sidebarOpen ? 'p-4' : 'p-2'" x-data="{ userMenuOpen: false }">
+                    <div class="relative transition-all duration-300 ease-in-out">
+                        <button x-show="sidebarOpen" @click.stop="userMenuOpen = !userMenuOpen" 
+                                class="flex items-center w-full p-2 rounded-lg hover:bg-gray-100 transition-all duration-300 ease-in-out">
+                            <div class="w-8 h-8 bg-maroon rounded-full flex items-center justify-center text-white text-sm transition-all duration-300 ease-in-out">
                                 {{ substr(Auth::user()->name, 0, 1) }}
                             </div>
-                            <div x-show="sidebarOpen" class="ml-3 flex-1 text-left">
-                                <p class="text-sm font-medium text-gray-900">{{ Auth::user()->name }}</p>
-                                <p class="text-xs text-gray-500">Cashier</p>
+                            <div class="ml-3 flex-1 text-left transition-all duration-300 ease-in-out">
+                                <p class="text-sm font-medium text-gray-900 transition-all duration-300 ease-in-out">{{ Auth::user()->name }}</p>
+                                <p class="text-xs text-gray-500 transition-all duration-300 ease-in-out">Cashier</p>
                             </div>
                         </button>
-                        <div x-show="userMenuOpen" @click.away="userMenuOpen = false" 
-                             :class="sidebarOpen ? 'absolute bottom-full left-0 right-0 mb-2' : 'absolute bottom-full left-0 mb-2'"
-                             class="bg-white rounded-lg shadow-lg border border-gray-200 py-2"
-                             :style="sidebarOpen ? '' : 'width: 200px;'">
-                            <a href="{{ route('cashier.change-password') }}" 
-                               class="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                <i class="fas fa-key mr-3"></i>
-                                Change Password
-                            </a>
+                        <div x-show="!sidebarOpen" class="flex items-center justify-center w-full p-2 transition-all duration-300 ease-in-out">
+                            <div class="w-10 h-10 bg-maroon rounded-full flex items-center justify-center text-white text-base transition-all duration-300 ease-in-out">
+                                {{ substr(Auth::user()->name, 0, 1) }}
+                            </div>
+                        </div>
+                        <div x-show="userMenuOpen" @click.away="userMenuOpen = false" x-transition 
+                             class="absolute bottom-full left-0 right-0 mb-2 bg-white rounded-lg shadow-lg border border-gray-200 py-2">
                             <form method="POST" action="{{ route('cashier.logout') }}">
                                 @csrf
                                 <button type="submit" class="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
@@ -184,9 +177,6 @@
             <header class="bg-white shadow-sm border-b border-gray-200">
                 <div class="flex items-center justify-between px-6 py-4">
                     <div class="flex items-center space-x-4">
-                        <button @click="sidebarOpen = !sidebarOpen" class="lg:hidden p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100">
-                            <i class="fas fa-bars text-lg"></i>
-                        </button>
                         <div>
                             <h1 class="text-2xl font-semibold text-gray-900">@yield('page-title', 'Cashier Panel')</h1>
                             <p class="text-sm text-gray-600">@yield('page-description', 'Manage quotations, orders, and deliveries')</p>

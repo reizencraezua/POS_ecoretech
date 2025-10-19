@@ -5,10 +5,11 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Models\TracksHistory;
 
 class Delivery extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes, TracksHistory;
 
     protected $primaryKey = 'delivery_id';
 
@@ -32,7 +33,7 @@ class Delivery extends Model
 
     public function order()
     {
-        return $this->belongsTo(Order::class, 'order_id');
+        return $this->belongsTo(Order::class, 'order_id', 'order_id');
     }
 
     public function employee()
@@ -43,6 +44,11 @@ class Delivery extends Model
     public function creator()
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function histories()
+    {
+        return $this->hasMany(DeliveryHistory::class, 'delivery_id', 'delivery_id');
     }
 
     /**

@@ -37,41 +37,18 @@
             
         <!-- Search and Filters -->
         <div class="flex items-center space-x-4">
-             <!-- Archive Button -->
-             <a href="{{ route('cashier.quotations.index', array_merge(request()->query(), ['archived' => isset($showArchived) && $showArchived ? 0 : 1])) }}"
-                class="px-4 py-2 rounded-lg font-medium inline-flex items-center border {{ (isset($showArchived) && $showArchived) ? 'border-green-600 text-green-700 hover:bg-green-50' : 'border-gray-300 text-gray-700 hover:bg-gray-50' }}">
-                <i class="fas fa-box-archive mr-2"></i>
-                {{ (isset($showArchived) && $showArchived) ? 'Show Active' : 'View Archives' }}
-            </a>
-            <form method="GET" class="flex items-center space-x-2">
-                <select name="status" class="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-maroon focus:border-maroon">
-                    <option value="">All Status</option>
-                    <option value="Pending" {{ request('status') == 'Pending' ? 'selected' : '' }}>Pending</option>
-                    <option value="Closed" {{ request('status') == 'Closed' ? 'selected' : '' }}>Closed</option>
-                </select>
-                <div class="relative">
-                    <input type="text" name="search" value="{{ request('search') }}" placeholder="Search quotations..."
-                        class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-maroon focus:border-maroon">
-                    <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+           
+            <div class="relative">
+                <input type="text" id="searchInput" placeholder="Search quotations..."
+                    class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-maroon focus:border-maroon w-80">
+                <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
             </div>
-                <input type="hidden" name="archived" value="{{ (isset($showArchived) && $showArchived) ? 1 : 0 }}">
-                <input type="hidden" name="start_date" value="{{ request('start_date') }}">
-                <input type="hidden" name="end_date" value="{{ request('end_date') }}">
-                <button type="submit" class="bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-lg">
-                    <i class="fas fa-search"></i>
-                </button>
-                @if(request('search') || request('status') || request('start_date') || request('end_date') || request('archived'))
-                <a href="{{ route('cashier.quotations.index', ['archived' => (isset($showArchived) && $showArchived) ? 1 : 0]) }}" class="bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-lg">
-                        <i class="fas fa-times"></i>
-                    </a>
-                @endif
-            </form>
         </div>
     </div>
 
     <!-- Quotations Grid -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    @forelse($quotations as $quotation)
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="quotationsGrid">
+        @forelse($quotations as $quotation)
         <div class="bg-white rounded-lg shadow hover:shadow-lg border border-gray-200 cursor-pointer group" onclick="window.location.href='{{ route('cashier.quotations.show', $quotation) }}'">
             <!-- Card Header -->
             <div class="p-4 border-b border-gray-200">
@@ -83,9 +60,9 @@
                     <div class="flex items-center space-x-2">
                         <span class="px-2 py-1 text-xs font-medium rounded-full
                                 @if($quotation->status === 'Pending')
-                                    bg-yellow-100 text-yellow-800
+                                    text-yellow-800
                                 @else
-                                    bg-green-100 text-green-800
+                                    text-green-800
                             @endif
                             ">
                             {{ $quotation->status }}
@@ -175,29 +152,35 @@
                             </div>
 
                 <div class="flex items-center">
-                    <a href="{{ route('cashier.quotations.edit', $quotation) }}" class="text-maroon hover:text-maroon-dark text-sm">
-                        <i class="fas fa-edit mr-1"></i>Edit
-                    </a>
+                    @if($quotation->hasPayments())
+                        <button class="text-gray-400 cursor-not-allowed text-sm" title="Cannot edit due to payment exist" onclick="event.stopPropagation(); showPaymentError();">
+                            <i class="fas fa-edit mr-1"></i>Edit
+                        </button>
+                    @else
+                        <a href="{{ route('cashier.quotations.edit', $quotation) }}" class="text-maroon hover:text-maroon-dark text-sm">
+                            <i class="fas fa-edit mr-1"></i>Edit
+                        </a>
+                    @endif
                 </div>
             </div>
         </div>
-                    @empty
+        @empty
         <div class="col-span-full bg-white rounded-lg shadow p-12 text-center">
             <div class="text-gray-400">
                 <i class="fas fa-file-alt text-6xl mb-4"></i>
                 <p class="text-xl font-medium mb-2">No quotations found</p>
                 <p class="text-gray-500 mb-4">Create your first quotation to get started</p>
             </div>
-                            </div>
-                    @endforelse
-        </div>
-        
+                        </div>
+        @endforelse
+    </div>
+    
     <!-- Pagination -->
-        @if($quotations->hasPages())
+    @if($quotations->hasPages())
     <div class="bg-white rounded-lg shadow p-4">
-            {{ $quotations->links() }}
-        </div>
-        @endif
+        {{ $quotations->links() }}
+    </div>
+    @endif
 </div>
 
 <!-- Convert to Job Order Modal -->
@@ -216,6 +199,17 @@
                 <input type="hidden" id="quotation_id" name="quotation_id">
 
                 <div class="space-y-6">
+                    <!-- Quotation Items Section -->
+                    <div class="bg-white border border-gray-200 rounded-lg p-4">
+                        <h4 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                            <i class="fas fa-list text-blue-600 mr-2"></i>
+                            Quotation Items
+                        </h4>
+                        <div id="quotation_items_display" class="space-y-3">
+                            <!-- Items will be loaded here via JavaScript -->
+                        </div>
+                    </div>
+
                     <!-- Employee Assignment Section -->
                     <div class="bg-gray-50 rounded-lg p-4">
                         <h4 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
@@ -411,7 +405,8 @@
 function openConvertModal(quotationId) {
     document.getElementById('quotation_id').value = quotationId;
     document.getElementById('convertModal').classList.remove('hidden');
-        calculateDownpaymentInfo();
+    loadQuotationItems(quotationId);
+    calculateDownpaymentInfo();
 }
 
 function closeConvertModal() {
@@ -539,9 +534,9 @@ function closeConvertModal() {
 
         clearErrorMessages();
 
+        // If no payment term is selected, allow conversion without payment
         if (!paymentTerm) {
-            showErrorMessage('Please select a payment term.');
-            return false;
+            return true;
         }
 
         if (paymentTerm === 'Downpayment') {
@@ -609,6 +604,84 @@ function closeConvertModal() {
         errorMessages.forEach(error => error.remove());
     }
 
+    function showPaymentError() {
+        alert('Cannot edit quotation because it has been converted to an order with payments. Please contact the administrator if you need to make changes.');
+    }
+
+    function loadQuotationItems(quotationId) {
+        const itemsDisplay = document.getElementById('quotation_items_display');
+        
+        // Show loading state
+        itemsDisplay.innerHTML = '<div class="text-center py-4"><i class="fas fa-spinner fa-spin text-gray-400"></i> Loading items...</div>';
+        
+        // Fetch quotation details
+        fetch(`/cashier/quotations/${quotationId}/data`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to fetch quotation data');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.details && data.details.length > 0) {
+                    let itemsHtml = '';
+                    
+                    data.details.forEach((item, index) => {
+                        const itemName = item.product ? item.product.product_name : item.service ? item.service.service_name : 'Unknown Item';
+                        const itemType = item.item_type;
+                        const quantity = item.quantity;
+                        const unit = item.unit ? item.unit.unit_name : 'N/A';
+                        const size = item.size || 'N/A';
+                        const price = parseFloat(item.price).toFixed(2);
+                        const layout = item.layout ? 'Yes' : 'No';
+                        const layoutPrice = item.layout_price ? parseFloat(item.layout_price).toFixed(2) : '0.00';
+                        
+                        itemsHtml += `
+                            <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                                <div class="flex items-start justify-between">
+                                    <div class="flex-1">
+                                        <div class="flex items-center space-x-2 mb-2">
+                                            <span class="px-2 py-1 text-xs font-medium rounded-full ${itemType === 'Product' ? 'text-blue-800 bg-blue-100' : 'text-green-800 bg-green-100'}">
+                                                ${itemType}
+                                            </span>
+                                            <h5 class="text-sm font-medium text-gray-900">${itemName}</h5>
+                                        </div>
+                                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs text-gray-600">
+                                            <div>
+                                                <span class="font-medium">Quantity:</span> ${quantity}
+                                            </div>
+                                            <div>
+                                                <span class="font-medium">Unit:</span> ${unit}
+                                            </div>
+                                            <div>
+                                                <span class="font-medium">Size:</span> ${size}
+                                            </div>
+                                            <div>
+                                                <span class="font-medium">Price:</span> ₱${price}
+                                            </div>
+                                        </div>
+                                        ${item.layout ? `
+                                            <div class="mt-2 text-xs text-gray-600">
+                                                <span class="font-medium">Layout:</span> ${layout} (₱${layoutPrice})
+                                            </div>
+                                        ` : ''}
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    
+                    itemsDisplay.innerHTML = itemsHtml;
+                } else {
+                    itemsDisplay.innerHTML = '<div class="text-center py-4 text-gray-500"><i class="fas fa-box text-2xl mb-2"></i><p>No items found in this quotation</p></div>';
+                }
+            })
+            .catch(error => {
+                console.error('Error loading quotation items:', error);
+                itemsDisplay.innerHTML = '<div class="text-center py-4 text-red-500"><i class="fas fa-exclamation-triangle text-2xl mb-2"></i><p>Error loading items</p></div>';
+            });
+    }
+
     // Add event listeners
     document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('payment_term').addEventListener('change', toggleDownpaymentField);
@@ -620,5 +693,29 @@ function closeConvertModal() {
             }
         });
     });
+</script>
+
+<!-- Simple Search Script -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('searchInput');
+    const quotationsGrid = document.getElementById('quotationsGrid');
+    
+    if (searchInput && quotationsGrid) {
+        searchInput.addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase().trim();
+            const cards = quotationsGrid.querySelectorAll('.bg-white.rounded-lg.shadow');
+            
+            cards.forEach(card => {
+                const text = card.textContent.toLowerCase();
+                if (text.includes(searchTerm)) {
+                    card.style.display = '';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        });
+    }
+});
 </script>
 @endsection

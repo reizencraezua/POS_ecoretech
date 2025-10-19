@@ -31,18 +31,9 @@
             <!-- Search and Filters -->
             <form method="GET" class="flex items-center space-x-2" id="searchForm">
                 <div class="relative">
-                    <input type="text" 
-                           id="instantSearchInput" 
-                           data-instant-search="true"
-                           data-container="deliveriesTableContainer"
-                           data-loading="searchLoading"
-                           value="{{ request('search') }}" 
-                           placeholder="Search deliveries..." 
-                           class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-maroon focus:border-maroon">
+                    <input type="text" id="searchInput" placeholder="Search deliveries..." 
+                           class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-maroon focus:border-maroon w-80">
                     <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-                    <div id="searchLoading" class="absolute right-3 top-1/2 transform -translate-y-1/2 hidden">
-                        <i class="fas fa-spinner fa-spin text-gray-400"></i>
-                    </div>
                 </div>
                 <select name="status" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-maroon focus:border-maroon" >
                     <option value="">All Status</option>
@@ -51,19 +42,14 @@
                     <option value="delivered" {{ request('status') == 'delivered' ? 'selected' : '' }}>Delivered</option>
                     <option value="cancelled" {{ request('status') == 'cancelled' ? 'selected' : '' }}>Cancelled</option>
                 </select>
-                @if(request('search') || request('status'))
-                    <a href="{{ route('admin.deliveries.index') }}" class="bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-lg transition-colors">
-                        <i class="fas fa-times"></i>
-                    </a>
-                @endif
             </form>
         </div>
     </div>
 
         <!-- Deliveries Table -->
-        <div class="bg-white rounded-lg shadow-md overflow-hidden">
+        <div id="deliveriesTableContainer" class="bg-white rounded-lg shadow-md overflow-hidden">
             <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-gray-200">
+                <table id="deliveriesTable" class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
                         <tr>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order</th>
@@ -95,12 +81,12 @@
                                 {{ $delivery->delivery_date->format('M d, Y') }}
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full
-                                    @if($delivery->status == 'scheduled') bg-blue-100 text-blue-800
-                                    @elseif($delivery->status == 'in_transit') bg-yellow-100 text-yellow-800
-                                    @elseif($delivery->status == 'delivered') bg-green-100 text-green-800
-                                    @elseif($delivery->status == 'cancelled') bg-red-100 text-red-800
-                                    @else bg-gray-100 text-gray-800 @endif">
+                                <span class="inline-flex text-xs leading-5 font-semibold
+                                    @if($delivery->status == 'scheduled') text-blue-800
+                                    @elseif($delivery->status == 'in_transit') text-yellow-800
+                                    @elseif($delivery->status == 'delivered') text-green-800
+                                    @elseif($delivery->status == 'cancelled') text-red-800
+                                    @else text-gray-800 @endif">
                                     {{ ucfirst(str_replace('_', ' ', $delivery->status)) }}
                                 </span>
                             </td>
@@ -143,10 +129,7 @@
                                     <p class="text-lg font-medium">No deliveries found</p>
                                     <p class="text-sm">Schedule your first delivery to get started</p>
                                     @if(!$showArchived)
-                                        <a href="{{ route('admin.deliveries.create') }}" class="bg-maroon hover:bg-maroon-dark text-white px-4 py-2 rounded-lg font-medium transition-colors inline-flex items-center mt-4">
-                                            <i class="fas fa-plus mr-2"></i>
-                                            Schedule Delivery
-                                        </a>
+                                        
                                     @endif
                                 </div>
                             </td>
@@ -165,5 +148,26 @@
         </div>
     </div>
 </div>
-<script src="{{ asset('js/instant-search.js') }}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('searchInput');
+    const deliveriesTable = document.getElementById('deliveriesTable');
+    
+    if (searchInput && deliveriesTable) {
+        searchInput.addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase().trim();
+            const rows = deliveriesTable.querySelectorAll('tbody tr');
+            
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                if (text.includes(searchTerm)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        });
+    }
+});
+</script>
 @endsection

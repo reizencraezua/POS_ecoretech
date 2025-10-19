@@ -531,8 +531,9 @@
                             <div class="md:col-span-2">
                                 <label class="block text-sm font-medium text-gray-700 mb-1">Remarks</label>
                                 <textarea name="payment[remarks]" rows="2"
-                                          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon"
-                                          placeholder="Optional notes for this payment..."></textarea>
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon"
+                                    placeholder="Optional notes for this payment...">
+                                </textarea>
                             </div>
                         </div>
                     </div>
@@ -560,7 +561,6 @@
                     </div>
                 </div>
             </div>
-
         </form>
     </div>
 </div>
@@ -852,8 +852,9 @@ function orderForm() {
                     const finalTotalAmount = this.getFinalTotalAmount();
                     const existingPayments = {{ $order->payments->sum('amount_paid') }};
                     const remainingBalance = finalTotalAmount - existingPayments;
-                    const expectedDownpayment = finalTotalAmount * 0.5;
-                    const remainingDownpayment = Math.max(0, expectedDownpayment - existingPayments);
+                    
+                    // Calculate downpayment based on remaining balance (50% of remaining balance)
+                    const remainingDownpayment = Math.max(0, remainingBalance * 0.5);
                     
                     // Update display elements
                     document.getElementById('final_total_amount').textContent = `₱${finalTotalAmount.toFixed(2)}`;
@@ -871,6 +872,10 @@ function orderForm() {
                                 <span>Remaining Balance:</span>
                                 <span>₱${remainingBalance.toFixed(2)}</span>
                             </div>
+                            <div class="flex justify-between items-center text-xs text-blue-600 mt-1 pt-1 border-t border-blue-300">
+                                <span>Required Downpayment (50% of remaining):</span>
+                                <span class="font-semibold">₱${remainingDownpayment.toFixed(2)}</span>
+                            </div>
                         `;
                     }
                     
@@ -886,14 +891,15 @@ function orderForm() {
         },
 
         validateDownpayment() {
-            const paymentTermSelect = document.getElementById('payment_term');
             const amountPaidInput = document.querySelector('input[name="payment[amount_paid]"]');
+            const paymentTermSelect = document.getElementById('payment_term');
             
-            if (amountPaidInput) {
+            if (amountPaidInput && paymentTermSelect) {
                 const finalTotalAmount = this.getFinalTotalAmount();
                 const existingPayments = {{ $order->payments->sum('amount_paid') }};
                 const remainingBalance = finalTotalAmount - existingPayments;
                 const amountPaid = parseFloat(amountPaidInput.value) || 0;
+                const selectedTerm = paymentTermSelect.value;
                 
                 // Check if payment amount exceeds remaining balance
                 if (amountPaid > remainingBalance) {
@@ -901,15 +907,16 @@ function orderForm() {
                     return false;
                 }
                 
-                // Check downpayment validation
-                if (paymentTermSelect && paymentTermSelect.value === 'Downpayment') {
-                    const expectedDownpayment = finalTotalAmount * 0.5;
-                    const remainingDownpayment = Math.max(0, expectedDownpayment - existingPayments);
-                    const totalAfterPayment = existingPayments + amountPaid;
+                // Validate downpayment amount if payment term is "Downpayment"
+                if (selectedTerm === 'Downpayment' && amountPaid > 0) {
+                    const requiredDownpayment = remainingBalance * 0.5;
                     
-                    if (totalAfterPayment < expectedDownpayment) {
-                        alert(`Downpayment must be at least 50% of the total amount (₱${expectedDownpayment.toFixed(2)}). You need to pay at least ₱${remainingDownpayment.toFixed(2)} more. Current amount: ₱${amountPaid.toFixed(2)}`);
-                        return false;
+                    // Allow partial downpayment but warn if it's less than required
+                    if (amountPaid < requiredDownpayment) {
+                        const confirmMessage = `The required downpayment is ₱${requiredDownpayment.toFixed(2)} (50% of remaining balance). You are paying ₱${amountPaid.toFixed(2)}. Do you want to proceed with this partial downpayment?`;
+                        if (!confirm(confirmMessage)) {
+                            return false;
+                        }
                     }
                 }
             }

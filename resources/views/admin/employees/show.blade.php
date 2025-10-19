@@ -24,7 +24,7 @@
                     </div>
                 </div>
                 <div class="flex items-center space-x-4">
-                    <a href="{{ route('admin.employees.edit', $employee) }}" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md transition-colors">
+                    <a href="{{ route('admin.employees.edit', $employee) }}" class="bg-maroon hover:bg-maroon-dark text-white px-4 py-2 rounded-md transition-colors">
                         <i class="fas fa-edit mr-2"></i>
                         Edit Employee
                     </a>
@@ -110,6 +110,8 @@
 
         <!-- Sidebar -->
         <div class="space-y-6">
+
+        
             <!-- Quick Stats -->
             <div class="bg-white rounded-lg shadow-sm border border-gray-200">
                 <div class="px-6 py-4 border-b border-gray-200">
@@ -132,6 +134,105 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Account Information -->
+            @if($employee->user)
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h3 class="text-lg font-semibold text-gray-900 flex items-center">
+                        <i class="fas fa-user-circle text-blue-600 mr-2"></i>
+                        Account Information
+                    </h3>
+                </div>
+                <div class="p-6">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="text-sm font-medium text-gray-500">Username</label>
+                            <p class="text-gray-900 font-medium">{{ $employee->user->name }}</p>
+                        </div>
+                        <div>
+                            <label class="text-sm font-medium text-gray-500">Role</label>
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                                @if($employee->user->role === 'admin') text-red-800
+                                @elseif($employee->user->role === 'cashier') text-blue-800
+                                @elseif($employee->user->role === 'super_admin') text-purple-800
+                                @else text-gray-800
+                                @endif">
+                                {{ ucfirst(str_replace('_', ' ', $employee->user->role)) }}
+                            </span>
+                        </div>
+                        <div>
+                            <label class="text-sm font-medium text-gray-500">Status</label>
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                                {{ $employee->user->is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }}">
+                                {{ $employee->user->is_active ? 'Active' : 'Inactive' }}
+                            </span>
+                        </div>
+                        <div>
+                            <label class="text-sm font-medium text-gray-500">Account Created</label>
+                            <p class="text-gray-900 font-medium">{{ $employee->user->created_at->format('M d, Y g:i A') }}</p>
+                        </div>
+                        @if($employee->user->role === 'cashier')
+                        <div class="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                            <div class="flex items-start">
+                                <i class="fas fa-info-circle text-blue-600 mt-0.5 mr-2"></i>
+                                <div class="text-sm">
+                                    <p class="font-medium text-blue-900 mb-1">Auto-Generated Cashier Account</p>
+                                    <p class="text-blue-700">This account was automatically created when the employee was assigned the cashier role. The login credentials follow the pattern:</p>
+                                    <ul class="mt-2 text-xs text-blue-600 space-y-1">
+                                        <li>• Email: <span class="font-mono">{{ strtolower(preg_replace('/[^a-zA-Z]/', '', $employee->employee_firstname)) }}{{ str_pad($employee->employee_id, 4, '0', STR_PAD_LEFT) }}@ecoretech.com</span></li>
+                                        <li>• Password: <span class="font-mono">{{ strtolower($employee->employee_lastname) }}{{ $employee->employee_id }}</span></li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        @elseif($employee->user->role === 'admin')
+                        <div class="mt-4 p-3 bg-red-50 rounded-lg border border-red-200">
+                            <div class="flex items-start">
+                                <i class="fas fa-info-circle text-red-600 mt-0.5 mr-2"></i>
+                                <div class="text-sm">
+                                    <p class="font-medium text-red-900 mb-1">Auto-Generated Admin Account</p>
+                                    <p class="text-red-700">This account was automatically created when the employee was assigned the admin role. The login credentials follow the pattern:</p>
+                                    <ul class="mt-2 text-xs text-red-600 space-y-1">
+                                        <li>• Email: <span class="font-mono">{{ strtolower(preg_replace('/[^a-zA-Z]/', '', $employee->employee_firstname)) }}{{ str_pad($employee->employee_id, 4, '0', STR_PAD_LEFT) }}@ecoretech.com</span></li>
+                                        <li>• Password: <span class="font-mono">{{ strtolower($employee->employee_lastname) }}{{ $employee->employee_id }}</span></li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        @endif
+                    </div>
+                </div>
+            </div>
+            @else
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h3 class="text-lg font-semibold text-gray-900 flex items-center">
+                        <i class="fas fa-user-circle text-gray-400 mr-2"></i>
+                        Account Information
+                    </h3>
+                </div>
+                <div class="p-6">
+                    <div class="text-center py-4">
+                        <i class="fas fa-user-slash text-3xl text-gray-300 mb-3"></i>
+                        <p class="text-gray-500 mb-2">No account created</p>
+                        <p class="text-sm text-gray-400">This employee doesn't have a user account yet.</p>
+                        @if($employee->job && (strtolower($employee->job->job_title) === 'cashier' || strtolower($employee->job->job_title) === 'admin'))
+                        <div class="mt-4 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+                            <div class="flex items-start">
+                                <i class="fas fa-exclamation-triangle text-yellow-600 mt-0.5 mr-2"></i>
+                                <div class="text-sm">
+                                    <p class="font-medium text-yellow-900 mb-1">{{ ucfirst($employee->job->job_title) }} Account Missing</p>
+                                    <p class="text-yellow-700">This employee is a {{ strtolower($employee->job->job_title) }} but doesn't have an account. You may need to update their job position to trigger account creation.</p>
+                                </div>
+                            </div>
+                        </div>
+                        @endif
+                    </div>
+                </div>
+            </div>
+            @endif
+
 
             <!-- Recent Orders -->
             @if($employee->orders->count() > 0)

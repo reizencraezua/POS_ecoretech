@@ -19,6 +19,7 @@ use App\Http\Controllers\Admin\LayoutFeeController;
 use App\Http\Controllers\Admin\DiscountRuleController;
 use App\Http\Controllers\Admin\InventoryController;
 use App\Http\Controllers\Admin\SupplierController;
+use App\Http\Controllers\Admin\LogController;
 
 // Cashier Controllers
 use App\Http\Controllers\Cashier\DashboardController as CashierDashboardController;
@@ -67,6 +68,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
 		Route::post('quotations/{quotation}/restore', [QuotationController::class, 'restore'])->name('quotations.restore');
 		Route::patch('quotations/{quotation}/status', [QuotationController::class, 'updateStatus'])->name('quotations.status');
 		Route::get('quotations/{quotation}/data', [QuotationController::class, 'getData'])->name('quotations.data');
+		Route::get('quotations/{quotation}/items', [QuotationController::class, 'getItems'])->name('quotations.items');
 		Route::post('quotations/convert-to-job', [QuotationController::class, 'convertToJob'])->name('quotations.convert-to-job');
 
 		// Orders
@@ -104,6 +106,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
 		Route::resource('discount-rules', DiscountRuleController::class);
 		Route::post('discount-rules/{discountRule}/archive', [DiscountRuleController::class, 'archive'])->name('discount-rules.archive');
 		Route::post('discount-rules/{discountRule}/restore', [DiscountRuleController::class, 'restore'])->name('discount-rules.restore');
+		Route::post('discount-rules/{discountRule}/toggle-status', [DiscountRuleController::class, 'toggleStatus'])->name('discount-rules.toggle-status');
 
 		// Payments
 		Route::get('payments/print-summary', [PaymentController::class, 'printSummary'])->name('payments.print-summary');
@@ -130,6 +133,9 @@ Route::prefix('admin')->name('admin.')->group(function () {
 		Route::post('suppliers/{supplier}/archive', [SupplierController::class, 'archive'])->name('suppliers.archive');
 		Route::post('suppliers/{supplier}/restore', [SupplierController::class, 'restore'])->name('suppliers.restore');
 
+		// Transaction Logs
+		Route::resource('logs', LogController::class)->only(['index', 'show']);
+
 	});
 });
 
@@ -153,6 +159,7 @@ Route::prefix('cashier')->name('cashier.')->group(function () {
 		// Quotations
 		Route::resource('quotations', CashierQuotationController::class);
 		Route::patch('quotations/{quotation}/status', [CashierQuotationController::class, 'updateStatus'])->name('quotations.status');
+		Route::post('quotations/{quotation}/archive', [CashierQuotationController::class, 'archive'])->name('quotations.archive');
 		Route::get('quotations/{quotation}/data', [CashierQuotationController::class, 'getData'])->name('quotations.data');
 		Route::post('quotations/convert-to-job', [CashierQuotationController::class, 'convertToJob'])->name('quotations.convert-to-job');
 
@@ -163,6 +170,7 @@ Route::prefix('cashier')->name('cashier.')->group(function () {
 
 		// Deliveries
 		Route::resource('deliveries', CashierDeliveryController::class);
+		Route::post('deliveries/{delivery}/archive', [CashierDeliveryController::class, 'archive'])->name('deliveries.archive');
 
 		// Payments
 		Route::get('payments/print-summary', [CashierPaymentController::class, 'printSummary'])->name('payments.print-summary');

@@ -5,10 +5,15 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Payment;
 use App\Models\Order;
+use App\Models\Log;
+use App\Traits\LogsActivity;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log as LaravelLog;
 
 class PaymentController extends Controller
 {
+    use LogsActivity;
     public function index(Request $request)
     {
         $showArchived = $request->boolean('archived');
@@ -18,37 +23,6 @@ class PaymentController extends Controller
                 $q->where('order_status', '!=', \App\Models\Order::STATUS_VOIDED);
             });
 
-        // Search functionality
-        if ($request->has('search') && $request->search) {
-            $search = $request->search;
-            $query->where(function ($q) use ($search) {
-                // Search in payment fields
-                $q->where('payment_id', 'like', "%{$search}%")
-                  ->orWhere('receipt_number', 'like', "%{$search}%")
-                  ->orWhere('payment_method', 'like', "%{$search}%")
-                  ->orWhere('payment_term', 'like', "%{$search}%")
-                  ->orWhere('amount_paid', 'like', "%{$search}%")
-                  ->orWhere('change', 'like', "%{$search}%")
-                  ->orWhere('balance', 'like', "%{$search}%")
-                  ->orWhere('reference_number', 'like', "%{$search}%")
-                  ->orWhere('remarks', 'like', "%{$search}%")
-                  // Search in order fields
-                  ->orWhereHas('order', function ($orderQuery) use ($search) {
-                      $orderQuery->where('order_id', 'like', "%{$search}%")
-                                ->orWhere('order_status', 'like', "%{$search}%")
-                                ->orWhere('total_amount', 'like', "%{$search}%")
-                                ->orWhere('layout_design_fee', 'like', "%{$search}%");
-                  })
-                  // Search in customer fields
-                  ->orWhereHas('order.customer', function ($customerQuery) use ($search) {
-                      $customerQuery->where('customer_firstname', 'like', "%{$search}%")
-                                   ->orWhere('customer_lastname', 'like', "%{$search}%")
-                                   ->orWhere('business_name', 'like', "%{$search}%")
-                                   ->orWhere('customer_email', 'like', "%{$search}%")
-                                   ->orWhere('customer_phone', 'like', "%{$search}%");
-                  });
-            });
-        }
 
         // Date range filters
         if ($request->has('date_range') && $request->date_range) {
@@ -99,12 +73,7 @@ class PaymentController extends Controller
             }
         }
 
-        $payments = $query->latest('payment_date')->paginate(15)->appends($request->query());
-
-        // If it's an AJAX request, return only the table content
-        if ($request->ajax()) {
-            return view('admin.payments.partials.payments-table', compact('payments', 'showArchived'));
-        }
+        $payments = $query->orderBy('payment_id', 'desc')->paginate(15);
 
         return view('admin.payments.index', compact('payments', 'showArchived'));
     }
@@ -121,41 +90,55 @@ class PaymentController extends Controller
             $validated = $request->validate([
                 'order_id' => 'required|exists:orders,order_id',
                 'payment_date' => 'required|date',
-                'amount_paid' => 'required|numeric|min:0.01',
+                'amount_paid' => 'required|numeric|min:0.01|max:999999.99',
                 'payment_method' => 'required|in:Cash,GCash,Bank Transfer,Check,Credit Card',
                 'payment_term' => 'nullable|in:Downpayment,Initial,Partial,Full',
                 'reference_number' => 'nullable|string|max:255',
-                'remarks' => 'nullable|string',
+                'remarks' => 'nullable|string|max:1000',
+            ], [
+                'order_id.required' => 'Please select an order.',
+                'order_id.exists' => 'Selected order does not exist.',
+                'payment_date.required' => 'Payment date is required.',
+                'payment_date.date' => 'Please enter a valid payment date.',
+                'amount_paid.required' => 'Amount paid is required.',
+                'amount_paid.numeric' => 'Amount paid must be a number.',
+                'amount_paid.min' => 'Amount paid must be at least ₱0.01.',
+                'amount_paid.max' => 'Amount paid cannot exceed ₱999,999.99.',
+                'payment_method.required' => 'Payment method is required.',
+                'payment_method.in' => 'Invalid payment method selected.',
+                'payment_term.in' => 'Invalid payment term selected.',
+                'reference_number.max' => 'Reference number cannot exceed 255 characters.',
+                'remarks.max' => 'Remarks cannot exceed 1000 characters.',
             ]);
+
+            DB::beginTransaction();
 
             // Get order for validation (including soft-deleted to check if it exists)
             $order = Order::withTrashed()->findOrFail($validated['order_id']);
             
             // Check if order is soft-deleted
             if ($order->trashed()) {
+                DB::rollBack();
                 return redirect()->back()
                     ->withErrors(['order_id' => 'Cannot create payment for a deleted order.'])
                     ->withInput();
             }
             
-            // Validate downpayment amount (must be exactly 50% of total amount)
-            if ($validated['payment_term'] === 'Downpayment') {
-                $expectedDownpayment = $order->final_total_amount * 0.5;
-                $tolerance = 0.01; // Allow 1 cent tolerance for rounding
-                
-                if (abs($validated['amount_paid'] - $expectedDownpayment) > $tolerance) {
-                    return redirect()->back()
-                        ->withErrors(['amount_paid' => "Downpayment must be exactly 50% of the total amount (₱" . number_format($expectedDownpayment, 2) . ")"])
-                        ->withInput();
-                }
+            // Validate payment amount against remaining balance
+            $totalPaid = $order->payments->sum('amount_paid') + $validated['amount_paid'];
+            if ($totalPaid > $order->final_total_amount) {
+                DB::rollBack();
+                return redirect()->back()
+                    ->withErrors(['amount_paid' => 'Payment amount cannot exceed the total amount of ₱' . number_format($order->final_total_amount, 2) . '.'])
+                    ->withInput();
             }
 
             // Calculate balance and change
-            $totalPaid = $order->payments->sum('amount_paid') + $validated['amount_paid'];
             $remaining = max(0, $order->final_total_amount - $totalPaid);
             $change = $totalPaid > $order->final_total_amount ? ($totalPaid - $order->final_total_amount) : 0;
 
             Payment::create([
+                'payment_id' => Payment::generatePaymentId(),
                 'receipt_number' => 'RCPT-' . now()->format('YmdHis') . '-' . $order->order_id,
                 'payment_date' => $validated['payment_date'],
                 'payment_method' => $validated['payment_method'],
@@ -166,7 +149,11 @@ class PaymentController extends Controller
                 'reference_number' => $validated['reference_number'],
                 'remarks' => $validated['remarks'],
                 'order_id' => $validated['order_id'],
+                'created_by' => auth('web')->id() ?? \App\Models\User::first()->id,
+                'received_by' => auth('web')->id() ?? \App\Models\User::first()->id,
             ]);
+
+            DB::commit();
 
             // Check if this is an AJAX request
             if ($request->ajax()) {
@@ -181,9 +168,19 @@ class PaymentController extends Controller
                 ]);
             }
 
+            // Log the creation
+            $this->logCreated(
+                Log::TYPE_PAYMENT,
+                $payment->payment_id,
+                $this->generateTransactionName(Log::TYPE_PAYMENT, $payment->payment_id),
+                $payment->toArray()
+            );
+
             return redirect()->route('admin.payments.index')
                 ->with('success', 'Payment recorded successfully.');
         } catch (\Illuminate\Validation\ValidationException $e) {
+            DB::rollBack();
+            LaravelLog::error('Payment validation error: ' . json_encode($e->errors()));
             if ($request->ajax()) {
                 return response()->json([
                     'success' => false,
@@ -191,8 +188,13 @@ class PaymentController extends Controller
                     'errors' => $e->errors()
                 ], 422);
             }
-            throw $e;
+            return redirect()->back()
+                ->withErrors($e->errors())
+                ->withInput();
         } catch (\Exception $e) {
+            DB::rollBack();
+            LaravelLog::error('Error creating payment: ' . $e->getMessage());
+            LaravelLog::error('Stack trace: ' . $e->getTraceAsString());
             if ($request->ajax()) {
                 return response()->json([
                     'success' => false,
@@ -200,7 +202,9 @@ class PaymentController extends Controller
                     'error' => $e->getMessage()
                 ], 500);
             }
-            throw $e;
+            return redirect()->back()
+                ->with('error', 'Failed to create payment: ' . $e->getMessage())
+                ->withInput();
         }
     }
 
@@ -226,6 +230,9 @@ class PaymentController extends Controller
 
     public function update(Request $request, Payment $payment)
     {
+        // Store original data for logging
+        $originalData = $payment->toArray();
+        
         $validated = $request->validate([
             'order_id' => 'required|exists:orders,order_id',
             'payment_date' => 'required|date',
@@ -258,17 +265,7 @@ class PaymentController extends Controller
                 ->withInput();
         }
         
-        // Validate downpayment amount (must be exactly 50% of total amount)
-        if ($validated['payment_term'] === 'Downpayment') {
-            $expectedDownpayment = $order->final_total_amount * 0.5;
-            $tolerance = 0.01; // Allow 1 cent tolerance for rounding
-            
-            if (abs($validated['amount_paid'] - $expectedDownpayment) > $tolerance) {
-                return redirect()->back()
-                    ->withErrors(['amount_paid' => "Downpayment must be exactly 50% of the total amount (₱" . number_format($expectedDownpayment, 2) . ")"])
-                    ->withInput();
-            }
-        }
+        // Note: Downpayment validation removed to allow flexible payment updates
 
         // Calculate balance and change
         $totalPaid = $order->payments->where('id', '!=', $payment->id)->sum('amount_paid') + $validated['amount_paid'];
@@ -286,12 +283,29 @@ class PaymentController extends Controller
             'remarks' => $validated['remarks'],
         ]);
 
+        // Log the update
+        $this->logUpdated(
+            Log::TYPE_PAYMENT,
+            $payment->payment_id,
+            $originalData,
+            $payment->fresh()->toArray(),
+            $this->generateTransactionName(Log::TYPE_PAYMENT, $payment->payment_id)
+        );
+
         return redirect()->route('admin.payments.index')
             ->with('success', 'Payment updated successfully.');
     }
 
     public function destroy(Payment $payment)
     {
+        // Log the deletion
+        $this->logDeleted(
+            Log::TYPE_PAYMENT,
+            $payment->payment_id,
+            $this->generateTransactionName(Log::TYPE_PAYMENT, $payment->payment_id),
+            $payment->toArray()
+        );
+
         $payment->delete();
 
         return redirect()->route('admin.payments.index')

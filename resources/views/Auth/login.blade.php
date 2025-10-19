@@ -24,10 +24,10 @@
         <div class="bg-white rounded-2xl shadow-xl p-8 border border-gray-200">
             <!-- Logo and Header -->
             <div class="text-center mb-8">
-                <div class="mx-auto w-24 h-24 bg-maroon flex items-center justify-center mb-4 overflow-hidden">
-                    <img src="{{ asset('images/logo/ecoretech.png') }}" 
+                <div class="mx-auto w-48 h-48 flex items-center justify-center">
+                    <img src="{{ asset('images/logo/Ecoretech.png') }}" 
                          alt="Ecoretech Logo" 
-                         class="w-full h-full object-cover">
+                         class="w-full h-full object-contain">
                 </div>
                 <h1 class="text-2xl font-bold text-maroon mb-2">Ecoretech Printing Shop</h1>
             </div>
@@ -89,7 +89,7 @@
                     type="submit" 
                     class="w-full bg-maroon text-white py-3 px-4 rounded-lg font-medium hover:bg-maroon-dark focus:outline-none focus:ring-2 focus:ring-maroon focus:ring-offset-2 transition-colors duration-200"
                 >
-                    Sign In to POS System
+                    Login
                 </button>
             </form>
 

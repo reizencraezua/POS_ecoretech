@@ -32,12 +32,12 @@
                         {{ $delivery->delivery_date->format('M d, Y') }}
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap">
-                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full
-                            @if($delivery->status == 'scheduled') bg-blue-100 text-blue-800
-                            @elseif($delivery->status == 'in_transit') bg-yellow-100 text-yellow-800
-                            @elseif($delivery->status == 'delivered') bg-green-100 text-green-800
-                            @elseif($delivery->status == 'cancelled') bg-red-100 text-red-800
-                            @else bg-gray-100 text-gray-800 @endif">
+                        <span class="inline-flex text-xs leading-5 font-semibold
+                            @if($delivery->status == 'scheduled')  text-blue-800
+                            @elseif($delivery->status == 'in_transit')  text-yellow-800
+                            @elseif($delivery->status == 'delivered')  text-green-800
+                            @elseif($delivery->status == 'cancelled')  text-red-800
+                            @else  text-gray-800 @endif">
                             {{ ucfirst(str_replace('_', ' ', $delivery->status)) }}
                         </span>
                     </td>

@@ -114,11 +114,11 @@
                                 </span>
                                 <span class="flex items-center">
                                     @if($category->is_active)
-                                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                        <span class="inline-flex items-center text-xs font-medium text-green-800">
                                             Active
                                         </span>
                                     @else
-                                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                        <span class="inline-flex items-center text-xs font-medium text-red-800">
                                             Inactive
                                         </span>
                                     @endif

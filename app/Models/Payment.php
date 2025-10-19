@@ -5,14 +5,18 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Models\TracksHistory;
 
 class Payment extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes, TracksHistory;
 
     protected $primaryKey = 'payment_id';
+    public $incrementing = false;
+    protected $keyType = 'string';
 
     protected $fillable = [
+        'payment_id',
         'receipt_number',
         'payment_date',
         'payment_method',
@@ -24,6 +28,7 @@ class Payment extends Model
         'remarks',
         'order_id',
         'created_by',
+        'received_by',
     ];
 
     protected $casts = [
@@ -41,7 +46,7 @@ class Payment extends Model
 
     public function order()
     {
-        return $this->belongsTo(Order::class, 'order_id');
+        return $this->belongsTo(Order::class, 'order_id', 'order_id');
     }
 
     public function creator()
@@ -49,12 +54,17 @@ class Payment extends Model
         return $this->belongsTo(User::class, 'created_by');
     }
 
+    public function histories()
+    {
+        return $this->hasMany(PaymentHistory::class, 'payment_id', 'payment_id');
+    }
+
     /**
      * Get the order including soft-deleted ones
      */
     public function orderWithTrashed()
     {
-        return $this->belongsTo(Order::class, 'order_id')->withTrashed();
+        return $this->belongsTo(Order::class, 'order_id', 'order_id')->withTrashed();
     }
 
     /**

@@ -19,10 +19,11 @@ class Supplier extends Model
         'supplier_address',
     ];
 
-    public function products()
-    {
-        return $this->hasMany(Product::class, 'supplier_id');
-    }
+    // Products are related through inventories, not directly
+    // public function products()
+    // {
+    //     return $this->hasManyThrough(Product::class, Inventory::class, 'supplier_id', 'product_id', 'supplier_id', 'product_id');
+    // }
 
     public function orders()
     {

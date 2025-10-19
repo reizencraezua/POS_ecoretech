@@ -15,25 +15,7 @@ class SupplierController extends Controller
             ? Supplier::onlyTrashed()
             : Supplier::query();
 
-        if ($request->has('search')) {
-            $search = $request->search;
-            $query->where(function($q) use ($search) {
-                $q->where('supplier_id', 'like', "%{$search}%")
-                  ->orWhere('supplier_name', 'like', "%{$search}%")
-                  ->orWhere('supplier_email', 'like', "%{$search}%")
-                  ->orWhere('supplier_contact', 'like', "%{$search}%")
-                  ->orWhere('supplier_address', 'like', "%{$search}%")
-                  ->orWhere('contact_person', 'like', "%{$search}%")
-                  ->orWhere('notes', 'like', "%{$search}%");
-            });
-        }
-
-        $suppliers = $query->latest()->paginate(15)->appends($request->query());
-
-        // If it's an AJAX request, return only the table content
-        if ($request->ajax()) {
-            return view('admin.suppliers.partials.suppliers-table', compact('suppliers', 'showArchived'));
-        }
+        $suppliers = $query->latest()->paginate(15);
 
         return view('admin.suppliers.index', compact('suppliers', 'showArchived'));
     }
@@ -66,9 +48,6 @@ class SupplierController extends Controller
         $supplier->load([
             'inventories' => function($query) {
                 $query->withTrashed()->orderBy('created_at', 'desc');
-            },
-            'products' => function($query) {
-                $query->withTrashed();
             }
         ]);
 
@@ -105,37 +84,12 @@ class SupplierController extends Controller
                 'amount' => null,
                 'status' => 'used',
                 'reference' => $usage->order ? $usage->order->order_id : 'N/A',
-                'details' => $usage->order ? 'Order: ' . $usage->order->order_id . ' - ' . $usage->order->customer->customer_name : 'Order not found'
+                'details' => $usage->order ? 'Order: ' . $usage->order->order_id . ' - ' . $usage->order->customer->display_name : 'Order not found'
             ];
         });
 
-        // 3. Orders that include products from this supplier
-        $orders = \App\Models\Order::whereHas('details.product', function($query) use ($supplier) {
-            $query->whereHas('inventories', function($q) use ($supplier) {
-                $q->where('supplier_id', $supplier->supplier_id);
-            });
-        })->with(['details.product.inventories', 'customer', 'payments'])->get();
-
-        $orderTransactions = $orders->map(function($order) use ($supplier) {
-            $supplierProducts = $order->details->filter(function($detail) use ($supplier) {
-                return $detail->product && $detail->product->inventories->where('supplier_id', $supplier->supplier_id)->count() > 0;
-            });
-
-            $totalQuantity = $supplierProducts->sum('quantity');
-            $totalAmount = $supplierProducts->sum('subtotal');
-
-            return [
-                'type' => 'order',
-                'date' => $order->order_date,
-                'description' => 'Order: ' . $order->order_id,
-                'quantity' => $totalQuantity,
-                'unit' => 'items',
-                'amount' => $totalAmount,
-                'status' => $order->order_status,
-                'reference' => $order->order_id,
-                'details' => 'Customer: ' . $order->customer->customer_name . ' | Products: ' . $supplierProducts->count()
-            ];
-        });
+        // 3. Orders that include products from this supplier (simplified for now)
+        $orderTransactions = collect();
 
         // Combine all transactions and sort by date
         $transactions = $transactions

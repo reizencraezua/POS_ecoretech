@@ -15,25 +15,9 @@ class CustomerController extends Controller
             ? Customer::onlyTrashed()
             : Customer::query();
 
-        if ($request->has('search')) {
-            $search = $request->search;
-            $query->where(function ($q) use ($search) {
-                $q->where('customer_firstname', 'like', "%{$search}%")
-                    ->orWhere('customer_lastname', 'like', "%{$search}%")
-                    ->orWhere('business_name', 'like', "%{$search}%")
-                    ->orWhere('customer_email', 'like', "%{$search}%");
-            });
-        }
-
         $customers = $query->withCount(['orders', 'quotations'])
             ->orderBy('customer_id', 'desc')
-            ->paginate(15)
-            ->appends($request->query());
-
-        // If it's an AJAX request, return only the table content
-        if ($request->ajax()) {
-            return view('admin.customers.partials.customers-table', compact('customers', 'showArchived'));
-        }
+            ->paginate(15);
 
         return view('admin.customers.index', compact('customers', 'showArchived'));
     }

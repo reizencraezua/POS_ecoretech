@@ -7,17 +7,8 @@
 @section('content')
 <div class="max-w-7xl mx-auto space-y-6">
     <!-- Back Button & Title -->
-    <div class="flex items-center justify-between">
-        <div class="flex items-center gap-4">
-            <a href="{{ route('admin.products.index') }}" 
-               class="p-2 text-gray-600 hover:text-maroon hover:bg-gray-100 rounded-lg transition-all">
-                <i class="fas fa-arrow-left text-xl"></i>
-            </a>
-            <div>
-                <h1 class="text-2xl font-bold text-gray-900">{{ $product->product_name }}</h1>
-                <p class="text-sm text-gray-500">Product Details & Performance</p>
-            </div>
-        </div>
+    <div class="flex items-center justify-end">
+        
         
         <!-- Quick Actions -->
         <div class="flex items-center space-x-3">
@@ -114,8 +105,8 @@
                         @if($product->category)
                         <div class="flex items-center justify-between py-3 border-b border-gray-50">
                             <span class="text-sm text-gray-600">Category</span>
-                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium" 
-                                  style="background-color: {{ $product->category->category_color }}20; color: {{ $product->category->category_color }};">
+                            <span class="inline-flex items-center text-xs font-medium" 
+                                  style="color: {{ $product->category->category_color }};">
                                 {{ $product->category->category_name }}
                             </span>
                         </div>
@@ -177,7 +168,6 @@
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Customer</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Qty</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Price</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
                             </tr>
@@ -186,6 +176,9 @@
                             @foreach($orders as $order)
                             @php
                                 $orderDetail = $order->details->where('product_id', $product->product_id)->first();
+                                $unitPrice = $orderDetail ? $orderDetail->unit_price : 0;
+                                $quantity = $orderDetail ? $orderDetail->quantity : 0;
+                                $subtotal = $orderDetail ? $orderDetail->subtotal : 0;
                             @endphp
                             <tr class="hover:bg-blue-50 hover:shadow-sm transition-all duration-200 cursor-pointer group" onclick="window.location.href='{{ route('admin.orders.show', $order) }}'">
                                 <td class="px-6 py-4 whitespace-nowrap">
@@ -210,28 +203,28 @@
                                     {{ $order->order_date->format('M d, Y') }}
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700">
-                                        {{ $orderDetail ? $orderDetail->quantity : 0 }}
+                                    <span class="inline-flex items-center text-xs font-medium text-blue-700">
+                                        {{ $quantity }}
                                     </span>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                    ₱{{ number_format($orderDetail ? $orderDetail->unit_price : 0, 2) }}
-                                </td>
+                               
                                 <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
-                                    ₱{{ number_format($orderDetail ? $orderDetail->subtotal : 0, 2) }}
+                                    ₱{{ number_format($subtotal, 2) }}
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     @php
                                         $statusColors = [
-                                            'pending' => 'bg-yellow-50 text-yellow-700',
-                                            'processing' => 'bg-blue-50 text-blue-700',
-                                            'completed' => 'bg-green-50 text-green-700',
-                                            'cancelled' => 'bg-red-50 text-red-700',
-                                            'shipped' => 'bg-purple-50 text-purple-700'
+                                            'on_process' => 'text-yellow-700',
+                                            'production' => 'text-blue-700',
+                                            'designing' => 'text-green-700',
+                                            'for_releasing' => 'text-orange-700',
+                                            'completed' => 'text-green-700',
+                                            'cancelled' => 'text-red-700',
+                                            'shipped' => 'text-purple-700',
                                         ];
-                                        $statusColor = $statusColors[$order->order_status] ?? 'bg-gray-50 text-gray-700';
+                                        $statusColor = $statusColors[$order->order_status] ?? 'text-gray-700';
                                     @endphp
-                                    <span class="px-2.5 py-1 text-xs font-medium rounded-full {{ $statusColor }}">
+                                    <span class="text-xs font-medium {{ $statusColor }}">
                                         {{ ucfirst($order->order_status) }}
                                     </span>
                                 </td>

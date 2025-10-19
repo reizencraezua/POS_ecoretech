@@ -27,7 +27,7 @@
                         <div class="text-2xl font-bold text-gray-900">₱{{ number_format($quotation->final_total_amount, 2) }}</div>
                         <div class="text-sm text-gray-600">Total Amount</div>
                     </div>
-                    <span class="px-3 py-1 rounded-md text-sm font-medium {{ $quotation->status == 'Pending' ? 'bg-maroon text-white' : 'bg-gray-100 text-gray-800' }}">
+                    <span class="px-3 py-1 rounded-md text-sm font-medium {{ $quotation->status == 'Pending' ? 'text-maroon' : 'text-gray-800' }}">
                         {{ $quotation->status }}
                     </span>
                 </div>
@@ -115,7 +115,7 @@
                             <tr>
                                 <td class="px-4 py-3 whitespace-nowrap">
                                     <span class="px-2 py-1 text-xs font-medium rounded-full
-                                        {{ $detail->item_type === 'Product' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800' }}">
+                                        {{ $detail->item_type === 'Product' ? 'text-blue-800' : 'text-green-800' }}">
                                         {{ $detail->item_type }}
                                     </span>
                                 </td>
@@ -130,11 +130,11 @@
                                 <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">₱{{ number_format($detail->price, 2) }}</td>
                                 <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
                                     @if($detail->layout)
-                                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium text-green-800">
                                             <i class="fas fa-check mr-1"></i>Yes
                                         </span>
                                     @else
-                                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium text-gray-800">
                                             <i class="fas fa-times mr-1"></i>No
                                         </span>
                                     @endif
@@ -243,6 +243,8 @@
                 </div>
             </div>
             @endif
+
+          
         </div>
 
         <!-- Sidebar -->

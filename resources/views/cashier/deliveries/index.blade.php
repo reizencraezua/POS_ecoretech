@@ -10,23 +10,15 @@
     <!-- Header Actions -->
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div class="flex items-center space-x-4">
-            @if(!$showArchived)
-                <a href="{{ route('cashier.deliveries.create') }}" class="bg-maroon hover:bg-maroon-dark text-white px-4 py-2 rounded-lg font-medium inline-flex items-center">
-                    <i class="fas fa-plus mr-2"></i>
-                    Schedule Delivery
-                </a>
-            @endif
+            <a href="{{ route('cashier.deliveries.create') }}" class="bg-maroon hover:bg-maroon-dark text-white px-4 py-2 rounded-lg font-medium inline-flex items-center">
+                <i class="fas fa-plus mr-2"></i>
+                Schedule Delivery
+            </a>
         </div>
         
-        <!-- Search and Archive Toggle -->
+        <!-- Search and Filters -->
         <div class="flex items-center space-x-4">
-            <!-- Archive Toggle -->
-            <a href="{{ route('cashier.deliveries.index', array_merge(request()->query(), ['archived' => isset($showArchived) && $showArchived ? 0 : 1])) }}"
-               class="px-4 py-2 rounded-lg font-medium inline-flex items-center border {{ (isset($showArchived) && $showArchived) ? 'border-green-600 text-green-700 hover:bg-gray-50' : 'border-gray-300 text-gray-700 hover:bg-gray-50' }}">
-                <i class="fas fa-box-archive mr-2"></i>
-                {{ (isset($showArchived) && $showArchived) ? 'Show Active' : 'View Archives' }}
-            </a>
-            
+           
             <!-- Search and Filters -->
             <form method="GET" class="flex items-center space-x-2">
                 <div class="relative">
@@ -89,12 +81,12 @@
                                 {{ $delivery->delivery_date->format('M d, Y') }}
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full
-                                    @if($delivery->status == 'scheduled') bg-blue-100 text-blue-800
-                                    @elseif($delivery->status == 'in_transit') bg-yellow-100 text-yellow-800
-                                    @elseif($delivery->status == 'delivered') bg-green-100 text-green-800
-                                    @elseif($delivery->status == 'cancelled') bg-red-100 text-red-800
-                                    @else bg-gray-100 text-gray-800 @endif">
+                                <span class="inline-flex text-xs leading-5 font-semibold
+                                    @if($delivery->status == 'scheduled') text-blue-800
+                                    @elseif($delivery->status == 'in_transit') text-yellow-800
+                                    @elseif($delivery->status == 'delivered') text-green-800
+                                    @elseif($delivery->status == 'cancelled') text-red-800
+                                    @else text-gray-800 @endif">
                                     {{ ucfirst(str_replace('_', ' ', $delivery->status)) }}
                                 </span>
                             </td>
@@ -129,37 +121,20 @@
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium" onclick="event.stopPropagation()">
                                 <div class="flex items-center justify-center space-x-3">
-                                    @if($showArchived)
-                                        <x-archive-actions 
-                                            :item="$delivery" 
-                                            :archiveRoute="'cashier.deliveries.archive'" 
-                                            :restoreRoute="'cashier.deliveries.restore'" 
-                                            :editRoute="'cashier.deliveries.edit'"
-                                            :showRestore="true" />
-                                    @else
-                                        <x-archive-actions 
-                                            :item="$delivery" 
-                                            :archiveRoute="'cashier.deliveries.archive'" 
-                                            :restoreRoute="'cashier.deliveries.restore'" 
-                                            :editRoute="'cashier.deliveries.edit'"
-                                            :showRestore="false" />
-                                    @endif
+                                    <a href="{{ route('cashier.deliveries.edit', $delivery) }}" 
+                                       class="text-blue-600 hover:text-blue-800 transition-colors">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
                                 </div>
                             </td>
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="6" class="px-6 py-12 text-center">
+                            <td colspan="7" class="px-6 py-12 text-center">
                                 <div class="text-gray-400">
                                     <i class="fas fa-truck text-4xl mb-4"></i>
                                     <p class="text-lg font-medium">No deliveries found</p>
                                     <p class="text-sm">Schedule your first delivery to get started</p>
-                                    @if(!$showArchived)
-                                        <a href="{{ route('cashier.deliveries.create') }}" class="bg-maroon hover:bg-maroon-dark text-white px-4 py-2 rounded-lg font-medium inline-flex items-center mt-4">
-                                            <i class="fas fa-plus mr-2"></i>
-                                            Schedule Delivery
-                                        </a>
-                                    @endif
                                 </div>
                             </td>
                         </tr>

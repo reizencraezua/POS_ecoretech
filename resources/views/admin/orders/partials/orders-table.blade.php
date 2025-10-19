@@ -6,7 +6,7 @@
         </p>
     </div>
     <div class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-gray-200">
+        <table id="ordersTable" class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-50">
                 <tr>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order Info</th>
@@ -24,10 +24,7 @@
                         @if($order->order_status !== 'Voided') onclick="window.location.href='{{ route('admin.orders.show', $order) }}'" @endif>
                         <td class="px-6 py-4 whitespace-nowrap">
                             <div class="flex items-center">
-                                <div class="w-10 h-10 bg-maroon text-white rounded-full flex items-center justify-center font-bold text-sm">
-                                    {{ str_pad($order->order_id, 3, '0', STR_PAD_LEFT) }}
-                                </div>
-                                <div class="ml-4">
+                               <div class="ml-4">
                                     <div class="flex items-center gap-2">
                                         <div class="text-sm font-medium text-gray-900 group-hover:text-blue-600">Order #{{ str_pad($order->order_id, 5, '0', STR_PAD_LEFT) }}</div>
                                         <i class="fas fa-external-link-alt text-xs text-gray-400 group-hover:text-blue-600 transition-colors"></i>
@@ -84,28 +81,28 @@
                                 <span class="px-3 py-1 text-xs font-medium rounded-full
                                     @switch($order->order_status)
                                         @case('On-Process')
-                                            bg-blue-100 text-blue-800
+                                           text-blue-800
                                             @break
                                         @case('Designing')
-                                            bg-purple-100 text-purple-800
+                                            text-purple-800
                                             @break
                                         @case('Production')
-                                            bg-yellow-100 text-yellow-800
+                                            text-yellow-800
                                             @break
                                         @case('For Releasing')
-                                            bg-orange-100 text-orange-800
+                                            text-orange-800
                                             @break
                                         @case('Completed')
-                                            bg-green-100 text-green-800
+                                            text-green-800
                                             @break
                                         @case('Cancelled')
-                                            bg-red-100 text-red-800
+                                            text-red-800
                                             @break
                                         @case('Voided')
-                                            bg-gray-100 text-gray-800
+                                            text-gray-800
                                             @break
                                         @default
-                                            bg-gray-100 text-gray-800
+                                            text-gray-800
                                     @endswitch
                                 ">
                                     {{ $order->order_status }}
@@ -147,10 +144,17 @@
                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                             <div class="flex items-center space-x-2">
                                 @if($order->order_status !== 'Voided')
-                                    <!-- Edit Order -->
-                                    <a href="{{ route('admin.orders.edit', $order) }}" class="text-red-600 hover:text-red-800 transition-colors" title="Edit Order" onclick="event.stopPropagation();">
-                                        <i class="fas fa-edit"></i>
-                                    </a>
+                                    @if($order->payments()->count() > 0)
+                                        <!-- Edit Order Disabled -->
+                                        <span class="text-gray-400 cursor-not-allowed" title="Cannot edit order with existing payments">
+                                            <i class="fas fa-lock"></i>
+                                        </span>
+                                    @else
+                                        <!-- Edit Order -->
+                                        <a href="{{ route('admin.orders.edit', $order) }}" class="text-red-600 hover:text-red-800 transition-colors" title="Edit Order" onclick="event.stopPropagation();">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                    @endif
                                 @endif
                                 
                                 @if(isset($showArchived) && $showArchived)

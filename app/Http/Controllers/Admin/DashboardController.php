@@ -107,43 +107,74 @@ class DashboardController extends Controller
             ->orderBy('deadline_date', 'asc')
             ->get();
 
-        // Monthly sales overview data for chart
+        // Sales overview data for chart
         // Determine the period: either provided date range or last 6 months
         if ($startDate && $endDate && $startDate->lte($endDate)) {
-            $periodStart = (clone $startDate)->startOfMonth();
-            $periodEnd = (clone $endDate)->endOfMonth();
+            // For filtered date ranges, show daily data
+            $periodStart = (clone $startDate)->startOfDay();
+            $periodEnd = (clone $endDate)->endOfDay();
+            
+            // Initialize days map
+            $daysMap = [];
+            $cursor = $periodStart->copy();
+            while ($cursor->lte($periodEnd)) {
+                $key = $cursor->format('Y-m-d');
+                $daysMap[$key] = 0.0;
+                $cursor->addDay();
+            }
+
+            // Fetch payments in period and aggregate by day
+            $paymentsQuery = Payment::query();
+            $paymentsQuery->whereBetween('payment_date', [$periodStart->toDateString(), $periodEnd->toDateString()]);
+            $payments = $paymentsQuery->get(['payment_date', 'amount_paid']);
+            foreach ($payments as $payment) {
+                $key = Carbon::parse($payment->payment_date)->format('Y-m-d');
+                if (array_key_exists($key, $daysMap)) {
+                    $daysMap[$key] += (float) $payment->amount_paid;
+                }
+            }
+
+            // Prepare labels and data for daily view
+            $chartLabels = [];
+            $chartData = [];
+            foreach ($daysMap as $ymd => $sum) {
+                $dt = Carbon::createFromFormat('Y-m-d', $ymd);
+                $chartLabels[] = $dt->format('M d');
+                $chartData[] = round($sum, 2);
+            }
         } else {
+            // For default view (no filter), show monthly data for last 6 months
             $periodEnd = Carbon::now()->endOfMonth();
             $periodStart = (clone $periodEnd)->subMonths(5)->startOfMonth();
-        }
 
-        // Initialize months map
-        $monthsMap = [];
-        $cursor = $periodStart->copy();
-        while ($cursor->lte($periodEnd)) {
-            $key = $cursor->format('Y-m');
-            $monthsMap[$key] = 0.0;
-            $cursor->addMonth();
-        }
-
-        // Fetch payments in period and aggregate in PHP (DB-agnostic)
-        $paymentsQuery = Payment::query();
-        $paymentsQuery->whereBetween('payment_date', [$periodStart->toDateString(), $periodEnd->toDateString()]);
-        $payments = $paymentsQuery->get(['payment_date', 'amount_paid']);
-        foreach ($payments as $payment) {
-            $key = Carbon::parse($payment->payment_date)->format('Y-m');
-            if (array_key_exists($key, $monthsMap)) {
-                $monthsMap[$key] += (float) $payment->amount_paid;
+            // Initialize months map
+            $monthsMap = [];
+            $cursor = $periodStart->copy();
+            while ($cursor->lte($periodEnd)) {
+                $key = $cursor->format('Y-m');
+                $monthsMap[$key] = 0.0;
+                $cursor->addMonth();
             }
-        }
 
-        // Prepare labels and data
-        $chartLabels = [];
-        $chartData = [];
-        foreach ($monthsMap as $ym => $sum) {
-            $dt = Carbon::createFromFormat('Y-m', $ym);
-            $chartLabels[] = $dt->format('M Y');
-            $chartData[] = round($sum, 2);
+            // Fetch payments in period and aggregate in PHP (DB-agnostic)
+            $paymentsQuery = Payment::query();
+            $paymentsQuery->whereBetween('payment_date', [$periodStart->toDateString(), $periodEnd->toDateString()]);
+            $payments = $paymentsQuery->get(['payment_date', 'amount_paid']);
+            foreach ($payments as $payment) {
+                $key = Carbon::parse($payment->payment_date)->format('Y-m');
+                if (array_key_exists($key, $monthsMap)) {
+                    $monthsMap[$key] += (float) $payment->amount_paid;
+                }
+            }
+
+            // Prepare labels and data for monthly view
+            $chartLabels = [];
+            $chartData = [];
+            foreach ($monthsMap as $ym => $sum) {
+                $dt = Carbon::createFromFormat('Y-m', $ym);
+                $chartLabels[] = $dt->format('M Y');
+                $chartData[] = round($sum, 2);
+            }
         }
 
         return view('admin.dashboard', compact(

@@ -81,7 +81,7 @@
                                 </div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium text-blue-800">
                                     {{ $job->employees->count() }} {{ $job->employees->count() === 1 ? 'employee' : 'employees' }}
                                 </span>
                             </td>

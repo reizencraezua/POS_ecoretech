@@ -1,469 +1,570 @@
 @extends('layouts.cashier')
 
 @section('title', 'Order Details')
-@section('page-title', 'Order Details')
-@section('page-description', 'View detailed information about the job order')
-
-@section('header-actions')
-<div class="flex items-center space-x-4">
-    <a href="{{ route('cashier.orders.index') }}" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-medium inline-flex items-center">
-        <i class="fas fa-arrow-left mr-2"></i>
-        Back to Orders
-    </a>
-    @if($order->order_status !== 'Completed' && $order->order_status !== 'Cancelled' && $order->order_status !== 'Voided')
-    <button onclick="openVoidModal({{ $order->order_id }})" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium inline-flex items-center">
-    <i class="fas fa-ban mr-2"></i>Void Order
-    </button>
-    @endif
-</div>
-@endsection
+@section('page-title', 'Order #' . $order->order_id)
+@section('page-description', 'View detailed information about this job order')
 
 @section('content')
-<div class="space-y-6">
-    <!-- Order Header -->
-    <div class="bg-white rounded-lg shadow p-6">
-        <div class="flex items-center justify-between mb-4">
+<div class="max-w-7xl mx-auto">
+    <!-- Header -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <a href="{{ route('cashier.orders.index') }}" class="text-gray-500 hover:text-gray-700 transition-colors">
+                        <i class="fas fa-arrow-left text-lg"></i>
+                    </a>
             <div>
-                <h2 class="text-2xl font-bold text-gray-900">Order #{{ str_pad($order->order_id, 5, '0', STR_PAD_LEFT) }}</h2>
-                <p class="text-sm text-gray-500">Created {{ $order->created_at->format('M d, Y \a\t g:i A') }}</p>
-            </div>
-            <div class="flex items-center space-x-4">
-                
-                
-                <!-- Status Update (if not completed/cancelled) -->
-                @if($order->order_status !== 'Completed' && $order->order_status !== 'Cancelled' && $order->order_status !== 'Voided')
-                    <form id="statusUpdateForm" method="POST" action="{{ route('cashier.orders.status', $order) }}">
-                        @csrf
-                        @method('PATCH')
-                        <div class="flex items-center space-x-2">
-                            <select name="order_status" id="statusSelect" onchange="this.form.submit()" class="border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-maroon focus:border-maroon">
-                                <option value="">Select Status</option>
-                                <option value="{{ \App\Models\Order::STATUS_ON_PROCESS }}" {{ $order->order_status === \App\Models\Order::STATUS_ON_PROCESS ? 'selected' : '' }}>On-Process</option>
-                                <option value="{{ \App\Models\Order::STATUS_DESIGNING }}" {{ $order->order_status === \App\Models\Order::STATUS_DESIGNING ? 'selected' : '' }}>Designing</option>
-                                <option value="{{ \App\Models\Order::STATUS_PRODUCTION }}" {{ $order->order_status === \App\Models\Order::STATUS_PRODUCTION ? 'selected' : '' }}>Production</option>
-                                <option value="{{ \App\Models\Order::STATUS_FOR_RELEASING }}" {{ $order->order_status === \App\Models\Order::STATUS_FOR_RELEASING ? 'selected' : '' }}>For Releasing</option>
-                                <option value="{{ \App\Models\Order::STATUS_COMPLETED }}" {{ $order->order_status === \App\Models\Order::STATUS_COMPLETED ? 'selected' : '' }}>Completed</option>
-                                <option value="{{ \App\Models\Order::STATUS_CANCELLED }}" {{ $order->order_status === \App\Models\Order::STATUS_CANCELLED ? 'selected' : '' }}>Cancelled</option>
-                            </select>
+                        <h2 class="text-2xl font-semibold text-gray-900">Order #{{ $order->order_id }}</h2>
+                        <div class="flex items-center space-x-6 text-sm text-gray-600 mt-1">
+                            <span><i class="fas fa-calendar mr-1"></i>{{ $order->order_date->format('M d, Y') }}</span>
+                            <span><i class="fas fa-flag-checkered mr-1"></i>{{ $order->deadline_date->format('M d, Y') }}</span>
+                            <span><i class="fas fa-user mr-1"></i>{{ $order->customer->display_name }}</span>
                         </div>
-                    </form>
-                @endif
-
-                <!-- Status Badge -->
-                <span id="statusBadge" class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium
-                    @switch($order->order_status)
-                        @case('On-Process')
-                            bg-blue-100 text-blue-800
-                            @break
-                        @case('Designing')
-                            bg-purple-100 text-purple-800
-                            @break
-                        @case('Production')
-                            bg-yellow-100 text-yellow-800
-                            @break
-                        @case('For Releasing')
-                            bg-orange-100 text-orange-800
-                            @break
-                        @case('Completed')
-                            bg-green-100 text-green-800
-                            @break
-                        @case('Cancelled')
-                            bg-red-100 text-red-800
-                            @break
-                        @case('Voided')
-                            bg-gray-100 text-gray-800
-                            @break
-                        @default
-                            bg-gray-100 text-gray-800
-                    @endswitch">
+                    </div>
+                </div>
+                <div class="flex items-center space-x-8">
+                    <div class="text-right">
+                        <div class="text-2xl font-bold text-gray-900">₱{{ number_format($order->final_total_amount, 2) }}</div>
+                        <div class="text-sm text-gray-600">Total Amount</div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-xl font-semibold text-gray-700">₱{{ number_format($order->total_paid, 2) }}</div>
+                        <div class="text-sm text-gray-600">Total Paid</div>
+            </div>
+                    <div class="text-right">
+                        <div class="text-lg font-semibold {{ $order->remaining_balance > 0 ? 'text-red-600' : 'text-green-600' }}">
+                            ₱{{ number_format($order->remaining_balance, 2) }}
+                        </div>
+                        <div class="text-sm text-gray-600">Balance</div>
+                    </div>
+                 <span id="statusBadge" class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium
+                     @switch($order->order_status)
+                         @case('On-Process')
+                             text-blue-800
+                             @break
+                         @case('Designing')
+                             text-purple-800
+                             @break
+                         @case('Production')
+                             text-yellow-800
+                             @break
+                         @case('For Releasing')
+                             text-orange-800
+                             @break
+                         @case('Completed')
+                             text-green-800
+                             @break
+                         @case('Cancelled')
+                             text-red-800
+                             @break
+                         @case('Voided')
+                             text-gray-800
+                             @break
+                         @default
+                             text-gray-800
+                     @endswitch">
                     {{ $order->order_status }}
                 </span>
             </div>
         </div>
     </div>
+    </div>
 
-    <!-- Customer & Employee Information -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <!-- Customer Information -->
-        <div class="bg-white rounded-lg shadow p-6">
-            <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                <i class="fas fa-user mr-2 text-maroon"></i>
-                Customer Information
-            </h3>
-            <div class="space-y-3">
-                <div>
-                    <label class="text-sm font-medium text-gray-500">Name</label>
-                    <p class="text-sm text-gray-900">{{ $order->customer->customer_firstname }} {{ $order->customer->customer_lastname }}</p>
+
+    <div class="grid grid-cols-1 xl:grid-cols-4 gap-6">
+        <!-- Main Content -->
+        <div class="xl:col-span-3 space-y-4">
+            <!-- Order Information -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h3 class="text-lg font-semibold text-gray-900">Order Information</h3>
                 </div>
+                <div class="p-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                        <div class="space-y-6">
+                            <div>
+                                <h4 class="text-sm font-medium text-gray-500 uppercase tracking-wide mb-3">Customer Details</h4>
+                                <div class="space-y-2">
+                                    <p class="text-gray-900 font-medium">{{ $order->customer->display_name }}</p>
                 @if($order->customer->business_name)
-                    <div>
-                        <label class="text-sm font-medium text-gray-500">Business Name</label>
-                        <p class="text-sm text-gray-900">{{ $order->customer->business_name }}</p>
+                                        <p class="text-sm text-gray-600">{{ $order->customer->business_name }}</p>
+                                    @endif
+                                </div>
                     </div>
-                @endif
-                @if($order->customer->contact_number1)
                     <div>
-                        <label class="text-sm font-medium text-gray-500">Contact Number</label>
-                        <p class="text-sm text-gray-900">{{ $order->customer->contact_number1 }}</p>
-                    </div>
+                                <h4 class="text-sm font-medium text-gray-500 uppercase tracking-wide mb-3">Production Team</h4>
+                                <div class="space-y-2">
+                                    <p class="text-gray-900 font-medium">{{ $order->employee->full_name }}</p>
+                                    @if($order->employee->job)
+                                        <p class="text-sm text-gray-600">{{ $order->employee->job->job_title }}</p>
                 @endif
-                @if($order->customer->email)
-                    <div>
-                        <label class="text-sm font-medium text-gray-500">Email</label>
-                        <p class="text-sm text-gray-900">{{ $order->customer->email }}</p>
-                    </div>
+                                    @if($order->layout_employee_id)
+                                        <div class="pt-2 border-t border-gray-100">
+                                            <p class="text-sm text-gray-500">Layout Designer</p>
+                                            <p class="text-gray-900 font-medium">{{ $order->layoutEmployee->full_name }}</p>
+                                            @if($order->layoutEmployee->job)
+                                                <p class="text-sm text-gray-600">{{ $order->layoutEmployee->job->job_title }}</p>
                 @endif
-                @if($order->customer->address)
-                    <div>
-                        <label class="text-sm font-medium text-gray-500">Address</label>
-                        <p class="text-sm text-gray-900">{{ $order->customer->address }}</p>
                     </div>
                 @endif
             </div>
         </div>
-
-        <!-- Employee & Order Information -->
-        <div class="bg-white rounded-lg shadow p-6">
-            <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                <i class="fas fa-briefcase mr-2 text-maroon"></i>
-                Order Information
-            </h3>
-            <div class="space-y-3">
-                <div>
-                    <label class="text-sm font-medium text-gray-500">Assigned Employee</label>
-                    <p class="text-sm text-gray-900">{{ $order->employee->employee_firstname }} {{ $order->employee->employee_lastname }}</p>
                 </div>
+                        <div class="space-y-6">
                 <div>
-                    <label class="text-sm font-medium text-gray-500">Order Date</label>
-                    <p class="text-sm text-gray-900">{{ $order->order_date->format('M d, Y') }}</p>
+                                <h4 class="text-sm font-medium text-gray-500 uppercase tracking-wide mb-3">Timeline</h4>
+                                <div class="space-y-3">
+                                    <div class="flex justify-between">
+                                        <span class="text-sm text-gray-600">Order Date</span>
+                                        <span class="text-sm font-medium text-gray-900">{{ $order->order_date->format('M d, Y') }}</span>
                 </div>
-                @if($order->delivery_date)
-                    <div>
-                        <label class="text-sm font-medium text-gray-500">Delivery Date</label>
-                        <p class="text-sm text-gray-900">{{ $order->delivery_date->format('M d, Y') }}</p>
+                                    <div class="flex justify-between">
+                                        <span class="text-sm text-gray-600">Deadline</span>
+                                        <span class="text-sm font-medium text-gray-900">{{ $order->deadline_date->format('M d, Y') }}</span>
                     </div>
-                @endif
-                <div>
-                    <label class="text-sm font-medium text-gray-500">Created By</label>
-                    <p class="text-sm text-gray-900">
-                        @if($order->creator)
-                            @if($order->creator->employee)
-                                EMP{{ $order->creator->employee->employee_id }} : {{ $order->creator->employee->employee_firstname }}
-                            @else
-                                {{ $order->creator->name }}
-                            @endif
-                        @else
-                            Admin
-                        @endif
-                    </p>
+                                    
                 </div>
-                @if($order->order_status === 'Voided')
-                    <div>
-                        <label class="text-sm font-medium text-gray-500">Voided By</label>
-                        <p class="text-sm text-gray-900">
-                            @if($order->voidedBy)
-                                @if($order->voidedBy->employee)
-                                    EMP{{ $order->voidedBy->employee->employee_id }} : {{ $order->voidedBy->employee->employee_firstname }}
-                                @else
-                                    {{ $order->voidedBy->name }}
-                                @endif
-                            @else
-                                Admin
-                            @endif
-                        </p>
                     </div>
-                    @if($order->voided_at)
-                        <div>
-                            <label class="text-sm font-medium text-gray-500">Voided At</label>
-                            <p class="text-sm text-gray-900">{{ $order->voided_at->format('M d, Y \a\t g:i A') }}</p>
                         </div>
-                    @endif
-                    @if($order->void_reason)
+                        <div class="space-y-6">
                         <div>
-                            <label class="text-sm font-medium text-gray-500">Void Reason</label>
-                            <p class="text-sm text-gray-900">{{ $order->void_reason }}</p>
+                                <h4 class="text-sm font-medium text-gray-500 uppercase tracking-wide mb-3">Order Summary</h4>
+                                <div class="space-y-3">
+                                    <div class="flex justify-between">
+                                        <span class="text-sm text-gray-600">Items</span>
+                                        <span class="text-sm font-medium text-gray-900">{{ $order->details->count() }} items</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-sm text-gray-600">Payment Progress</span>
+                                        <span class="text-sm font-medium text-gray-900">
+                                            {{ $order->final_total_amount > 0 ? round(($order->total_paid / $order->final_total_amount) * 100) : 0 }}%
+                                        </span>
+                                    </div>
+                                    <div class="pt-2 border-t border-gray-100">
+                                        <div class="w-full bg-gray-200 rounded-full h-2">
+                                            <div class="bg-gray-600 h-2 rounded-full" style="width: {{ $order->final_total_amount > 0 ? round(($order->total_paid / $order->final_total_amount) * 100) : 0 }}%"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                    @endif
-                @endif
             </div>
         </div>
     </div>
 
+
     <!-- Order Items -->
-    <div class="bg-white rounded-lg shadow p-6">
-        <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-            <i class="fas fa-list mr-2 text-maroon"></i>
-            Order Items
-        </h3>
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-lg font-semibold text-gray-900">Order Items</h3>
+                        <div class="flex items-center space-x-6 text-sm text-gray-600">
+                            <span>{{ $order->details->count() }} items</span>
+                            @if($order->layout_design_fee > 0)
+                            <span>₱{{ number_format($order->layout_design_fee, 2) }} layout fee</span>
+                            @endif
+                        </div>
+                    </div>
+                </div>
         <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">
                     <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Item</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unit</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Size</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Layout</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Subtotal</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Item</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unit</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Size</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unit Price</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Layout</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Layout Price</th>
                     </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
-                    @foreach($order->details as $detail)
-                    <tr>
-                        <td class="px-6 py-4 whitespace-nowrap">
+                            @forelse($order->details as $detail)
+                            <tr>
+                                <td class="px-4 py-3 whitespace-nowrap">
+                                    <span class="px-2 py-1 text-xs font-medium rounded-full
+                                        {{ $detail->item_type === 'Product' ? 'text-blue-800' : 'text-green-800' }}">
+                                        {{ $detail->item_type }}
+                                    </span>
+                                </td>
+                                <td class="px-4 py-3 whitespace-nowrap">
                             <div class="text-sm font-medium text-gray-900">
-                                @if($detail->product)
-                                    {{ $detail->product->product_name }}
-                                @elseif($detail->service)
-                                    {{ $detail->service->service_name }}
+                                        @if($detail->item_type === 'Product')
+                                            {{ $detail->product ? $detail->product->product_name : 'Product Not Found' }}
+                                        @else
+                                            {{ $detail->service ? $detail->service->service_name : 'Service Not Found' }}
                                 @endif
                             </div>
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-                                @if($detail->product) bg-blue-100 text-blue-800
-                                @else bg-green-100 text-green-800 @endif">
-                                @if($detail->product) Product @else Service @endif
-                            </span>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {{ $detail->quantity }}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {{ $detail->unit ? $detail->unit->unit_name : 'N/A' }}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {{ $detail->size ?? 'N/A' }}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            ₱{{ number_format($detail->price, 2) }}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ $detail->quantity }}</td>
+                                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ $detail->unit ? $detail->unit->unit_name : 'N/A' }}</td>
+                                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ $detail->size }}</td>
+                                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">₱{{ number_format($detail->price, 2) }}</td>
+                                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
                             @if($detail->layout)
-                                <span class="text-green-600">
-                                    <i class="fas fa-check mr-1"></i>
-                                    ₱{{ number_format($detail->layout_price, 2) }}
+                                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium text-green-800">
+                                            <i class="fas fa-check mr-1"></i>Yes
                                 </span>
                             @else
-                                <span class="text-gray-400">No</span>
+                                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium text-gray-800">
+                                            <i class="fas fa-times mr-1"></i>No
+                                        </span>
+                                    @endif
+                                </td>
+                                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                                    @if($detail->layout && $detail->layout_price > 0)
+                                        ₱{{ number_format($detail->layout_price, 2) }}
+                                    @else
+                                        <span class="text-gray-400">-</span>
                             @endif
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                            ₱{{ number_format($detail->subtotal, 2) }}
+                               
+                            @empty
+                            <tr>
+                                <td colspan="9" class="px-4 py-8 text-center text-gray-500">
+                                    <i class="fas fa-box text-4xl mb-2"></i>
+                                    <p>No items found for this order.</p>
                         </td>
                     </tr>
-                    @endforeach
+                            @endforelse
                 </tbody>
             </table>
         </div>
     </div>
 
     <!-- Order Summary -->
-    <div class="bg-white rounded-lg shadow p-6">
-        <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-            <i class="fas fa-calculator mr-2 text-maroon"></i>
-            Order Summary
-        </h3>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div class="space-y-3">
-                <div class="flex justify-between">
-                    <span class="text-sm font-medium text-gray-500">Subtotal:</span>
-                    <span class="text-sm text-gray-900">₱{{ number_format($order->sub_total, 2) }}</span>
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h3 class="text-lg font-semibold text-gray-900">Order Summary</h3>
                 </div>
+                <div class="p-6">
+                    <div class="space-y-3">
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">No. of items: </span>
+                            <span class="font-medium">{{ $order->details->sum('quantity') }}</span>
+                        </div>
+                        
+                       
+
                 <div class="flex justify-between">
-                    <span class="text-sm font-medium text-gray-500">VAT (12%):</span>
-                    <span class="text-sm text-gray-900">₱{{ number_format($order->vat_amount, 2) }}</span>
+                            <span class="text-gray-600">Base Amount:</span>
+                            <span class="font-medium">₱{{ number_format($order->base_amount, 2) }}</span>
                 </div>
+                        
+                       
+                        
                 <div class="flex justify-between">
-                    <span class="text-sm font-medium text-gray-500">Base Amount:</span>
-                    <span class="text-sm text-gray-900">₱{{ number_format($order->base_amount, 2) }}</span>
+                            <span class="text-gray-600">VAT (12%):</span>
+                            <span class="font-medium">₱{{ number_format($order->vat_amount, 2) }}</span>
                 </div>
-                @if($order->order_discount_amount > 0)
+                        
                     <div class="flex justify-between">
-                        <span class="text-sm font-medium text-gray-500">Discount:</span>
-                        <span class="text-sm text-green-600">-₱{{ number_format($order->order_discount_amount, 2) }}</span>
+                            <span class="text-gray-600">Sub Total:</span>
+                            <span class="font-medium">₱{{ number_format($order->sub_total, 2) }}</span>
                     </div>
+                       
+                        
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Order Discount:</span>
+                            <div class="text-right">
+                                <div class="font-medium text-green-600">-₱{{ number_format($order->order_discount_amount, 2) }}</div>
+                                @if($order->order_discount_info)
+                                    <div class="text-xs text-gray-500">
+                                        @if($order->order_discount_info['type'] === 'percentage')
+                                            {{ $order->order_discount_info['percentage'] }}% off
+                                        @else
+                                            ₱{{ number_format($order->order_discount_info['amount'], 2) }} off
+                                        @endif
+                                        @if($order->order_discount_info['rule_name'])
+                                            ({{ $order->order_discount_info['rule_name'] }})
                 @endif
-                @if($order->layout_fees > 0)
-                    <div class="flex justify-between">
-                        <span class="text-sm font-medium text-gray-500">Layout Fees:</span>
-                        <span class="text-sm text-gray-900">₱{{ number_format($order->layout_fees, 2) }}</span>
-                    </div>
-                @endif
-            </div>
-            <div class="space-y-3">
-                <div class="border-t pt-3">
-                    <div class="flex justify-between">
-                        <span class="text-lg font-semibold text-gray-900">Total Amount:</span>
-                        <span class="text-lg font-bold text-maroon">₱{{ number_format($order->final_total_amount, 2) }}</span>
-                    </div>
-                </div>
-                @if($order->payments->count() > 0)
-                    <div class="flex justify-between">
-                        <span class="text-sm font-medium text-gray-500">Total Paid:</span>
-                        <span class="text-sm text-green-600">₱{{ number_format($order->total_paid, 2) }}</span>
-                    </div>
-                    <div class="flex justify-between">
-                        <span class="text-sm font-medium text-gray-500">Remaining Balance:</span>
-                        <span class="text-sm {{ $order->remaining_balance > 0 ? 'text-red-600' : 'text-green-600' }}">
-                            ₱{{ number_format($order->remaining_balance, 2) }}
-                        </span>
                     </div>
                 @endif
             </div>
+                        </div>
+
+                    <div class="flex justify-between">
+                            <span class="text-gray-600">Layout Fees: </span>
+                            <span class="font-medium">₱{{ number_format($order->layout_fees, 2) }}</span>
+                        </div>
+                        
+                        <hr class="border-gray-200">
+                        <div class="flex justify-between text-lg font-bold">
+                            <span>TOTAL AMOUNT: </span>
+                            <span>₱{{ number_format($order->final_total_amount, 2) }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="space-y-6">
+
+            <!-- Actions -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+                <div class="px-4 py-3 border-b border-gray-200">
+                    <h3 class="text-sm font-semibold text-gray-900">Actions</h3>
+                </div>
+                <div class="p-4 space-y-3">
+                    @if($order->payments()->count() > 0)
+                        <button type="button" disabled class="w-full bg-gray-100 text-gray-400 px-3 py-2 rounded text-sm cursor-not-allowed inline-flex items-center justify-center" title="Cannot edit order with existing payments">
+                            <i class="fas fa-lock mr-2"></i>
+                            Edit Order (Disabled)
+                        </button>
+                    @else
+                        <a href="{{ route('cashier.orders.edit', $order) }}" class="w-full bg-gray-100 hover:bg-gray-200 text-gray-900 px-3 py-2 rounded text-sm transition-colors inline-flex items-center justify-center">
+                            <i class="fas fa-edit mr-2"></i>
+                            Edit Order
+                        </a>
+                    @endif
+                    <button type="button" onclick="openPaymentModal()" class="w-full bg-gray-100 hover:bg-gray-200 text-gray-900 px-3 py-2 rounded text-sm transition-colors inline-flex items-center justify-center">
+                        Add Payment
+                    </button>
+                    <a href="{{ route('cashier.deliveries.create', ['order_id' => $order->order_id]) }}" class="w-full bg-gray-100 hover:bg-gray-200 text-gray-900 px-3 py-2 rounded text-sm transition-colors inline-flex items-center justify-center">
+                        Add Delivery
+                    </a>
+                    @if($order->order_status !== 'Completed' && $order->order_status !== 'Cancelled' && $order->order_status !== 'Voided')
+                    <form method="POST" action="{{ route('cashier.orders.status', $order) }}" class="w-full">
+                        @csrf
+                        @method('PATCH')
+                        <select name="order_status" onchange="this.form.submit()" class="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-maroon focus:border-maroon @error('order_status') border-red-500 @enderror">
+                            <option value="">Update Status</option>
+                            <option value="On-Process" {{ $order->order_status === 'On-Process' ? 'selected' : '' }}>On-Process</option>
+                            <option value="Designing" {{ $order->order_status === 'Designing' ? 'selected' : '' }}>Designing</option>
+                            <option value="Production" {{ $order->order_status === 'Production' ? 'selected' : '' }}>Production</option>
+                            <option value="For Releasing" {{ $order->order_status === 'For Releasing' ? 'selected' : '' }}>For Releasing</option>
+                            <option value="Completed" {{ $order->order_status === 'Completed' ? 'selected' : '' }}>Completed</option>
+                            <option value="Cancelled" {{ $order->order_status === 'Cancelled' ? 'selected' : '' }}>Cancelled</option>
+                        </select>
+                        @error('order_status')
+                            <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                        @enderror
+                    </form>
+                    @endif
         </div>
     </div>
 
-    <!-- Payments -->
+            <!-- Payment History -->
     @if($order->payments->count() > 0)
-    <div class="bg-white rounded-lg shadow p-6">
-        <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+                <div class="px-4 py-3 border-b border-gray-200">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-sm font-semibold text-gray-900 flex items-center">
             <i class="fas fa-credit-card mr-2 text-maroon"></i>
             Payment History
         </h3>
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
-                    <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Method</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Term</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reference</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Remarks</th>
-                    </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
+                        <span class="text-xs text-gray-500">{{ $order->payments->count() }} payment(s)</span>
+                    </div>
+                </div>
+                <div class="p-4">
+                    <div class="space-y-4 max-h-80 overflow-y-auto">
                     @foreach($order->payments as $payment)
-                    <tr>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {{ $payment->payment_date->format('M d, Y') }}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {{ $payment->payment_method }}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                            <div class="flex justify-between items-start mb-2">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                                        <i class="fas fa-check text-green-600 text-sm"></i>
+                                    </div>
+                                    <div>
+                                        <p class="text-lg font-bold text-maroon">₱{{ number_format($payment->amount_paid, 2) }}</p>
+                                        <p class="text-xs text-gray-500">{{ $payment->payment_date->format('M d, Y g:i A') }}</p>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium text-blue-800">
                             {{ $payment->payment_term }}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                            ₱{{ number_format($payment->amount_paid, 2) }}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {{ $payment->reference_number ?? 'N/A' }}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {{ $payment->remarks ?? 'N/A' }}
-                        </td>
-                    </tr>
+                                    </span>
+                                    <p class="text-xs text-gray-500 mt-1">{{ $payment->payment_method }}</p>
+                                </div>
+                            </div>
+                            
+                            @if($payment->reference_number)
+                            <div class="flex items-center space-x-2 text-xs text-gray-600 mb-2">
+                                <i class="fas fa-hashtag"></i>
+                                <span>Reference: {{ $payment->reference_number }}</span>
+                            </div>
+                            @endif
+                            
+                            @if($payment->remarks)
+                            <div class="text-xs text-gray-600 bg-white rounded p-2 border">
+                                <i class="fas fa-comment mr-1"></i>
+                                {{ $payment->remarks }}
+                            </div>
+                            @endif
+                            
+                            <div class="flex justify-between items-center mt-2 pt-2 border-t border-gray-200">
+                                <span class="text-xs text-gray-500">Receipt: {{ $payment->receipt_number }}</span>
+                                <span class="text-xs text-gray-500">
+                                    @if($payment->change > 0)
+                                        Change: ₱{{ number_format($payment->change, 2) }}
+                                    @else
+                                        Balance: ₱{{ number_format($payment->balance, 2) }}
+                                    @endif
+                                </span>
+                            </div>
+                        </div>
                     @endforeach
-                </tbody>
-            </table>
+                    </div>
         </div>
     </div>
     @endif
 
-    
+            <!-- Delivery History -->
+            @if($order->deliveries->count() > 0)
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+                <div class="px-4 py-3 border-b border-gray-200">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-sm font-semibold text-gray-900 flex items-center">
+                            <i class="fas fa-truck mr-2 text-maroon"></i>
+                            Delivery History
+                        </h3>
+                        <span class="text-xs text-gray-500">{{ $order->deliveries->count() }} delivery(s)</span>
+                    </div>
+                </div>
+                <div class="p-4">
+                    <div class="space-y-4 max-h-80 overflow-y-auto">
+                        @foreach($order->deliveries as $delivery)
+                        <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                            <div class="flex justify-between items-start mb-2">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                                        <i class="fas fa-truck text-blue-600 text-sm"></i>
+                                    </div>
+                                    <div>
+                                        <p class="text-sm font-medium text-gray-900">{{ ucfirst(str_replace('_', ' ', $delivery->status)) }}</p>
+                                        <p class="text-xs text-gray-500">{{ $delivery->delivery_date->format('M d, Y g:i A') }}</p>
+                                    </div>
+                                </div>
+                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium 
+                                    @if($delivery->status === 'delivered') text-green-800
+                                    @elseif($delivery->status === 'in_transit') text-yellow-800
+                                    @elseif($delivery->status === 'scheduled') text-blue-800
+                                    @else text-red-800 @endif">
+                                    {{ ucfirst(str_replace('_', ' ', $delivery->status)) }}
+                                </span>
+                            </div>
+                            
+                            <div class="text-xs text-gray-600 mb-2">
+                                <i class="fas fa-map-marker-alt mr-1"></i>
+                                {{ $delivery->delivery_address }}
 </div>
 
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const statusSelect = document.getElementById('statusSelect');
-    const statusBadge = document.getElementById('statusBadge');
-    
-    if (statusSelect && statusBadge) {
-        // Handle status change with immediate visual feedback
-        statusSelect.addEventListener('change', function() {
-            const currentStatus = '{{ $order->order_status }}';
-            
-            // Only proceed if status is different and not empty
-            if (this.value !== '' && this.value !== currentStatus) {
-                // Update status badge immediately for better UX
-                updateStatusBadge(this.value);
-                
-                // Update status immediately
-                this.disabled = true;
-            }
-        });
-    }
-    
-    function updateStatusBadge(status) {
-        // Remove all existing classes
-        statusBadge.className = 'inline-flex items-center px-3 py-1 rounded-full text-sm font-medium';
-        
-        // Add appropriate classes based on status
-        switch(status) {
-            case '{{ \App\Models\Order::STATUS_ON_PROCESS }}':
-                statusBadge.classList.add('bg-blue-100', 'text-blue-800');
-                break;
-            case '{{ \App\Models\Order::STATUS_DESIGNING }}':
-                statusBadge.classList.add('bg-purple-100', 'text-purple-800');
-                break;
-            case '{{ \App\Models\Order::STATUS_PRODUCTION }}':
-                statusBadge.classList.add('bg-yellow-100', 'text-yellow-800');
-                break;
-            case '{{ \App\Models\Order::STATUS_FOR_RELEASING }}':
-                statusBadge.classList.add('bg-orange-100', 'text-orange-800');
-                break;
-            case '{{ \App\Models\Order::STATUS_COMPLETED }}':
-                statusBadge.classList.add('bg-green-100', 'text-green-800');
-                break;
-            case '{{ \App\Models\Order::STATUS_CANCELLED }}':
-                statusBadge.classList.add('bg-red-100', 'text-red-800');
-                break;
-            case 'Voided':
-                statusBadge.classList.add('bg-gray-100', 'text-gray-800');
-                break;
-            default:
-                statusBadge.classList.add('bg-gray-100', 'text-gray-800');
-        }
-        
-        // Update the text content
-        statusBadge.textContent = status;
-    }
-});
-</script>
+                            @if($delivery->notes)
+                            <div class="text-xs text-gray-600 bg-white rounded p-2 border">
+                                <i class="fas fa-comment mr-1"></i>
+                                {{ $delivery->notes }}
+                            </div>
+                            @endif
+                        </div>
+                        @endforeach
+                    </div>
+                </div>
+            </div>
+            @endif
 
-<!-- Void Order Confirmation Modal -->
-<div id="voidModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+        </div>
+    </div>
+</div>
+
+<!-- Payment Modal -->
+<div id="paymentModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
     <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
         <div class="mt-3">
-            <div class="flex items-center justify-center w-12 h-12 mx-auto bg-red-100 rounded-full mb-4">
-                <i class="fas fa-exclamation-triangle text-red-600 text-xl"></i>
+            <!-- Modal Header -->
+            <div class="flex items-center justify-between pb-4 border-b border-gray-200">
+                <h3 class="text-lg font-semibold text-gray-900">Add Payment</h3>
+                <button onclick="closePaymentModal()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
             </div>
-            <h3 class="text-lg font-medium text-gray-900 text-center mb-4">Void Order Confirmation</h3>
-            <p class="text-sm text-gray-500 text-center mb-6">This action will permanently void the order. This cannot be undone.</p>
             
-            <form id="voidForm" method="POST" action="">
+            <!-- Modal Body -->
+            <form id="paymentForm" method="POST" action="{{ route('cashier.payments.store') }}" class="mt-4">
                 @csrf
+                <input type="hidden" name="order_id" value="{{ $order->order_id }}">
+                
                 <div class="space-y-4">
-                    <!-- Admin Password -->
+                    <!-- Payment Date (Hidden) -->
+                    <input type="hidden" name="payment_date" id="payment_date" value="{{ now()->format('Y-m-d') }}">
+                    
+                    <!-- Payment Method -->
                     <div>
-                        <label for="admin_password" class="block text-sm font-medium text-gray-700 mb-2">System Administrator Password *</label>
-                        <input type="password" name="admin_password" id="admin_password" required
-                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-red-500"
-                               placeholder="Enter system administrator password">
-                        <p class="text-xs text-gray-500 mt-1">Enter the system administrator's password to void this order</p>
+                        <label for="payment_method" class="block text-sm font-medium text-gray-700 mb-1">Payment Method *</label>
+                        <select name="payment_method" id="payment_method" required
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon @error('payment_method') border-red-500 @enderror">
+                            <option value="">Select Method</option>
+                            <option value="Cash" {{ old('payment_method') == 'Cash' ? 'selected' : '' }}>Cash</option>
+                            <option value="GCash" {{ old('payment_method') == 'GCash' ? 'selected' : '' }}>GCash</option>
+                            <option value="Bank Transfer" {{ old('payment_method') == 'Bank Transfer' ? 'selected' : '' }}>Bank Transfer</option>
+                            <option value="Check" {{ old('payment_method') == 'Check' ? 'selected' : '' }}>Check</option>
+                            <option value="Credit Card" {{ old('payment_method') == 'Credit Card' ? 'selected' : '' }}>Credit Card</option>
+                        </select>
+                        @error('payment_method')
+                            <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                        @enderror
                     </div>
                     
-                    <!-- Void Reason -->
+                    <!-- Payment Term -->
                     <div>
-                        <label for="void_reason" class="block text-sm font-medium text-gray-700 mb-2">Reason for Voiding *</label>
-                        <textarea name="void_reason" id="void_reason" rows="3" required
-                                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-red-500"
-                                  placeholder="Enter reason for voiding this order"></textarea>
+                        <label for="payment_term" class="block text-sm font-medium text-gray-700 mb-1">Payment Term *</label>
+                        <select name="payment_term" id="payment_term" required
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon @error('payment_term') border-red-500 @enderror">
+                            <option value="">Select Term</option>
+                            <option value="Full Payment" {{ old('payment_term') == 'Full Payment' ? 'selected' : '' }}>Full Payment</option>
+                            <option value="Partial Payment" {{ old('payment_term') == 'Partial Payment' ? 'selected' : '' }}>Partial Payment</option>
+                        </select>
+                        @error('payment_term')
+                            <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                        @enderror
+                    </div>
+                    
+                    <!-- Amount Paid -->
+                    <div>
+                        <label for="amount_paid" class="block text-sm font-medium text-gray-700 mb-1">Amount Paid *</label>
+                        <input type="number" name="amount_paid" id="amount_paid" step="0.01" min="0" max="{{ $order->final_total_amount }}" required
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon @error('amount_paid') border-red-500 @enderror"
+                               placeholder="0.00">
+                        @error('amount_paid')
+                            <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                        @enderror
+                        <p class="text-xs text-gray-500 mt-1">Order Total: ₱{{ number_format($order->final_total_amount, 2) }}</p>
+                    </div>
+                    
+                    <!-- Reference Number -->
+                    <div>
+                        <label for="reference_number" class="block text-sm font-medium text-gray-700 mb-1">Reference Number</label>
+                        <input type="text" name="reference_number" id="reference_number" value="{{ old('reference_number') }}"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon @error('reference_number') border-red-500 @enderror"
+                               placeholder="Optional">
+                        @error('reference_number')
+                            <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                        @enderror
+                    </div>
+                    
+                    <!-- Remarks -->
+                    <div>
+                        <label for="remarks" class="block text-sm font-medium text-gray-700 mb-1">Remarks</label>
+                        <textarea name="remarks" id="remarks" rows="3"
+                                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon @error('remarks') border-red-500 @enderror"
+                                  placeholder="Optional">{{ old('remarks') }}</textarea>
+                        @error('remarks')
+                            <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                        @enderror
                     </div>
                 </div>
                 
-                <div class="flex items-center justify-between mt-6">
-                    <button type="button" onclick="closeVoidModal()" 
+                <div class="flex items-center justify-end space-x-3 mt-6">
+                    <button type="button" onclick="closePaymentModal()" 
                             class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400">
                         Cancel
                     </button>
                     <button type="submit" 
-                            class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700">
-                        <i class="fas fa-ban mr-2"></i>Void Order
+                            class="px-4 py-2 bg-maroon text-white rounded-md hover:bg-maroon-dark">
+                        <i class="fas fa-credit-card mr-2"></i>Add Payment
                     </button>
                 </div>
             </form>
@@ -472,21 +573,20 @@ document.addEventListener('DOMContentLoaded', function() {
 </div>
 
 <script>
-function openVoidModal(orderId) {
-    document.getElementById('voidForm').action = '{{ route("cashier.orders.void", ":id") }}'.replace(':id', orderId);
-    document.getElementById('voidModal').classList.remove('hidden');
-    document.getElementById('admin_password').focus();
+function openPaymentModal() {
+    document.getElementById('paymentModal').classList.remove('hidden');
+    document.getElementById('amount_paid').focus();
 }
 
-function closeVoidModal() {
-    document.getElementById('voidModal').classList.add('hidden');
-    document.getElementById('voidForm').reset();
+function closePaymentModal() {
+    document.getElementById('paymentModal').classList.add('hidden');
+    document.getElementById('paymentForm').reset();
 }
 
 // Close modal when clicking outside
-document.getElementById('voidModal').addEventListener('click', function(e) {
+document.getElementById('paymentModal').addEventListener('click', function(e) {
     if (e.target === this) {
-        closeVoidModal();
+        closePaymentModal();
     }
 });
 </script>

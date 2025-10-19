@@ -26,11 +26,15 @@ return new class extends Migration
             $table->decimal('balance', 10, 2)->default(0);
             $table->text('remarks')->nullable();
             $table->unsignedBigInteger('order_id');
+            $table->unsignedBigInteger('created_by')->nullable();
+            $table->unsignedBigInteger('received_by')->nullable();
             $table->timestamps();
             $table->softDeletes();
 
             // Foreign key constraints
             $table->foreign('order_id')->references('order_id')->on('orders')->onDelete('cascade');
+            $table->foreign('created_by')->references('id')->on('users')->onDelete('set null');
+            $table->foreign('received_by')->references('id')->on('users')->onDelete('set null');
         });
     }
 

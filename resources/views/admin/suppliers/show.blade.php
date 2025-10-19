@@ -251,7 +251,7 @@
                         $totalAmount = $transactions->where('type', 'order')->sum('amount');
                     @endphp
                     
-                    <div class="grid grid-cols-2 gap-4">
+                    <div class="grid grid-cols-3 gap-4">
                         <div class="text-center">
                             <div class="text-2xl font-bold text-blue-600">{{ $inventoryCount }}</div>
                             <div class="text-xs text-gray-500">Stock Ins</div>
@@ -264,59 +264,12 @@
                             <div class="text-2xl font-bold text-green-600">{{ $orderCount }}</div>
                             <div class="text-xs text-gray-500">Orders</div>
                         </div>
-                        <div class="text-center">
-                            <div class="text-2xl font-bold text-maroon">₱{{ number_format($totalAmount, 0) }}</div>
-                            <div class="text-xs text-gray-500">Total Value</div>
-                        </div>
+                        
                     </div>
                 </div>
             </div>
 
-            <!-- Quick Actions -->
-            <div class="bg-white rounded-lg shadow-sm border border-gray-200">
-                <div class="px-4 py-3 border-b border-gray-200">
-                    <h3 class="text-sm font-semibold text-gray-900 flex items-center">
-                        <i class="fas fa-bolt mr-2 text-maroon"></i>
-                        Quick Actions
-                    </h3>
-                </div>
-                <div class="p-4 space-y-3">
-                    @if($supplier->supplier_email)
-                    <a href="mailto:{{ $supplier->supplier_email }}" 
-                       class="flex items-center p-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors group">
-                        <div class="w-8 h-8 bg-maroon text-white rounded-lg flex items-center justify-center mr-3 group-hover:bg-maroon-dark transition-colors">
-                            <i class="fas fa-envelope text-sm"></i>
-                        </div>
-                        <div>
-                            <p class="text-sm font-medium text-gray-900">Send Email</p>
-                            <p class="text-xs text-gray-500">Contact via email</p>
-                        </div>
-                    </a>
-                    @endif
-                    
-                    <a href="tel:{{ $supplier->supplier_contact }}" 
-                       class="flex items-center p-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors group">
-                        <div class="w-8 h-8 bg-maroon text-white rounded-lg flex items-center justify-center mr-3 group-hover:bg-maroon-dark transition-colors">
-                            <i class="fas fa-phone text-sm"></i>
-                        </div>
-                        <div>
-                            <p class="text-sm font-medium text-gray-900">Call Supplier</p>
-                            <p class="text-xs text-gray-500">Make a phone call</p>
-                        </div>
-                    </a>
-                    
-                    <a href="{{ route('admin.suppliers.edit', $supplier) }}" 
-                       class="flex items-center p-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors group">
-                        <div class="w-8 h-8 bg-maroon text-white rounded-lg flex items-center justify-center mr-3 group-hover:bg-maroon-dark transition-colors">
-                            <i class="fas fa-edit text-sm"></i>
-                        </div>
-                        <div>
-                            <p class="text-sm font-medium text-gray-900">Edit Information</p>
-                            <p class="text-xs text-gray-500">Update details</p>
-                        </div>
-                    </a>
-                </div>
-            </div>
+            
         </div>
     </div>
 </div>

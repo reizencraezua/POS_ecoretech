@@ -316,29 +316,10 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function validateDownpayment() {
-        const selectedTerm = paymentTermSelect.value;
-        const selectedOrder = orderSelect.value;
-        const enteredAmount = parseFloat(amountInput.value);
-        
-        if (selectedTerm === 'Downpayment' && selectedOrder && orderAmounts[selectedOrder]) {
-            const totalAmount = orderAmounts[selectedOrder];
-            const expectedDownpayment = totalAmount * 0.5;
-            const tolerance = 0.01;
-            
-            if (enteredAmount && Math.abs(enteredAmount - expectedDownpayment) > tolerance) {
-                amountInput.classList.add('border-red-500');
-                amountInput.classList.remove('border-gray-300');
-                downpaymentInfo.classList.remove('bg-blue-50', 'border-blue-200', 'text-blue-700');
-                downpaymentInfo.classList.add('bg-red-50', 'border-red-200', 'text-red-700');
-            } else {
-                amountInput.classList.remove('border-red-500');
-                amountInput.classList.add('border-gray-300');
-                downpaymentInfo.classList.remove('bg-red-50', 'border-red-200', 'text-red-700');
-                downpaymentInfo.classList.add('bg-blue-50', 'border-blue-200', 'text-blue-700');
-            }
-        } else {
-            amountInput.classList.remove('border-red-500');
-            amountInput.classList.add('border-gray-300');
+        // Downpayment validation removed to allow flexible payment updates
+        amountInput.classList.remove('border-red-500');
+        amountInput.classList.add('border-gray-300');
+        if (downpaymentInfo) {
             downpaymentInfo.classList.remove('bg-red-50', 'border-red-200', 'text-red-700');
             downpaymentInfo.classList.add('bg-blue-50', 'border-blue-200', 'text-blue-700');
         }

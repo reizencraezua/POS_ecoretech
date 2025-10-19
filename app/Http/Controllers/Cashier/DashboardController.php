@@ -24,51 +24,71 @@ class DashboardController extends Controller
         $startDate = $startDateParam ? Carbon::parse($startDateParam)->startOfDay() : null;
         $endDate = $endDateParam ? Carbon::parse($endDateParam)->endOfDay() : null;
 
+        // Base stats queries
+        $quotations_query = Quotation::query();
+        $orders_query = Order::query();
+        $deliveries_query = Delivery::query();
+        
+        // Apply date filter to stats if provided
+        if ($startDate && $endDate) {
+            $quotations_query->whereBetween('quotation_date', [$startDate, $endDate]);
+            $orders_query->whereBetween('order_date', [$startDate, $endDate]);
+            $deliveries_query->whereBetween('delivery_date', [$startDate, $endDate]);
+        }
+
         $stats = [
-            'total_quotations' => Quotation::count(),
-            'pending_quotations' => Quotation::where('status', Quotation::STATUS_PENDING)->count(),
-            'due_orders_today' => Order::where('deadline_date', now()->toDateString())->whereNotIn('order_status', [Order::STATUS_COMPLETED, Order::STATUS_CANCELLED])->count(),
-            'due_orders_soon' => Order::whereBetween('deadline_date', [now()->addDay(), now()->addDays(3)])->whereNotIn('order_status', [Order::STATUS_COMPLETED, Order::STATUS_CANCELLED])->count(),
-            'total_orders' => Order::count(),
-            'active_orders' => Order::whereNotIn('order_status', [Order::STATUS_COMPLETED, Order::STATUS_CANCELLED])->count(),
-            'total_deliveries' => Delivery::count(),
-            'pending_deliveries' => Delivery::where('status', '!=', 'Delivered')->count(),
+            'total_quotations' => $quotations_query->count(),
+            'pending_quotations' => (clone $quotations_query)->where('status', Quotation::STATUS_PENDING)->count(),
+            'due_orders_today' => (clone $orders_query)->where('deadline_date', now()->toDateString())->whereNotIn('order_status', [Order::STATUS_COMPLETED, Order::STATUS_CANCELLED])->count(),
+            'due_orders_soon' => (clone $orders_query)->whereBetween('deadline_date', [now()->addDay(), now()->addDays(3)])->whereNotIn('order_status', [Order::STATUS_COMPLETED, Order::STATUS_CANCELLED])->count(),
+            'total_orders' => $orders_query->count(),
+            'active_orders' => (clone $orders_query)->whereNotIn('order_status', [Order::STATUS_COMPLETED, Order::STATUS_CANCELLED])->count(),
+            'total_deliveries' => $deliveries_query->count(),
+            'pending_deliveries' => (clone $deliveries_query)->where('status', '!=', 'delivered')->count(),
         ];
 
         // Recent quotations
-        $recent_quotations = Quotation::with(['customer'])
-            ->orderBy('quotation_date', 'desc')
-            ->take(5)
-            ->get();
+        $recent_quotations_query = Quotation::with(['customer']);
+        if ($startDate && $endDate) {
+            $recent_quotations_query->whereBetween('quotation_date', [$startDate, $endDate]);
+        }
+        $recent_quotations = $recent_quotations_query->orderBy('quotation_date', 'desc')->take(5)->get();
 
         // Recent orders
-        $recent_orders = Order::with(['customer', 'employee'])
-            ->orderBy('order_date', 'desc')
-            ->take(5)
-            ->get();
+        $recent_orders_query = Order::with(['customer', 'employee']);
+        if ($startDate && $endDate) {
+            $recent_orders_query->whereBetween('order_date', [$startDate, $endDate]);
+        }
+        $recent_orders = $recent_orders_query->orderBy('order_date', 'desc')->take(5)->get();
 
         // Recent deliveries
-        $recent_deliveries = Delivery::with(['order.customer'])
-            ->orderBy('delivery_date', 'desc')
-            ->take(5)
-            ->get();
+        $recent_deliveries_query = Delivery::with(['order.customer']);
+        if ($startDate && $endDate) {
+            $recent_deliveries_query->whereBetween('delivery_date', [$startDate, $endDate]);
+        }
+        $recent_deliveries = $recent_deliveries_query->orderBy('delivery_date', 'desc')->take(5)->get();
 
             // Orders with pending payments
-            $pending_payments = Order::with(['customer', 'payments'])
-                ->whereNotIn('order_status', [Order::STATUS_COMPLETED, Order::STATUS_CANCELLED])
-                ->get()
+            $pending_payments_query = Order::with(['customer', 'payments'])
+                ->whereNotIn('order_status', [Order::STATUS_COMPLETED, Order::STATUS_CANCELLED]);
+            if ($startDate && $endDate) {
+                $pending_payments_query->whereBetween('order_date', [$startDate, $endDate]);
+            }
+            $pending_payments = $pending_payments_query->get()
                 ->filter(function($order) {
                     return $order->remaining_balance > 0;
                 })
                 ->take(5);
 
             // Orders due in 1-3 days
-            $due_orders = Order::with(['customer', 'employee'])
+            $due_orders_query = Order::with(['customer', 'employee'])
                 ->whereNotNull('deadline_date')
                 ->whereNotIn('order_status', [Order::STATUS_COMPLETED, Order::STATUS_CANCELLED])
-                ->whereBetween('deadline_date', [now()->addDay(), now()->addDays(3)])
-                ->orderBy('deadline_date', 'asc')
-                ->get();
+                ->whereBetween('deadline_date', [now()->addDay(), now()->addDays(3)]);
+            if ($startDate && $endDate) {
+                $due_orders_query->whereBetween('order_date', [$startDate, $endDate]);
+            }
+            $due_orders = $due_orders_query->orderBy('deadline_date', 'asc')->get();
 
             return view('cashier.dashboard', compact(
                 'stats',

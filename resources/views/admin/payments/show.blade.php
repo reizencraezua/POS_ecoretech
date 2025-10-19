@@ -46,7 +46,7 @@
                     </div>
                     @endif
                     <span class="px-3 py-1 rounded-md text-sm font-medium 
-                        @if($payment->balance > 0) bg-red-100 text-red-800 @else bg-green-100 text-green-800 @endif">
+                        @if($payment->balance > 0) text-red-800 @else text-green-800 @endif">
                         {{ $payment->balance > 0 ? 'Partial' : 'Complete' }}
                     </span>
                 </div>
@@ -158,6 +158,54 @@
                 </div>
                 <div class="p-6">
                     <p class="text-gray-700">{{ $payment->remarks }}</p>
+                </div>
+            </div>
+            @endif
+
+            <!-- Update History Section -->
+            @if($payment->histories->count() > 0)
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h3 class="text-lg font-semibold text-gray-900">Update History</h3>
+                </div>
+                <div class="p-6">
+                    <div class="space-y-4">
+                        @foreach($payment->histories->sortByDesc('created_at') as $history)
+                        <div class="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg">
+                            <div class="flex-shrink-0">
+                                <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                                    <i class="fas fa-history text-blue-600 text-sm"></i>
+                                </div>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center justify-between">
+                                    <p class="text-sm font-medium text-gray-900">
+                                        @if($history->action === 'created')
+                                            {{ $history->description }}
+                                        @elseif($history->action === 'updated' && $history->old_values && $history->new_values)
+                                            @php
+                                                $changes = [];
+                                                foreach($history->new_values as $field => $newValue) {
+                                                    $oldValue = $history->old_values[$field] ?? null;
+                                                    if($oldValue !== $newValue) {
+                                                        $changes[] = ucfirst(str_replace('_', ' ', $field)) . ": '" . $oldValue . "' -------- '" . $newValue . "'";
+                                                    }
+                                                }
+                                            @endphp
+                                            Payment was updated:<br><br>{{ implode('<br>', $changes) }}
+                                        @else
+                                            {{ $history->description }}
+                                        @endif
+                                    </p>
+                                    <p class="text-xs text-gray-500">{{ $history->created_at->format('M d, Y g:i A') }}</p>
+                                </div>
+                                <p class="text-xs text-gray-600 mt-1">
+                                    Edited By: {{ $history->updatedBy ? $history->updatedBy->name : 'System' }}
+                                </p>
+                            </div>
+                        </div>
+                        @endforeach
+                    </div>
                 </div>
             </div>
             @endif

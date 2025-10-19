@@ -6,26 +6,31 @@
 
 @section('header-actions')
 <div class="flex items-center gap-6">
-    <!-- Monthly Sales Display -->
-    
     <!-- Date Filter Form -->
-    <form method="GET" action="{{ route('admin.dashboard') }}" class="flex items-end gap-3">
+    <form method="GET" action="{{ route('admin.dashboard') }}" id="dateFilterForm" class="flex items-end gap-3">
         <div>
             <label for="start_date" class="block text-xs font-medium text-gray-600 mb-1">Start date</label>
             <input type="date" id="start_date" name="start_date" value="{{ request('start_date') }}"
-                   class="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon">
+                   class="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon"
+                   onchange="autoFilter()">
         </div>
         <div>
             <label for="end_date" class="block text-xs font-medium text-gray-600 mb-1">End date</label>
             <input type="date" id="end_date" name="end_date" value="{{ request('end_date') }}"
-                   class="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon">
+                   class="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon"
+                   onchange="autoFilter()">
         </div>
         <div class="flex items-center gap-2">
-            <button type="submit" class="bg-maroon hover:bg-maroon-dark text-white px-4 py-2 rounded-md">Filter</button>
             <a href="{{ route('admin.dashboard') }}" class="px-3 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">Reset</a>
         </div>
     </form>
 </div>
+
+<script>
+function autoFilter() {
+    document.getElementById('dateFilterForm').submit();
+}
+</script>
 @endsection
 
 @section('content')
@@ -35,22 +40,29 @@
 
         <div class="bg-white rounded-lg shadow p-6 border-l-4 border-green-500 hover:shadow-lg transition-shadow" x-data="{ salesVisible: true }">
             <div class="flex items-center justify-between">
-                <div>
-                     <div class="flex items-center justify-between mb-2">
-                         <p class="text-sm font-medium text-gray-600">
-                             @if(request('start_date') && request('end_date'))
-                                 Sales ({{ \Carbon\Carbon::parse(request('start_date'))->format('M d') }} - {{ \Carbon\Carbon::parse(request('end_date'))->format('M d, Y') }})
-                             @else
-                                 Total Sales (All Time)
-                             @endif
-                         </p>
-                         <button @click="salesVisible = !salesVisible" 
-                                 class="p-1 rounded-full hover:bg-gray-100 transition-colors"
-                                 :title="salesVisible ? 'Hide sales amount' : 'Show sales amount'">
-                             <i class="fas text-gray-500 transition-colors" 
-                                :class="salesVisible ? 'fa-eye-slash' : 'fa-eye'"></i>
-                         </button>
-                     </div>
+                <div class="flex items-center space-x-4">
+                    <div class="p-3 bg-green-500 bg-opacity-10 rounded-full">
+                        <i class="fas fa-chart-line text-green-500 text-xl"></i>
+                    </div>
+                    <div>
+                         <div class="flex items-center justify-between mb-2">
+                             <p class="text-sm font-medium text-gray-600">
+                                 @if(request('start_date') && request('end_date'))
+                                     Sales ({{ \Carbon\Carbon::parse(request('start_date'))->format('M d') }} - {{ \Carbon\Carbon::parse(request('end_date'))->format('M d, Y') }})
+                                 @else
+                                     Total Sales
+                                 @endif
+                             </p>
+                             <button @click="salesVisible = !salesVisible" 
+                                     class="p-1 rounded-full hover:bg-gray-100 transition-colors"
+                                     :title="salesVisible ? 'Hide sales amount' : 'Show sales amount'">
+                                 <i class="fas text-gray-500 transition-colors" 
+                                    :class="salesVisible ? 'fa-eye-slash' : 'fa-eye'"></i>
+                             </button>
+                         </div>
+                    </div>
+                </div>
+                <div class="text-right">
                      <div x-show="salesVisible" x-transition>
                          <p class="text-3xl font-bold text-gray-900">₱{{ number_format($stats['monthly_sales'], 2) }}</p>
                      </div>
@@ -58,37 +70,38 @@
                          <p class="text-3xl font-bold text-gray-400">••••••</p>
                      </div>
                 </div>
-                <div class="p-3 bg-green-500 bg-opacity-10 rounded-full">
-                    <i class="fas fa-chart-line text-green-500 text-xl"></i>
-                </div>
             </div>
         </div>
 
 
         <a href="{{ route('admin.inventories.index') }}" class="bg-white rounded-lg shadow p-6 border-l-4 border-purple-500 hover:shadow-lg transition-shadow">
             <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm font-medium text-gray-600">Inventory Items</p>
-                    <p class="text-3xl font-bold text-gray-900">{{ number_format($stats['total_inventory_items']) }}</p>
-                    @if($stats['critical_inventory_items'] > 0)
-                        <p class="text-xs text-red-600 mt-1">
-                            <i class="fas fa-exclamation-triangle mr-1"></i>
-                            {{ $stats['critical_inventory_items'] }} critical
-                        </p>
-                    @elseif($stats['low_stock_items'] > 0)
-                        <p class="text-xs text-yellow-600 mt-1">
-                            <i class="fas fa-exclamation-circle mr-1"></i>
-                            {{ $stats['low_stock_items'] }} low stock
-                        </p>
-                    @else
-                        <p class="text-xs text-green-600 mt-1">
-                            <i class="fas fa-check-circle mr-1"></i>
-                            All items in stock
-                        </p>
-                    @endif
+                <div class="flex items-center space-x-4">
+                    <div class="p-3 bg-purple-500 bg-opacity-10 rounded-full">
+                        <i class="fas fa-boxes text-purple-500 text-xl"></i>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-gray-600">Inventory Items</p>
+                        @if($stats['critical_inventory_items'] > 0)
+                            <p class="text-xs text-red-600 mt-1">
+                                <i class="fas fa-exclamation-triangle mr-1"></i>
+                                {{ $stats['critical_inventory_items'] }} critical
+                            </p>
+                        @elseif($stats['low_stock_items'] > 0)
+                            <p class="text-xs text-yellow-600 mt-1">
+                                <i class="fas fa-exclamation-circle mr-1"></i>
+                                {{ $stats['low_stock_items'] }} low stock
+                            </p>
+                        @else
+                            <p class="text-xs text-green-600 mt-1">
+                                <i class="fas fa-check-circle mr-1"></i>
+                                All items in stock
+                            </p>
+                        @endif
+                    </div>
                 </div>
-                <div class="p-3 bg-purple-500 bg-opacity-10 rounded-full">
-                    <i class="fas fa-boxes text-purple-500 text-xl"></i>
+                <div class="text-right">
+                    <p class="text-3xl font-bold text-gray-900">{{ number_format($stats['total_inventory_items']) }}</p>
                 </div>
             </div>
         </a>
@@ -96,23 +109,27 @@
         <!-- Due Today Card -->
         <a href="{{ route('admin.orders.index', ['status' => 'due_today']) }}" class="bg-white rounded-lg shadow p-6 border-l-4 border-orange-500 hover:shadow-lg transition-shadow">
             <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm font-medium text-gray-600">Due Today</p>
-                    <p class="text-3xl font-bold text-gray-900">{{ $due_today_orders->count() }}</p>
-                    @if($due_today_orders->count() > 0)
-                        <p class="text-xs text-orange-600 mt-1">
-                            <i class="fas fa-clock mr-1"></i>
-                            {{ $due_today_orders->count() }} orders due today
-                        </p>
-                    @else
-                        <p class="text-xs text-green-600 mt-1">
-                            <i class="fas fa-check-circle mr-1"></i>
-                            No orders due today
-                        </p>
-                    @endif
+                <div class="flex items-center space-x-4">
+                    <div class="p-3 bg-orange-500 bg-opacity-10 rounded-full">
+                        <i class="fas fa-calendar-day text-orange-500 text-xl"></i>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-gray-600">Due Today</p>
+                        @if($due_today_orders->count() > 0)
+                            <p class="text-xs text-orange-600 mt-1">
+                                <i class="fas fa-clock mr-1"></i>
+                                {{ $due_today_orders->count() }} orders due today
+                            </p>
+                        @else
+                            <p class="text-xs text-green-600 mt-1">
+                                <i class="fas fa-check-circle mr-1"></i>
+                                No orders due today
+                            </p>
+                        @endif
+                    </div>
                 </div>
-                <div class="p-3 bg-orange-500 bg-opacity-10 rounded-full">
-                    <i class="fas fa-calendar-day text-orange-500 text-xl"></i>
+                <div class="text-right">
+                    <p class="text-3xl font-bold text-gray-900">{{ $due_today_orders->count() }}</p>
                 </div>
             </div>
         </a>
@@ -123,12 +140,18 @@
         <!-- Monthly Sales Chart -->
         <div class="lg:col-span-2 bg-white rounded-lg shadow">
             <div class="px-6 py-4 border-b border-gray-200">
-                <h3 class="text-lg font-semibold text-gray-900">Sales Overview</h3>
+                <h3 class="text-lg font-semibold text-gray-900">
+                    @if(request('start_date') && request('end_date'))
+                        Daily Sales Overview
+                    @else
+                        Monthly Sales Overview
+                    @endif
+                </h3>
                 <p class="text-sm text-gray-600">
                     @if(request('start_date') && request('end_date'))
-                        Sales performance from {{ \Carbon\Carbon::parse(request('start_date'))->format('M d, Y') }} to {{ \Carbon\Carbon::parse(request('end_date'))->format('M d, Y') }}
+                        Daily sales performance from {{ \Carbon\Carbon::parse(request('start_date'))->format('M d, Y') }} to {{ \Carbon\Carbon::parse(request('end_date'))->format('M d, Y') }}
                     @else
-                        Sales performance for the last 6 months
+                        Monthly sales performance for the last 6 months
                     @endif
                 </p>
             </div>
@@ -207,25 +230,25 @@
                                         <span class="px-2 py-1 text-xs font-medium rounded-full
                                                     @switch($order->order_status)
                                                         @case('On-Process')
-                                                            bg-blue-100 text-blue-800
+                                                           text-blue-800
                                                             @break
                                                         @case('Designing')
-                                                            bg-purple-100 text-purple-800
+                                                            text-purple-800
                                                             @break
                                                         @case('Production')
-                                                            bg-yellow-100 text-yellow-800
+                                                            text-yellow-800
                                                             @break
                                                         @case('For Releasing')
-                                                            bg-orange-100 text-orange-800
+                                                            text-orange-800
                                                             @break
                                                         @case('Completed')
-                                                            bg-green-100 text-green-800
+                                                            text-green-800
                                                             @break
                                                         @case('Cancelled')
-                                                            bg-red-100 text-red-800
+                                                            text-red-800
                                                             @break
                                                         @default
-                                                            bg-gray-100 text-gray-800
+                                                            text-gray-800
                                                     @endswitch
                                                 ">
                                             {{ $order->order_status }}
@@ -303,169 +326,9 @@
             </div>
         </div>
 
-        <!-- Due Orders (1-3 days) -->
-        @if($due_orders->count() > 0)
-        <div class="bg-white rounded-lg shadow">
-            <div class="px-6 py-4 border-b border-gray-200">
-                <div class="flex items-center justify-between">
-                    <h3 class="text-lg font-semibold text-gray-900">Orders Due Soon (1-3 days)</h3>
-                    <a href="{{ route('admin.orders.index') }}" class="text-maroon hover:text-maroon-dark text-sm font-medium transition-colors">
-                        View All Orders
-                    </a>
-                </div>
-            </div>
-            <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gray-50">
-                        <tr>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order ID</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Due Date</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody class="bg-white divide-y divide-gray-200">
-                        @foreach($due_orders as $order)
-                        <tr>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                {{ $order->order_id }}
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                {{ $order->customer->customer_firstname }} {{ $order->customer->customer_lastname }}
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-                                    @if($order->deadline_date->isToday()) bg-red-100 text-red-800
-                                    @elseif($order->deadline_date->isTomorrow()) bg-yellow-100 text-yellow-800
-                                    @else bg-orange-100 text-orange-800 @endif">
-                                    {{ $order->deadline_date->format('M d, Y') }}
-                                    @if($order->deadline_date->isToday())
-                                        (Today)
-                                    @elseif($order->deadline_date->isTomorrow())
-                                        (Tomorrow)
-                                    @else
-                                        ({{ $order->deadline_date->diffInDays(now()) }} days)
-                                    @endif
-                                </span>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-                                    @if($order->order_status === 'On-Process') bg-blue-100 text-blue-800
-                                    @elseif($order->order_status === 'Designing') bg-purple-100 text-purple-800
-                                    @elseif($order->order_status === 'Production') bg-yellow-100 text-yellow-800
-                                    @elseif($order->order_status === 'For Releasing') bg-green-100 text-green-800
-                                    @else bg-gray-100 text-gray-800 @endif">
-                                    {{ $order->order_status }}
-                                </span>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                <a href="{{ route('admin.orders.show', $order) }}" class="text-maroon hover:text-maroon-dark">
-                                    View Details
-                                </a>
-                            </td>
-                        </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-            </div>
-        </div>
-        @endif
+        
     </div>
 
-    <!-- Quick Actions and Recent Activity -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <!-- Quick Actions -->
-        <!-- <div class="bg-white rounded-lg shadow p-6">
-            <h3 class="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
-            <div class="grid grid-cols-2 gap-4">
-                <a href="{{ route('admin.customers.index') }}" class="flex flex-col items-center p-4 border-2 border-dashed border-gray-200 rounded-lg hover:bg-gray-50 hover:border-maroon transition-all group">
-                    <i class="fas fa-user-plus text-2xl text-maroon mb-2 group-hover:scale-110 transition-transform"></i>
-                    <span class="text-sm font-medium text-gray-700">Add Customer</span>
-                </a>
-                <a href="{{ route('admin.quotations.create') }}" class="flex flex-col items-center p-4 border-2 border-dashed border-gray-200 rounded-lg hover:bg-gray-50 hover:border-blue-500 transition-all group">
-                    <i class="fas fa-plus-circle text-2xl text-blue-500 mb-2 group-hover:scale-110 transition-transform"></i>
-                    <span class="text-sm font-medium text-gray-700">New Quotation</span>
-                </a>
-                <a href="{{ route('admin.orders.create') }}" class="flex flex-col items-center p-4 border-2 border-dashed border-gray-200 rounded-lg hover:bg-gray-50 hover:border-green-500 transition-all group">
-                    <i class="fas fa-plus-circle text-2xl text-green-500 mb-2 group-hover:scale-110 transition-transform"></i>
-                    <span class="text-sm font-medium text-gray-700">Create Order</span>
-                </a>
-            </div>
-        </div> -->
-
-        <!-- Today's Schedule -->
-        <!-- <div class="bg-white rounded-lg shadow">
-            <div class="px-6 py-4 border-b border-gray-200">
-                <h3 class="text-lg font-semibold text-gray-900">Today's Schedule</h3>
-                <p class="text-sm text-gray-600">{{ now()->format('l, F j, Y') }}</p>
-            </div>
-            <div class="p-6">
-                <div class="space-y-3">
-                    <div class="flex items-center space-x-3 p-3 bg-yellow-50 rounded-lg">
-                        <div class="w-2 h-2 bg-yellow-500 rounded-full"></div>
-                        <div class="flex-1">
-                            <p class="text-sm font-medium text-gray-900">Design Review</p>
-                            <p class="text-xs text-gray-600">Wedding Invitations - 10:00 AM</p>
-                        </div>
-                    </div>
-                    <div class="flex items-center space-x-3 p-3 bg-blue-50 rounded-lg">
-                        <div class="w-2 h-2 bg-blue-500 rounded-full"></div>
-                        <div class="flex-1">
-                            <p class="text-sm font-medium text-gray-900">Production Deadline</p>
-                            <p class="text-xs text-gray-600">Business Cards - 2:00 PM</p>
-                        </div>
-                    </div>
-                    <div class="flex items-center space-x-3 p-3 bg-green-50 rounded-lg">
-                        <div class="w-2 h-2 bg-green-500 rounded-full"></div>
-                        <div class="flex-1">
-                            <p class="text-sm font-medium text-gray-900">Delivery Schedule</p>
-                            <p class="text-xs text-gray-600">Corporate Brochures - 4:00 PM</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div> -->
-
-        <!-- System Status -->
-        <!-- <div class="bg-white rounded-lg shadow">
-            <div class="px-6 py-4 border-b border-gray-200">
-                <h3 class="text-lg font-semibold text-gray-900">System Status</h3>
-                <p class="text-sm text-gray-600">Current system health</p>
-            </div>
-            <div class="p-6">
-                <div class="space-y-4">
-                    <div class="flex items-center justify-between">
-                        <span class="text-sm text-gray-600">Database</span>
-                        <div class="flex items-center">
-                            <div class="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
-                            <span class="text-sm font-medium text-green-600">Online</span>
-                        </div>
-                    </div>
-                    <div class="flex items-center justify-between">
-                        <span class="text-sm text-gray-600">Storage</span>
-                        <div class="flex items-center">
-                            <div class="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
-                            <span class="text-sm font-medium text-green-600">75% Available</span>
-                        </div>
-                    </div>
-                    <div class="flex items-center justify-between">
-                        <span class="text-sm text-gray-600">Backup</span>
-                        <div class="flex items-center">
-                            <div class="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
-                            <span class="text-sm font-medium text-green-600">Last: Today</span>
-                        </div>
-                    </div>
-                    <div class="flex items-center justify-between">
-                        <span class="text-sm text-gray-600">Updates</span>
-                        <div class="flex items-center">
-                            <div class="w-2 h-2 bg-yellow-500 rounded-full mr-2"></div>
-                            <span class="text-sm font-medium text-yellow-600">1 Available</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div> -->
     </div>
 </div>
 
@@ -488,7 +351,11 @@
                     backgroundColor: 'rgba(128, 0, 32, 0.1)',
                     borderWidth: 2,
                     fill: true,
-                    tension: 0.4
+                    tension: 0.4,
+                    pointBackgroundColor: '#800020',
+                    pointBorderColor: '#800020',
+                    pointRadius: 4,
+                    pointHoverRadius: 6
                 }]
             },
             options: {
@@ -497,6 +364,13 @@
                 plugins: {
                     legend: {
                         display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return 'Sales: ₱' + context.parsed.y.toLocaleString();
+                            }
+                        }
                     }
                 },
                 scales: {
@@ -506,6 +380,12 @@
                             callback: function(value) {
                                 return '₱' + value.toLocaleString();
                             }
+                        }
+                    },
+                    x: {
+                        ticks: {
+                            maxRotation: 45,
+                            minRotation: 0
                         }
                     }
                 }

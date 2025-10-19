@@ -25,34 +25,18 @@
                 {{ (isset($showArchived) && $showArchived) ? 'Show Active' : 'View Archives' }}
             </a>
             
-            <form method="GET" class="flex items-center space-x-2" id="searchForm">
-                <div class="relative">
-                    <input type="text" 
-                           id="instantSearchInput" 
-                           data-instant-search="true"
-                           data-container="suppliersTableContainer"
-                           data-loading="searchLoading"
-                           value="{{ request('search') }}" 
-                           placeholder="Search suppliers..." 
-                           class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-maroon focus:border-maroon">
-                    <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-                    <div id="searchLoading" class="absolute right-3 top-1/2 transform -translate-y-1/2 hidden">
-                        <i class="fas fa-spinner fa-spin text-gray-400"></i>
-                    </div>
-                </div>
-                @if(request('search'))
-                    <a href="{{ route('admin.suppliers.index') }}" class="bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-lg transition-colors">
-                        <i class="fas fa-times"></i>
-                    </a>
-                @endif
-            </form>
+            <div class="relative">
+                <input type="text" id="searchInput" placeholder="Search suppliers..." 
+                       class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-maroon focus:border-maroon w-80">
+                <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+            </div>
         </div>
     </div>
 
     <!-- Suppliers Table -->
-    <div class="bg-white rounded-lg shadow overflow-hidden">
+    <div id="suppliersTableContainer" class="bg-white rounded-lg shadow overflow-hidden">
         <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
+            <table id="suppliersTable" class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">
                     <tr>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Supplier</th>
@@ -369,5 +353,26 @@
 <style>
 [x-cloak] { display: none !important; }
 </style>
-<script src="{{ asset('js/instant-search.js') }}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('searchInput');
+    const suppliersTable = document.getElementById('suppliersTable');
+    
+    if (searchInput && suppliersTable) {
+        searchInput.addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase().trim();
+            const rows = suppliersTable.querySelectorAll('tbody tr');
+            
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                if (text.includes(searchTerm)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        });
+    }
+});
+</script>
 @endsection

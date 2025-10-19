@@ -5,11 +5,14 @@ namespace App\Http\Controllers\Cashier;
 use App\Http\Controllers\Controller;
 use App\Models\Payment;
 use App\Models\Order;
+use App\Models\Log;
+use App\Traits\LogsActivity;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Log as LaravelLog;
 
 class PaymentController extends Controller
 {
+    use LogsActivity;
 
     /**
      * Display a listing of the resource.
@@ -94,9 +97,9 @@ class PaymentController extends Controller
                 'payment_method' => 'required|in:Cash,Check,GCash,Bank Transfer,Credit Card',
                 'amount_paid' => 'required|numeric|min:0.01',
                 'payment_date' => 'required|date',
-                'payment_term' => 'nullable|in:Downpayment,Initial,Partial,Full',
+                'payment_term' => 'nullable|in:Full Payment,Partial Payment,Downpayment,Initial',
                 'reference_number' => 'nullable|string|max:100',
-                'notes' => 'nullable|string|max:500',
+                'remarks' => 'nullable|string|max:500',
             ]);
 
             // Check if payment amount exceeds remaining balance
@@ -107,28 +110,47 @@ class PaymentController extends Controller
                     ->withInput();
             }
 
+            // Generate receipt number
+            $receiptNumber = 'RCPT-' . date('YmdHis') . '-' . $validated['order_id'];
+            
+            // Calculate change and balance
+            $change = 0; // For now, no change calculation
+            $balance = $order->remaining_balance - $validated['amount_paid'];
+            
             // Create payment
             $payment = Payment::create([
                 'payment_id' => Payment::generatePaymentId(),
+                'receipt_number' => $receiptNumber,
                 'order_id' => $validated['order_id'],
                 'payment_method' => $validated['payment_method'],
                 'amount_paid' => $validated['amount_paid'],
                 'payment_date' => $validated['payment_date'],
                 'payment_term' => $validated['payment_term'],
                 'reference_number' => $validated['reference_number'],
-                'remarks' => $validated['notes'],
+                'remarks' => $validated['remarks'],
+                'change' => $change,
+                'balance' => $balance,
                 'created_by' => auth('web')->id() ?? App\Models\User::first()->id,
+                'received_by' => auth('web')->id() ?? App\Models\User::first()->id,
             ]);
+
+            // Log the payment creation
+            $this->logCreated(
+                Log::TYPE_PAYMENT,
+                $payment->payment_id,
+                'Payment - ' . $payment->receipt_number,
+                $payment->toArray()
+            );
 
             // Check if order is fully paid
             if ($order->remaining_balance <= 0) {
                 $order->update(['order_status' => 'For Releasing']);
             }
 
-            return redirect()->route('cashier.payments.index')
+            return redirect()->route('cashier.orders.show', $order->order_id)
                 ->with('success', 'Payment recorded successfully.');
         } catch (\Exception $e) {
-            Log::error('Error creating payment: ' . $e->getMessage());
+            LaravelLog::error('Error creating payment: ' . $e->getMessage());
             return redirect()->back()
                 ->with('error', 'Failed to record payment. Please try again.')
                 ->withInput();
@@ -194,6 +216,9 @@ class PaymentController extends Controller
                     ->withInput();
             }
 
+            // Store original data for logging
+            $originalData = $payment->toArray();
+            
             // Update payment
             $payment->update([
                 'order_id' => $validated['order_id'],
@@ -205,6 +230,15 @@ class PaymentController extends Controller
                 'remarks' => $validated['remarks'],
             ]);
 
+            // Log the payment update
+            $this->logUpdated(
+                Log::TYPE_PAYMENT,
+                $payment->payment_id,
+                'Payment - ' . $payment->receipt_number,
+                $originalData,
+                $payment->toArray()
+            );
+
             // Check if order is fully paid
             if ($order->remaining_balance <= 0) {
                 $order->update(['order_status' => 'For Releasing']);
@@ -213,7 +247,7 @@ class PaymentController extends Controller
             return redirect()->route('cashier.payments.index')
                 ->with('success', 'Payment updated successfully.');
         } catch (\Exception $e) {
-            Log::error('Error updating payment: ' . $e->getMessage());
+            LaravelLog::error('Error updating payment: ' . $e->getMessage());
             return redirect()->back()
                 ->with('error', 'Failed to update payment. Please try again.')
                 ->withInput();
@@ -350,11 +384,19 @@ class PaymentController extends Controller
     public function archive(Payment $payment)
     {
         try {
+            // Log the payment deletion before archiving
+            $this->logDeleted(
+                Log::TYPE_PAYMENT,
+                $payment->payment_id,
+                'Payment - ' . $payment->receipt_number,
+                $payment->toArray()
+            );
+            
             $payment->delete();
             return redirect()->route('cashier.payments.index')
                 ->with('success', 'Payment archived successfully.');
         } catch (\Exception $e) {
-            Log::error('Error archiving payment: ' . $e->getMessage());
+            LaravelLog::error('Error archiving payment: ' . $e->getMessage());
             return redirect()->back()
                 ->with('error', 'Failed to archive payment. Please try again.');
         }
@@ -371,7 +413,7 @@ class PaymentController extends Controller
             return redirect()->route('cashier.payments.index')
                 ->with('success', 'Payment restored successfully.');
         } catch (\Exception $e) {
-            Log::error('Error restoring payment: ' . $e->getMessage());
+            LaravelLog::error('Error restoring payment: ' . $e->getMessage());
             return redirect()->back()
                 ->with('error', 'Failed to restore payment. Please try again.');
         }

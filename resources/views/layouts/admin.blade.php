@@ -44,70 +44,61 @@
 </head>
 <body class="bg-gray-100 font-sans">
 <div class="flex h-screen" x-data="{
-        sidebarOpen: true,
+        sidebarOpen: false,
         mobileOpen: false,
-        toggleSidebar() { this.sidebarOpen = !this.sidebarOpen; localStorage.setItem('ecore_sidebar_open', this.sidebarOpen ? '1' : '0'); },
-        init() { const v = localStorage.getItem('ecore_sidebar_open'); if (v !== null) { this.sidebarOpen = v === '1'; } }
-    }" x-init="init()">
-        <!-- Sidebar -->
-        <div :class="sidebarOpen ? 'w-64' : 'w-16'" class="sidebar-gradient shadow-lg flex-shrink-0 relative" style="transition: width 0.3s ease;">
+        showSidebar() { this.sidebarOpen = true; },
+        hideSidebar() { this.sidebarOpen = false; }
+    }">
+       <!-- Sidebar -->
+       <div class="sidebar-gradient shadow-lg transition-all duration-300 ease-in-out" 
+             :class="sidebarOpen ? 'w-64' : 'w-16'"
+             @mouseenter="showSidebar()"
+             @mouseleave="hideSidebar()">
             <div class="flex flex-col h-full">
-                <!-- Brand / Toggle -->
-                <div :class="sidebarOpen ? 'p-4' : 'p-3'" class="border-b border-gray-200">
-                    <div class="flex items-center justify-center">
-                        <div :class="sidebarOpen ? 'w-16 h-16' : 'w-12 h-12'" class="bg-maroon flex items-center justify-center overflow-hidden">
+                <!-- Logo -->
+                <div class="transition-all duration-300 ease-in-out" :class="sidebarOpen ? 'p-4' : 'p-3'">
+                    <div class="flex items-center transition-all duration-300 ease-in-out" :class="sidebarOpen ? 'justify-between' : 'flex-col'">
+                        <a href="{{ route('admin.dashboard') }}" class="flex items-center justify-center transition-all duration-300 ease-in-out" 
+                           :class="sidebarOpen ? 'mb-0' : 'mb-3'">
                             <img src="{{ asset('images/logo/ecoretech.png') }}" 
                                  alt="Ecoretech Logo" 
-                                 class="w-full h-full object-cover">
+                                 class="w-auto object-contain transition-all duration-300 ease-in-out"
+                                 :class="sidebarOpen ? 'h-24' : 'h-12'">
+                        </a>
+                        <div class="flex items-center gap-2">
+                            <button x-show="sidebarOpen" class="md:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors" @click="mobileOpen = !mobileOpen" title="Open menu">
+                                <i class="fas fa-ellipsis-vertical text-gray-600"></i>
+                            </button>
                         </div>
-                        <div x-show="sidebarOpen" class="ml-3">
-                            <h1 class="text-lg font-bold text-maroon">Ecoretech</h1>
-                            <p class="text-xs text-gray-500">Admin Panel</p>
-                        </div>
-                    </div>
-                    <div :class="sidebarOpen ? 'mt-4 flex items-center gap-2' : 'mt-3 flex justify-center'" >
-                        <button
-                            @click="toggleSidebar()"
-                            class="p-2 rounded-lg hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-maroon"
-                            :aria-pressed="sidebarOpen.toString()"
-                            :aria-label="sidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'"
-                            :title="sidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'"
-                        >
-                            <i class="fas text-gray-600"
-                               :class="sidebarOpen ? 'fa-angles-left' : 'fa-angles-right'"></i>
-                        </button>
-                        <button x-show="sidebarOpen" class="md:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors" @click="mobileOpen = !mobileOpen" title="Open menu">
-                            <i class="fas fa-ellipsis-vertical text-gray-600"></i>
-                        </button>
                     </div>
                 </div>
 
                 <!-- Navigation Menu -->
-                <nav :class="sidebarOpen ? 'p-4' : 'p-2'" class="flex-1 overflow-y-auto">
-                    <div class="space-y-6">
-                        <div>
-                            <p x-show="sidebarOpen" class="px-2 text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2">Overview</p>
-                            <ul class="space-y-1">
-                                <li class="relative sidebar-item">
+                <nav class="flex-1 transition-all duration-300 ease-in-out" :class="sidebarOpen ? 'p-4' : 'p-2'">
+                    <div class="space-y-4 transition-all duration-300 ease-in-out">
+                        <div class="transition-all duration-300 ease-in-out">
+                            <p x-show="sidebarOpen" class="px-2 text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2 transition-all duration-300 ease-in-out">Overview</p>
+                            <ul class="space-y-1 transition-all duration-300 ease-in-out">
+                                <li class="relative sidebar-item transition-all duration-300 ease-in-out">
                                     <a href="{{ route('admin.dashboard') }}" 
                                        :class="sidebarOpen ? 'sidebar-link' : 'sidebar-link-collapsed'"
-                                       class="{{ request()->routeIs('admin.dashboard') ? 'sidebar-active' : '' }}">
-                                        <i class="fas fa-gauge sidebar-icon"></i>
-                                        <span x-show="sidebarOpen">Dashboard</span>
+                                       class="{{ request()->routeIs('admin.dashboard') ? 'sidebar-active' : '' }} transition-all duration-300 ease-in-out">
+                                        <i class="fas fa-gauge sidebar-icon transition-all duration-300 ease-in-out"></i>
+                                        <span x-show="sidebarOpen" class="transition-all duration-300 ease-in-out">Dashboard</span>
                                     </a>
-                                    <span x-show="!sidebarOpen" class="sidebar-tooltip">Dashboard</span>
+                                    <span x-show="!sidebarOpen" class="sidebar-tooltip transition-all duration-300 ease-in-out">Dashboard</span>
                                 </li>
                             </ul>
                         </div>
 
                         <!-- Transactions Section -->
-                        <div x-data="{ transactionsOpen: {{ request()->routeIs('admin.quotations.*') || request()->routeIs('admin.orders.*') || request()->routeIs('admin.payments.*') || request()->routeIs('admin.deliveries.*') ? 'true' : 'false' }} }">
-                            <button @click.stop="transactionsOpen = !transactionsOpen" class="w-full flex items-center justify-between px-2 py-2 text-xs font-semibold uppercase tracking-wider text-gray-400 hover:text-gray-600 transition-colors">
-                                <span x-show="sidebarOpen">Transactions</span>
-                                <i x-show="sidebarOpen" class="fas fa-chevron-down text-xs" :class="transactionsOpen ? 'rotate-180' : ''"></i>
+                        <div x-data="{ transactionsOpen: {{ request()->routeIs('admin.quotations.*') || request()->routeIs('admin.orders.*') || request()->routeIs('admin.payments.*') || request()->routeIs('admin.deliveries.*') ? 'true' : 'false' }} }" class="transition-all duration-300 ease-in-out">
+                            <button @click.stop="transactionsOpen = !transactionsOpen" class="w-full flex items-center justify-between px-2 py-2 text-xs font-semibold uppercase tracking-wider text-gray-400 hover:text-gray-600 transition-all duration-300 ease-in-out">
+                                <span x-show="sidebarOpen" class="transition-all duration-300 ease-in-out">Transactions</span>
+                                <i x-show="sidebarOpen" class="fas fa-chevron-down text-xs transition-all duration-300 ease-in-out" :class="transactionsOpen ? 'rotate-180' : ''"></i>
                             </button>
-                            <div x-show="transactionsOpen" x-transition class="mt-2">
-                                <ul class="space-y-1">
+                            <div x-show="transactionsOpen" x-transition class="mt-2 transition-all duration-300 ease-in-out">
+                                <ul class="space-y-1 transition-all duration-300 ease-in-out">
                                     <li class="relative sidebar-item">
                                         <a href="{{ route('admin.quotations.index') }}" class="sidebar-link {{ request()->routeIs('admin.quotations.*') ? 'sidebar-active' : '' }}">
                                             <i class="fas fa-file-lines sidebar-icon"></i>
@@ -221,9 +212,9 @@
                         </div>
 
                         <!-- Settings & Reports Section -->
-                        <div x-data="{ settingsOpen: {{ request()->routeIs('admin.discount-rules.*') ? 'true' : 'false' }} }">
+                        <div x-data="{ settingsOpen: {{ request()->routeIs('admin.discount-rules.*') || request()->routeIs('admin.logs.*') ? 'true' : 'false' }} }">
                             <button @click.stop="settingsOpen = !settingsOpen" class="w-full flex items-center justify-between px-2 py-2 text-xs font-semibold uppercase tracking-wider text-gray-400 hover:text-gray-600 transition-colors">
-                                <span x-show="sidebarOpen">Settings</span>
+                                <span x-show="sidebarOpen">Settings & Reports</span>
                                 <i x-show="sidebarOpen" class="fas fa-chevron-down text-xs" :class="settingsOpen ? 'rotate-180' : ''"></i>
                             </button>
                             <div x-show="settingsOpen" x-transition class="mt-2">
@@ -235,6 +226,13 @@
                                         </a>
                                         <span x-show="!sidebarOpen" class="sidebar-tooltip">Discount Rules</span>
                                     </li>
+                                    <li class="relative sidebar-item">
+                                        <a href="{{ route('admin.logs.index') }}" class="sidebar-link {{ request()->routeIs('admin.logs.*') ? 'sidebar-active' : '' }}">
+                                            <i class="fas fa-history sidebar-icon"></i>
+                                            <span x-show="sidebarOpen">Transaction Logs</span>
+                                        </a>
+                                        <span x-show="!sidebarOpen" class="sidebar-tooltip">Transaction Logs</span>
+                                    </li>
                                 </ul>
                             </div>
                         </div>
@@ -242,24 +240,25 @@
                 </nav>
 
                 <!-- User Section -->
-                <div :class="sidebarOpen ? 'p-4' : 'p-2'" class="border-t border-gray-200" x-data="{ userMenuOpen: false }">
-                    <div class="relative">
-                        <button @click.stop="userMenuOpen = !userMenuOpen" 
-                                :class="sidebarOpen ? 'flex items-center w-full p-2' : 'flex items-center justify-center w-full p-2'"
-                                class="rounded-lg hover:bg-gray-100 transition-colors">
-                            <div :class="sidebarOpen ? 'w-8 h-8' : 'w-10 h-10'" class="bg-maroon rounded-full flex items-center justify-center text-white"
-                                 :class="sidebarOpen ? 'text-sm' : 'text-base'">
+                <div class="border-t border-gray-200 transition-all duration-300 ease-in-out" :class="sidebarOpen ? 'p-4' : 'p-2'" x-data="{ userMenuOpen: false }">
+                    <div class="relative transition-all duration-300 ease-in-out">
+                        <button x-show="sidebarOpen" @click.stop="userMenuOpen = !userMenuOpen" 
+                                class="flex items-center w-full p-2 rounded-lg hover:bg-gray-100 transition-all duration-300 ease-in-out">
+                            <div class="w-8 h-8 bg-maroon rounded-full flex items-center justify-center text-white text-sm transition-all duration-300 ease-in-out">
                                 {{ substr(Auth::user()->name, 0, 1) }}
                             </div>
-                            <div x-show="sidebarOpen" class="ml-3 flex-1 text-left">
-                                <p class="text-sm font-medium text-gray-900">{{ Auth::user()->name }}</p>
-                                <p class="text-xs text-gray-500">Administrator</p>
+                            <div class="ml-3 flex-1 text-left transition-all duration-300 ease-in-out">
+                                <p class="text-sm font-medium text-gray-900 transition-all duration-300 ease-in-out">{{ Auth::user()->name }}</p>
+                                <p class="text-xs text-gray-500 transition-all duration-300 ease-in-out">Administrator</p>
                             </div>
                         </button>
+                        <div x-show="!sidebarOpen" class="flex items-center justify-center w-full p-2 transition-all duration-300 ease-in-out">
+                            <div class="w-10 h-10 bg-maroon rounded-full flex items-center justify-center text-white text-base transition-all duration-300 ease-in-out">
+                                {{ substr(Auth::user()->name, 0, 1) }}
+                            </div>
+                        </div>
                         <div x-show="userMenuOpen" @click.away="userMenuOpen = false" x-transition 
-                             :class="sidebarOpen ? 'absolute bottom-full left-0 right-0 mb-2' : 'absolute bottom-full left-0 mb-2'"
-                             class="bg-white rounded-lg shadow-lg border border-gray-200 py-2"
-                             :style="sidebarOpen ? '' : 'width: 200px;'">
+                             class="absolute bottom-full left-0 right-0 mb-2 bg-white rounded-lg shadow-lg border border-gray-200 py-2">
                             <form method="POST" action="{{ route('admin.logout') }}">
                                 @csrf
                                 <button type="submit" class="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
@@ -290,9 +289,6 @@
                                 @yield('header-actions')
                             </div>
                         @endif
-                        <div class="text-sm text-gray-600">
-                            {{ now()->format('M d, Y - h:i A') }}
-                        </div>
                     </div>
                 </div>
             </header>

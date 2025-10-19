@@ -1,15 +1,12 @@
 @extends('layouts.admin')
 
+@section('page-title', 'Create New Payment')
+@section('page-description', 'Record a payment for an order')
 @section('title', 'Create Payment')
 
 @section('content')
 <div class="container mx-auto px-4 py-6">
     <div class="max-w-4xl mx-auto">
-        <!-- Header -->
-        <div class="mb-8">
-            <h1 class="text-3xl font-bold text-gray-900">Create New Payment</h1>
-            <p class="text-gray-600 mt-2">Record a payment for an order</p>
-        </div>
 
         <!-- Form -->
         <div class="bg-white rounded-lg shadow-md p-6">

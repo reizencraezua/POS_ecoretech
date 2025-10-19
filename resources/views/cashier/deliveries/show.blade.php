@@ -32,12 +32,12 @@
                         <div class="text-xl font-semibold text-gray-700">₱{{ number_format($delivery->delivery_fee, 2) }}</div>
                         <div class="text-sm text-gray-600">Delivery Fee</div>
                     </div>
-                    <span class="px-3 py-1 rounded-md text-sm font-medium 
-                        @if($delivery->status == 'scheduled') bg-blue-100 text-blue-800
-                        @elseif($delivery->status == 'in_transit') bg-yellow-100 text-yellow-800
-                        @elseif($delivery->status == 'delivered') bg-green-100 text-green-800
-                        @elseif($delivery->status == 'cancelled') bg-red-100 text-red-800
-                        @else bg-gray-100 text-gray-800 @endif">
+                    <span class="text-sm font-medium 
+                        @if($delivery->status == 'scheduled') text-blue-800
+                        @elseif($delivery->status == 'in_transit') text-yellow-800
+                        @elseif($delivery->status == 'delivered') text-green-800
+                        @elseif($delivery->status == 'cancelled') text-red-800
+                        @else text-gray-800 @endif">
                         {{ ucfirst(str_replace('_', ' ', $delivery->status)) }}
                     </span>
                 </div>
@@ -165,14 +165,7 @@
                     <a href="{{ route('cashier.deliveries.edit', $delivery) }}" class="w-full bg-gray-100 hover:bg-gray-200 text-gray-900 px-3 py-2 rounded text-sm inline-flex items-center justify-center">
                         Edit Delivery
                     </a>
-                    <button type="button" 
-                            onclick="if(confirm('Are you sure you want to archive this delivery?')) { document.getElementById('archive-form').submit(); }"
-                            class="w-full w-full bg-red-100 hover:bg-red-200 text-red-900 px-3 py-2 rounded text-sm inline-flex items-center justify-center ">
-                        Archive
-                    </button>
-                    <form id="archive-form" method="POST" action="{{ route('cashier.deliveries.archive', $delivery) }}" class="hidden">
-                        @csrf
-                    </form>
+                   
                 </div>
             </div>
 
@@ -250,6 +243,56 @@
                 </div>
             </div>
         </div>
+    </div>
+</div>
+
+<!-- Update History -->
+<div class="bg-white rounded-lg shadow-sm border border-gray-200 mt-6">
+    <div class="px-6 py-4 border-b border-gray-200">
+        <h3 class="text-lg font-semibold text-gray-900">Update History</h3>
+    </div>
+    <div class="p-6">
+        @if($delivery->history && $delivery->history->count() > 0)
+            <div class="flow-root">
+                <ul class="-mb-8">
+                    @foreach($delivery->history->sortByDesc('created_at') as $index => $history)
+                        <li>
+                            <div class="relative pb-8">
+                                @if(!$loop->last)
+                                    <span class="absolute top-4 left-4 -ml-px h-full w-0.5 bg-gray-200" aria-hidden="true"></span>
+                                @endif
+                                <div class="relative flex space-x-3">
+                                    <div>
+                                        <span class="h-8 w-8 rounded-full bg-maroon flex items-center justify-center ring-8 ring-white">
+                                            <i class="fas fa-edit text-white text-xs"></i>
+                                        </span>
+                                    </div>
+                                    <div class="min-w-0 flex-1 pt-1.5 flex justify-between space-x-4">
+                                        <div>
+                                            <p class="text-sm text-gray-900">{{ $history->description }}</p>
+                                            @if($history->action)
+                                                <p class="text-xs text-gray-600 font-medium">Action: {{ ucfirst(str_replace('_', ' ', $history->action)) }}</p>
+                                            @endif
+                                            <p class="text-xs text-gray-500">
+                                                Updated by <span class="font-medium">{{ $history->updatedBy->name ?? 'System' }}</span>
+                                            </p>
+                                        </div>
+                                        <div class="text-right text-sm whitespace-nowrap text-gray-500">
+                                            {{ $history->created_at->format('M d, Y') }} at {{ $history->created_at->format('g:i A') }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </li>
+                    @endforeach
+                </ul>
+            </div>
+        @else
+            <div class="text-center py-8">
+                <i class="fas fa-history text-gray-300 text-4xl mb-4"></i>
+                <p class="text-gray-500 text-sm">No update history available</p>
+            </div>
+        @endif
     </div>
 </div>
 @endsection

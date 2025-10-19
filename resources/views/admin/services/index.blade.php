@@ -52,26 +52,16 @@
                 {{ (isset($showArchived) && $showArchived) ? 'Show Active' : 'View Archives' }}
             </a>
             
-            <form method="GET" class="flex items-center space-x-2">
-                <div class="relative">
-                    <input type="text" name="search" value="{{ request('search') }}" placeholder="Search services..." 
-                           class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-maroon focus:border-maroon">
-                    <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-                </div>
-                <button type="submit" class="bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-lg transition-colors">
-                    <i class="fas fa-search"></i>
-                </button>
-                @if(request('search'))
-                    <a href="{{ route('admin.services.index') }}" class="bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-lg transition-colors">
-                        <i class="fas fa-times"></i>
-                    </a>
-                @endif
-            </form>
+            <div class="relative">
+                <input type="text" id="searchInput" placeholder="Search services..." 
+                       class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-maroon focus:border-maroon w-80">
+                <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+            </div>
         </div>
     </div>
 
     <!-- Services Grid -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+    <div id="servicesGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         @forelse($services as $service)
             <div class="bg-white rounded-lg shadow hover:shadow-lg transition-all duration-200 border border-gray-200 group cursor-pointer relative">
                 <!-- Clickable overlay for the entire card -->
@@ -83,8 +73,8 @@
                         <div class="flex items-center justify-between mb-2">
                             <span class="text-sm text-gray-500">#{{ str_pad($service->service_id, 3, '0', STR_PAD_LEFT) }}</span>
                             @if($service->category)
-                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium" 
-                                      style="background-color: {{ $service->category->category_color }}20; color: {{ $service->category->category_color }};">
+                                <span class="inline-flex items-center text-xs font-medium" 
+                                      style="color: {{ $service->category->category_color }};">
                                     {{ $service->category->category_name }}
                                 </span>
                             @endif
@@ -387,4 +377,26 @@ function editService(service) {
     overflow: hidden;
 }
 </style>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('searchInput');
+    const servicesGrid = document.getElementById('servicesGrid');
+    
+    if (searchInput && servicesGrid) {
+        searchInput.addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase().trim();
+            const cards = servicesGrid.querySelectorAll('.bg-white.rounded-lg.shadow');
+            
+            cards.forEach(card => {
+                const text = card.textContent.toLowerCase();
+                if (text.includes(searchTerm)) {
+                    card.style.display = '';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        });
+    }
+});
+</script>
 @endsection

@@ -6,10 +6,13 @@ use App\Http\Controllers\Controller;
 use App\Models\Delivery;
 use App\Models\Order;
 use App\Models\Employee;
+use App\Models\Log;
+use App\Traits\LogsActivity;
 use Illuminate\Http\Request;
 
 class DeliveryController extends Controller
 {
+    use LogsActivity;
     public function index(Request $request)
     {
         $showArchived = $request->boolean('archived');
@@ -21,56 +24,20 @@ class DeliveryController extends Controller
             $query->where('status', $request->status);
         }
 
-        if ($request->has('search')) {
-            $search = $request->search;
-            $query->where(function ($q) use ($search) {
-                // Search in delivery fields
-                $q->where('delivery_id', 'like', "%{$search}%")
-                  ->orWhere('status', 'like', "%{$search}%")
-                  ->orWhere('delivery_address', 'like', "%{$search}%")
-                  ->orWhere('notes', 'like', "%{$search}%")
-                  ->orWhere('tracking_number', 'like', "%{$search}%")
-                  // Search in order fields
-                  ->orWhereHas('order', function ($orderQuery) use ($search) {
-                      $orderQuery->where('order_id', 'like', "%{$search}%")
-                                ->orWhere('order_status', 'like', "%{$search}%");
-                  })
-                  // Search in customer fields
-                  ->orWhereHas('order.customer', function ($customerQuery) use ($search) {
-                      $customerQuery->where('customer_firstname', 'like', "%{$search}%")
-                                   ->orWhere('customer_lastname', 'like', "%{$search}%")
-                                   ->orWhere('business_name', 'like', "%{$search}%")
-                                   ->orWhere('customer_email', 'like', "%{$search}%")
-                                   ->orWhere('customer_phone', 'like', "%{$search}%");
-                  })
-                  // Search in employee fields
-                  ->orWhereHas('employee', function ($employeeQuery) use ($search) {
-                      $employeeQuery->where('first_name', 'like', "%{$search}%")
-                                   ->orWhere('last_name', 'like', "%{$search}%")
-                                   ->orWhere('email', 'like', "%{$search}%");
-                  });
-            });
-        }
 
-        $deliveries = $query->latest('delivery_date')->paginate(15);
-        $deliveries->appends($request->query());
-
-        // If it's an AJAX request, return only the table content
-        if ($request->ajax()) {
-            return view('admin.deliveries.partials.deliveries-table', compact('deliveries', 'showArchived'));
-        }
-
-        // If it's an AJAX request, return only the table content
-        if ($request->ajax()) {
-            return view('admin.deliveries.partials.deliveries-table', compact('deliveries', 'showArchived'));
-        }
+        $deliveries = $query->orderBy('delivery_id', 'desc')->paginate(15);
 
         return view('admin.deliveries.index', compact('deliveries', 'showArchived'));
     }
 
     public function create(Request $request)
     {
-        $orders = Order::with('customer')->where('order_status', '!=', 'Cancelled')->get();
+        $orders = Order::whereNotIn('order_status', ['Completed', 'Cancelled'])
+            ->whereDoesntHave('deliveries', function($query) {
+                $query->where('status', 'delivered');
+            })
+            ->with('customer')
+            ->get();
         $employees = Employee::with('job')->get();
         
         // Get the pre-selected order if order_id is provided
@@ -96,7 +63,15 @@ class DeliveryController extends Controller
             'notes' => 'nullable|string',
         ]);
 
-        Delivery::create($validated);
+        $delivery = Delivery::create($validated);
+
+        // Log the creation
+        $this->logCreated(
+            Log::TYPE_DELIVERY,
+            $delivery->delivery_id,
+            $this->generateTransactionName(Log::TYPE_DELIVERY, $delivery->delivery_id),
+            $delivery->toArray()
+        );
 
         return redirect()->route('admin.deliveries.index')
             ->with('success', 'Delivery scheduled successfully.');
@@ -117,6 +92,9 @@ class DeliveryController extends Controller
 
     public function update(Request $request, Delivery $delivery)
     {
+        // Store original data for logging
+        $originalData = $delivery->toArray();
+        
         $validated = $request->validate([
             'order_id' => 'required|exists:orders,order_id',
             'employee_id' => 'nullable|exists:employees,employee_id',
@@ -131,12 +109,29 @@ class DeliveryController extends Controller
 
         $delivery->update($validated);
 
+        // Log the update
+        $this->logUpdated(
+            Log::TYPE_DELIVERY,
+            $delivery->delivery_id,
+            $originalData,
+            $delivery->fresh()->toArray(),
+            $this->generateTransactionName(Log::TYPE_DELIVERY, $delivery->delivery_id)
+        );
+
         return redirect()->route('admin.deliveries.index')
             ->with('success', 'Delivery updated successfully.');
     }
 
     public function destroy(Delivery $delivery)
     {
+        // Log the deletion
+        $this->logDeleted(
+            Log::TYPE_DELIVERY,
+            $delivery->delivery_id,
+            $this->generateTransactionName(Log::TYPE_DELIVERY, $delivery->delivery_id),
+            $delivery->toArray()
+        );
+
         $delivery->delete();
 
         return redirect()->route('admin.deliveries.index')

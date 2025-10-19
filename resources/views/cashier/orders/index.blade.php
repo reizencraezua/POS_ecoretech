@@ -98,40 +98,13 @@
             </a>
         </div>
         
-        <!-- Search and Filters -->
+        <!-- Search -->
         <div class="flex items-center space-x-4">
-            <form method="GET" class="flex items-center space-x-2">
-                <select name="status" class="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-maroon focus:border-maroon">
-                    <option value="">All Status</option>
-                    <option value="On-Process" {{ request('status') == 'On-Process' ? 'selected' : '' }}>On-Process</option>
-                    <option value="Designing" {{ request('status') == 'Designing' ? 'selected' : '' }}>Designing</option>
-                    <option value="Production" {{ request('status') == 'Production' ? 'selected' : '' }}>Production</option>
-                    <option value="For Releasing" {{ request('status') == 'For Releasing' ? 'selected' : '' }}>For Releasing</option>
-                    <option value="Completed" {{ request('status') == 'Completed' ? 'selected' : '' }}>Completed</option>
-                    <option value="Cancelled" {{ request('status') == 'Cancelled' ? 'selected' : '' }}>Cancelled</option>
-                    <optgroup label="Due Dates">
-                        <option value="due_today" {{ request('status') == 'due_today' ? 'selected' : '' }}>Due Today</option>
-                        <option value="due_tomorrow" {{ request('status') == 'due_tomorrow' ? 'selected' : '' }}>Due Tomorrow</option>
-                        <option value="due_3_days" {{ request('status') == 'due_3_days' ? 'selected' : '' }}>Due in 3 Days</option>
-                        <option value="overdue" {{ request('status') == 'overdue' ? 'selected' : '' }}>Overdue</option>
-                    </optgroup>
-                </select>
                 <div class="relative">
-                    <input type="text" name="search" value="{{ request('search') }}" placeholder="Search orders..." 
-                           class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-maroon focus:border-maroon">
+                <input type="text" id="searchInput" placeholder="Search orders..." 
+                       class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-maroon focus:border-maroon w-80">
                     <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
                 </div>
-                <input type="hidden" name="start_date" value="{{ request('start_date') }}">
-                <input type="hidden" name="end_date" value="{{ request('end_date') }}">
-                <button type="submit" class="bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-lg">
-                    <i class="fas fa-search"></i>
-                </button>
-                @if(request('search') || request('status') || request('start_date') || request('end_date'))
-                    <a href="{{ route('cashier.orders.index') }}" class="bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-lg">
-                        <i class="fas fa-times"></i>
-                    </a>
-                @endif
-            </form>
         </div>
     </div>
 
@@ -146,7 +119,7 @@
                 Click on any order row to view details
             </p>
         </div>
-        <div class="overflow-x-auto">
+        <div class="overflow-x-auto" id="ordersTable">
             <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">
                     <tr>
@@ -196,8 +169,6 @@
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <div class="text-sm font-medium text-gray-900">₱{{ number_format($order->final_total_amount, 2) }}</div>
                                 <div class="text-sm text-gray-500">{{ $order->details->count() }} item(s)</div>
-                                @if($order->details->count() > 0)
-                                @endif
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 @php
@@ -227,28 +198,28 @@
                                     <span class="px-3 py-1 text-xs font-medium rounded-full
                                         @switch($order->order_status)
                                             @case('On-Process')
-                                                bg-blue-100 text-blue-800
+                                                text-blue-800
                                                 @break
                                             @case('Designing')
-                                                bg-purple-100 text-purple-800
+                                                text-purple-800
                                                 @break
                                             @case('Production')
-                                                bg-yellow-100 text-yellow-800
+                                                text-yellow-800
                                                 @break
                                             @case('For Releasing')
-                                                bg-orange-100 text-orange-800
+                                                text-orange-800
                                                 @break
                                             @case('Completed')
-                                                bg-green-100 text-green-800
+                                                text-green-800
                                                 @break
                                             @case('Cancelled')
-                                                bg-red-100 text-red-800
+                                                text-red-800
                                                 @break
                                             @case('Voided')
-                                                bg-gray-100 text-gray-800
+                                                text-gray-800
                                                 @break
                                             @default
-                                                bg-gray-100 text-gray-800
+                                                text-gray-800
                                         @endswitch
                                     ">
                                         {{ $order->order_status }}
@@ -290,15 +261,22 @@
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                 <div class="flex items-center space-x-2">
                                     @if($order->order_status !== 'Voided')
-                                        <!-- Edit Order -->
-                                        <a href="{{ route('cashier.orders.edit', $order) }}" class="text-blue-600 hover:text-blue-800" title="Edit Order" onclick="event.stopPropagation();">
-                                            <i class="fas fa-edit"></i>
-                                        </a>
+                                        @if($order->payments()->count() > 0)
+                                            <!-- Edit Order Disabled -->
+                                            <span class="text-gray-400 cursor-not-allowed" title="Cannot edit order with existing payments">
+                                                <i class="fas fa-lock"></i>
+                                            </span>
+                                        @else
+                                            <!-- Edit Order -->
+                                            <a href="{{ route('cashier.orders.edit', $order) }}" class="text-blue-600 hover:text-blue-800" title="Edit Order" onclick="event.stopPropagation();">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                        @endif
                                     @endif
                                     
                                     @if($order->order_status !== 'Completed' && $order->order_status !== 'Cancelled' && $order->order_status !== 'Voided')
                                         <!-- Void Order -->
-                                        <button onclick="openVoidModal({{ $order->order_id }})" class="text-red-600 hover:text-red-800" title="Void Order" onclick="event.stopPropagation();">
+                                        <button onclick="event.stopPropagation(); openVoidModal({{ $order->order_id }});" class="text-red-600 hover:text-red-800" title="Void Order">
                                             <i class="fas fa-ban"></i>
                                         </button>
                                     @endif
@@ -377,6 +355,34 @@
 
 <!-- Alpine.js for dropdown functionality -->
 <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+
+<!-- Simple Search Script -->
+<script>
+function showPaymentError() {
+    alert('Cannot edit due to payment exist');
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('searchInput');
+    const ordersTable = document.getElementById('ordersTable');
+    
+    if (searchInput && ordersTable) {
+        searchInput.addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase().trim();
+            const rows = ordersTable.querySelectorAll('tbody tr');
+            
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                if (text.includes(searchTerm)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        });
+    }
+});
+</script>
 
 <script>
 function openVoidModal(orderId) {

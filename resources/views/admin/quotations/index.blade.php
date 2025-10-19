@@ -4,26 +4,6 @@
 @section('page-title', 'Quotation Management')
 @section('page-description', 'Manage customer quotations and proposals')
 
-@section('header-actions')
-<form method="GET" action="{{ route('admin.quotations.index') }}" class="flex items-end gap-3" id="dateFilterForm">
-    <div>
-        <label for="start_date" class="block text-xs font-medium text-gray-600 mb-1">Start date</label>
-        <input type="date" id="start_date" name="start_date" value="{{ request('start_date') }}"
-               class="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon"
-               onchange="document.getElementById('dateFilterForm').submit();">
-    </div>
-    <div>
-        <label for="end_date" class="block text-xs font-medium text-gray-600 mb-1">End date</label>
-        <input type="date" id="end_date" name="end_date" value="{{ request('end_date') }}"
-               class="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon"
-               onchange="document.getElementById('dateFilterForm').submit();">
-    </div>
-    <div class="flex items-center gap-2">
-        <input type="hidden" name="archived" value="{{ (isset($showArchived) && $showArchived) ? 1 : 0 }}">
-        <a href="{{ route('admin.quotations.index', ['archived' => (isset($showArchived) && $showArchived) ? 1 : 0]) }}" class="px-3 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">Reset</a>
-    </div>
-</form>
-@endsection
 
 @section('content')
 <div class="space-y-6">
@@ -51,18 +31,9 @@
                     <option value="Closed" {{ request('status') == 'Closed' ? 'selected' : '' }}>Closed</option>
                 </select>
                 <div class="relative">
-                    <input type="text" 
-                           id="instantSearchInput" 
-                           data-instant-search="true"
-                           data-container="quotationsTableContainer"
-                           data-loading="searchLoading"
-                           value="{{ request('search') }}" 
-                           placeholder="Search quotations..."
-                           class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-maroon focus:border-maroon">
+                    <input type="text" id="searchInput" placeholder="Search quotations..." 
+                           class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-maroon focus:border-maroon w-80">
                     <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-                    <div id="searchLoading" class="absolute right-3 top-1/2 transform -translate-y-1/2 hidden">
-                        <i class="fas fa-spinner fa-spin text-gray-400"></i>
-                    </div>
                 </div>
                 <input type="hidden" name="archived" value="{{ (isset($showArchived) && $showArchived) ? 1 : 0 }}">
                 <input type="hidden" name="start_date" value="{{ request('start_date') }}">
@@ -97,6 +68,22 @@
                 <input type="hidden" id="quotation_id" name="quotation_id">
 
                 <div class="space-y-6">
+                    <!-- Quotation Items Section -->
+                    <div class="bg-white border border-gray-200 rounded-lg p-4">
+                        <h4 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                            <i class="fas fa-list text-maroon mr-2"></i>
+                            Quotation Items
+                        </h4>
+                        
+                        <div id="quotation_items_container">
+                            <!-- Items will be loaded here via JavaScript -->
+                            <div class="text-center py-4 text-gray-500">
+                                <i class="fas fa-spinner fa-spin mr-2"></i>
+                                Loading quotation items...
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Employee Assignment Section -->
                     <div class="bg-gray-50 rounded-lg p-4">
                         <h4 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
@@ -138,9 +125,7 @@
                             <div>
                                 <label for="deadline_date" class="block text-sm font-medium text-gray-700 mb-2">Deadline Date *</label>
                                 <input type="date" name="deadline_date" id="deadline_date" required
-                                    class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-maroon focus:border-maroon"
-                                    min="{{ now()->addDay()->toDateString() }}"
-                                    value="{{ now()->addDays(7)->toDateString() }}">
+                                    class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-maroon focus:border-maroon">
                                 <p class="text-xs text-gray-500 mt-1">Set the deadline for job completion</p>
                             </div>
                         </div>
@@ -162,7 +147,7 @@
                                         class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-maroon focus:border-maroon">
                                         <option value="">Select Payment Term</option>
                                         <option value="Full">Full Payment</option>
-                                        <option value="Downpayment">Downpayment (50%)</option>
+                                        <option value="Downpayment">Downpayment</option>
                                         <option value="Initial">Initial Payment</option>
                                     </select>
                                 </div>
@@ -184,46 +169,6 @@
                                 </div>
                             </div>
 
-                            <!-- Downpayment Information Box -->
-                            <div id="downpayment_info_div" class="hidden">
-                                <div class="bg-blue-100 border border-blue-300 rounded-lg p-4">
-                                    <div class="flex items-center mb-3">
-                                        <div class="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-bold mr-2">
-                                            <i class="fas fa-info text-xs"></i>
-                                        </div>
-                                        <h5 class="text-md font-semibold text-blue-800">Downpayment Information</h5>
-                                    </div>
-
-                                    <div class="space-y-2">
-                                        <div class="flex justify-between items-center">
-                                            <span class="text-gray-700">Total Amount:</span>
-                                            <span class="text-gray-700 font-medium" id="total_amount_display">₱0.00</span>
-                                        </div>
-
-                                        <div class="flex justify-between items-center">
-                                            <span class="text-gray-700">Required Downpayment (50%):</span>
-                                            <span class="text-blue-800 font-bold text-lg" id="downpayment_amount_display">₱0.00</span>
-                                        </div>
-                                        
-                                        <div class="flex justify-between items-center text-xs text-gray-500">
-                                            <span>Note: You can pay more than the downpayment</span>
-                                            <span>Max: <span id="max_payment_display">₱0.00</span></span>
-                                        </div>
-
-                                        <hr class="border-blue-200 my-2">
-
-                                        <div class="flex justify-between items-center">
-                                            <span class="text-gray-700">Already Paid:</span>
-                                            <span class="text-blue-600 font-medium" id="already_paid_display">₱0.00</span>
-                                        </div>
-
-                                        <div class="flex justify-between items-center">
-                                            <span class="text-gray-700">Remaining Balance:</span>
-                                            <span class="text-blue-600 font-medium" id="remaining_balance_display">₱0.00</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
 
                             
                             <!-- Amount Paid and Reference Number -->
@@ -287,33 +232,29 @@
     function openConvertModal(quotationId) {
         document.getElementById('quotation_id').value = quotationId;
         document.getElementById('convertModal').classList.remove('hidden');
+        loadQuotationItems(quotationId);
         calculateDownpaymentInfo();
     }
 
     function closeConvertModal() {
         document.getElementById('convertModal').classList.add('hidden');
         document.getElementById('convertForm').reset();
-        document.getElementById('downpayment_info_div').classList.add('hidden');
         clearErrorMessages();
     }
 
     function toggleDownpaymentField() {
         const paymentTerm = document.getElementById('payment_term').value;
-        const downpaymentDiv = document.getElementById('downpayment_info_div');
         const amountPaidRequired = document.getElementById('amount_paid_required');
         const paymentMethodRequired = document.getElementById('payment_method_required');
         const amountPaidField = document.getElementById('amount_paid');
         const paymentMethodField = document.getElementById('payment_method');
 
         if (paymentTerm === 'Downpayment') {
-            downpaymentDiv.classList.remove('hidden');
             amountPaidRequired.classList.remove('hidden');
             paymentMethodRequired.classList.remove('hidden');
             amountPaidField.setAttribute('required', 'required');
             paymentMethodField.setAttribute('required', 'required');
-            calculateDownpaymentInfo();
         } else {
-            downpaymentDiv.classList.add('hidden');
             amountPaidRequired.classList.add('hidden');
             paymentMethodRequired.classList.add('hidden');
             amountPaidField.removeAttribute('required');
@@ -336,23 +277,114 @@
         }
     }
 
+    function loadQuotationItems(quotationId) {
+        const container = document.getElementById('quotation_items_container');
+        
+        if (quotationId) {
+            // Show loading state
+            container.innerHTML = `
+                <div class="text-center py-4 text-gray-500">
+                    <i class="fas fa-spinner fa-spin mr-2"></i>
+                    Loading quotation items...
+                </div>
+            `;
+
+            // Fetch quotation items
+            fetch(`/admin/quotations/${quotationId}/items`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Failed to fetch quotation items');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.items && data.items.length > 0) {
+                        // Build items table
+                        let itemsHtml = `
+                            <div class="overflow-x-auto">
+                                <table class="min-w-full divide-y divide-gray-200">
+                                    <thead class="bg-gray-50">
+                                        <tr>
+                                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Item</th>
+                                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
+                                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unit</th>
+                                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Size</th>
+                                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unit Price</th>
+                                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Layout</th>
+                                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Layout Price</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="bg-white divide-y divide-gray-200">
+                        `;
+
+                        data.items.forEach(item => {
+                            const layoutStatus = item.layout ? 
+                                '<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium text-green-800"><i class="fas fa-check mr-1"></i>Yes</span>' :
+                                '<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium text-gray-800"><i class="fas fa-times mr-1"></i>No</span>';
+                            
+                            const layoutPrice = item.layout && item.layout_price > 0 ? 
+                                '₱' + parseFloat(item.layout_price).toFixed(2) : 
+                                '<span class="text-gray-400">-</span>';
+
+                            itemsHtml += `
+                                <tr>
+                                    <td class="px-4 py-3 whitespace-nowrap">
+                                        <span class="px-2 py-1 text-xs font-medium rounded-full ${item.item_type === 'Product' ? 'text-blue-800 bg-blue-100' : 'text-green-800 bg-green-100'}">
+                                            ${item.item_type}
+                                        </span>
+                                    </td>
+                                    <td class="px-4 py-3 whitespace-nowrap">
+                                        <div class="text-sm font-medium text-gray-900">${item.item_name}</div>
+                                    </td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">${item.quantity}</td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">${item.unit_name || 'N/A'}</td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">${item.size || '-'}</td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">₱${parseFloat(item.price).toFixed(2)}</td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">${layoutStatus}</td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">${layoutPrice}</td>
+                                </tr>
+                            `;
+                        });
+
+                        itemsHtml += `
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="mt-4 flex justify-between items-center text-sm text-gray-600">
+                                <span><strong>${data.items.length}</strong> items</span>
+                                <span>total amount: <strong>₱${parseFloat(data.total_amount).toFixed(2)}</strong> </span>
+                            </div>
+                        `;
+
+                        container.innerHTML = itemsHtml;
+                    } else {
+                        container.innerHTML = `
+                            <div class="text-center py-8 text-gray-500">
+                                <i class="fas fa-box text-4xl mb-2"></i>
+                                <p>No items found for this quotation.</p>
+                            </div>
+                        `;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching quotation items:', error);
+                    container.innerHTML = `
+                        <div class="text-center py-8 text-red-500">
+                            <i class="fas fa-exclamation-triangle text-4xl mb-2"></i>
+                            <p>Failed to load quotation items. Please try again.</p>
+                        </div>
+                    `;
+                });
+        }
+    }
+
     function calculateDownpaymentInfo() {
         const quotationId = document.getElementById('quotation_id').value;
-        const totalAmountDisplay = document.getElementById('total_amount_display');
-        const downpaymentAmountDisplay = document.getElementById('downpayment_amount_display');
-        const alreadyPaidDisplay = document.getElementById('already_paid_display');
-        const remainingBalanceDisplay = document.getElementById('remaining_balance_display');
         const layoutEmployeeDiv = document.getElementById('layout_employee_div');
 
         if (quotationId) {
-            // Show loading state
-            totalAmountDisplay.textContent = 'Loading...';
-            downpaymentAmountDisplay.textContent = 'Loading...';
-            alreadyPaidDisplay.textContent = '₱0.00';
-            remainingBalanceDisplay.textContent = 'Loading...';
-            document.getElementById('max_payment_display').textContent = 'Loading...';
-
-            // Fetch quotation details to get total amount and layout info
+            // Fetch quotation details to check if layout is required
             fetch(`/admin/quotations/${quotationId}/data`)
                 .then(response => {
                     if (!response.ok) {
@@ -361,85 +393,24 @@
                     return response.json();
                 })
                 .then(data => {
-                    if (data.final_total_amount) {
-                        const totalAmount = parseFloat(data.final_total_amount);
-                        const downpaymentAmount = totalAmount * 0.5;
-                        const alreadyPaid = 0; // For new orders, no previous payments
-                        const remainingBalance = downpaymentAmount - alreadyPaid;
-
-                        // Update all displays
-                        totalAmountDisplay.textContent = '₱' + totalAmount.toFixed(2);
-                        downpaymentAmountDisplay.textContent = '₱' + downpaymentAmount.toFixed(2);
-                        alreadyPaidDisplay.textContent = '₱' + alreadyPaid.toFixed(2);
-                        remainingBalanceDisplay.textContent = '₱' + remainingBalance.toFixed(2);
-                        
-                        // Update maximum payment display
-                        document.getElementById('max_payment_display').textContent = '₱' + totalAmount.toFixed(2);
-
-                        // Check if layout is required and show/hide layout employee field
-                        if (data.has_layout) {
-                            layoutEmployeeDiv.classList.remove('hidden');
-                            // Make layout employee required
-                            document.getElementById('layout_employee_id').setAttribute('required', 'required');
-                        } else {
-                            layoutEmployeeDiv.classList.add('hidden');
-                            document.getElementById('layout_employee_id').removeAttribute('required');
-                        }
+                    // Check if layout is required and show/hide layout employee field
+                    if (data.has_layout) {
+                        layoutEmployeeDiv.classList.remove('hidden');
+                        // Make layout employee required
+                        document.getElementById('layout_employee_id').setAttribute('required', 'required');
                     } else {
-                        throw new Error('Invalid quotation data');
+                        layoutEmployeeDiv.classList.add('hidden');
+                        document.getElementById('layout_employee_id').removeAttribute('required');
                     }
                 })
                 .catch(error => {
                     console.error('Error fetching quotation details:', error);
-                    // Show error state
-                    totalAmountDisplay.textContent = 'Error';
-                    downpaymentAmountDisplay.textContent = 'Error';
-                    remainingBalanceDisplay.textContent = 'Error';
-                    document.getElementById('max_payment_display').textContent = 'Error';
-
                     // Show user-friendly error message
-                    showErrorMessage('Failed to load quotation amount. Please try again.');
+                    showErrorMessage('Failed to load quotation data. Please try again.');
                 });
         }
     }
 
-    function updateDownpaymentInfo() {
-        const amountPaid = parseFloat(document.getElementById('amount_paid').value) || 0;
-        const downpaymentAmount = parseFloat(document.getElementById('downpayment_amount_display').textContent.replace('₱', '').replace(',', '')) || 0;
-        const totalAmount = parseFloat(document.getElementById('total_amount_display').textContent.replace('₱', '').replace(',', '')) || 0;
-        
-        // Calculate remaining balance based on total amount, not just downpayment
-        const remainingBalance = totalAmount - amountPaid;
-
-        document.getElementById('already_paid_display').textContent = '₱' + amountPaid.toFixed(2);
-        document.getElementById('remaining_balance_display').textContent = '₱' + remainingBalance.toFixed(2);
-        
-        // Show visual feedback based on payment amount
-        const remainingElement = document.getElementById('remaining_balance_display');
-        const amountPaidInput = document.getElementById('amount_paid');
-        
-        if (amountPaid > totalAmount) {
-            // Amount exceeds total - show error
-            remainingElement.style.color = '#dc2626'; // Red color for overpayment
-            remainingElement.title = 'Amount paid exceeds total quotation amount';
-            amountPaidInput.style.borderColor = '#dc2626';
-        } else if (amountPaid > downpaymentAmount && amountPaid <= totalAmount) {
-            // Amount exceeds downpayment but within total - show success
-            remainingElement.style.color = '#059669'; // Green color for overpayment
-            remainingElement.title = 'Amount paid exceeds downpayment but is within total amount';
-            amountPaidInput.style.borderColor = '#059669';
-        } else if (amountPaid > 0 && amountPaid <= downpaymentAmount) {
-            // Normal downpayment range
-            remainingElement.style.color = '#2563eb'; // Blue color for normal
-            remainingElement.title = 'Amount paid is within downpayment range';
-            amountPaidInput.style.borderColor = '#2563eb';
-        } else {
-            // Reset colors for zero amount
-            remainingElement.style.color = '';
-            remainingElement.title = '';
-            amountPaidInput.style.borderColor = '';
-        }
-    }
 
     function validateConvertForm() {
         const paymentTerm = document.getElementById('payment_term').value;
@@ -462,13 +433,6 @@
 
             if (!paymentMethod) {
                 showErrorMessage('Payment method is required for downpayment.');
-                return false;
-            }
-
-            // Check if amount paid exceeds total amount
-            const totalAmount = parseFloat(document.getElementById('total_amount_display').textContent.replace('₱', '').replace(',', '')) || 0;
-            if (parseFloat(amountPaid) > totalAmount) {
-                showErrorMessage('Amount paid cannot exceed the total quotation amount.');
                 return false;
             }
 
@@ -513,14 +477,31 @@
     document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('payment_term').addEventListener('change', toggleDownpaymentField);
         document.getElementById('payment_method').addEventListener('change', toggleReferenceNumberField);
-        document.getElementById('amount_paid').addEventListener('input', updateDownpaymentInfo);
         document.getElementById('convertForm').addEventListener('submit', function(e) {
             if (!validateConvertForm()) {
                 e.preventDefault();
             }
         });
     });
-</script>
 
-<script src="{{ asset('js/instant-search.js') }}"></script>
+    // Search functionality (adapted for quotations grid)
+    const searchInput = document.getElementById('searchInput');
+    const quotationsContainer = document.getElementById('quotationsTableContainer');
+    
+    if (searchInput && quotationsContainer) {
+        searchInput.addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase().trim();
+            const cards = quotationsContainer.querySelectorAll('.grid > div');
+            
+            cards.forEach(card => {
+                const text = card.textContent.toLowerCase();
+                if (text.includes(searchTerm)) {
+                    card.style.display = '';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        });
+    }
+</script>
 @endsection

@@ -23,11 +23,13 @@ return new class extends Migration
             $table->enum('status', ['Pending', 'Closed'])->default('Pending');
             $table->decimal('total_amount', 10, 2)->default(0);
             $table->unsignedBigInteger('customer_id');
+            $table->unsignedBigInteger('created_by')->nullable();
             $table->timestamps();
             $table->softDeletes();
 
             // Foreign key constraints
             $table->foreign('customer_id')->references('customer_id')->on('customers')->onDelete('cascade');
+            $table->foreign('created_by')->references('id')->on('users')->onDelete('set null');
         });
     }
 

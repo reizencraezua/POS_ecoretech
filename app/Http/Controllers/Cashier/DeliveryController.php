@@ -6,11 +6,14 @@ use App\Http\Controllers\Controller;
 use App\Models\Delivery;
 use App\Models\Order;
 use App\Models\Employee;
+use App\Models\Log;
+use App\Traits\LogsActivity;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Log as LaravelLog;
 
 class DeliveryController extends Controller
 {
+    use LogsActivity;
 
     /**
      * Display a listing of the resource.
@@ -64,7 +67,9 @@ class DeliveryController extends Controller
     public function create(Request $request)
     {
         $orders = Order::whereNotIn('order_status', ['Completed', 'Cancelled'])
-            ->whereDoesntHave('delivery')
+            ->whereDoesntHave('deliveries', function($query) {
+                $query->where('status', 'delivered');
+            })
             ->with('customer')
             ->get();
 
@@ -89,7 +94,7 @@ class DeliveryController extends Controller
                 'delivery_date' => 'required|date',
                 'delivery_address' => 'required|string|max:500',
                 'driver_name' => 'nullable|string|max:100',
-                'driver_contact' => 'nullable|string|max:20',
+                'driver_contact' => 'nullable|string|regex:/^[0-9]{11}$/',
                 'notes' => 'nullable|string|max:500',
                 'status' => 'nullable|in:scheduled,in_transit,delivered,cancelled',
                 'delivery_fee' => 'nullable|numeric|min:0',
@@ -117,10 +122,18 @@ class DeliveryController extends Controller
                 'created_by' => auth('web')->id() ?? App\Models\User::first()->id,
             ]);
 
+            // Log the delivery creation
+            $this->logCreated(
+                Log::TYPE_DELIVERY,
+                $delivery->delivery_id,
+                $this->generateTransactionName(Log::TYPE_DELIVERY, $delivery->delivery_id),
+                $delivery->toArray()
+            );
+
             return redirect()->route('cashier.deliveries.index')
                 ->with('success', 'Delivery scheduled successfully.');
         } catch (\Exception $e) {
-            Log::error('Error creating delivery: ' . $e->getMessage());
+            LaravelLog::error('Error creating delivery: ' . $e->getMessage());
             return redirect()->back()
                 ->with('error', 'Failed to create delivery. Please try again.')
                 ->withInput();
@@ -159,11 +172,14 @@ class DeliveryController extends Controller
                 'delivery_date' => 'required|date',
                 'delivery_address' => 'required|string|max:500',
                 'driver_name' => 'nullable|string|max:100',
-                'driver_contact' => 'nullable|string|max:20',
+                'driver_contact' => 'nullable|string|regex:/^[0-9]{11}$/',
                 'notes' => 'nullable|string|max:500',
                 'status' => 'required|in:scheduled,in_transit,delivered,cancelled',
                 'delivery_fee' => 'nullable|numeric|min:0',
             ]);
+
+            // Store original data for logging
+            $originalData = $delivery->toArray();
 
             // Update delivery
             $delivery->update([
@@ -177,6 +193,15 @@ class DeliveryController extends Controller
                 'delivery_fee' => $validated['delivery_fee'] ?? 0,
             ]);
 
+            // Log the delivery update
+            $this->logUpdated(
+                Log::TYPE_DELIVERY,
+                $delivery->delivery_id,
+                $this->generateTransactionName(Log::TYPE_DELIVERY, $delivery->delivery_id),
+                $originalData,
+                $delivery->toArray()
+            );
+
             // If delivered, update order status to completed
             if ($validated['status'] === 'delivered') {
                 $delivery->order->update(['order_status' => 'Completed']);
@@ -185,7 +210,7 @@ class DeliveryController extends Controller
             return redirect()->route('cashier.deliveries.index')
                 ->with('success', 'Delivery updated successfully.');
         } catch (\Exception $e) {
-            Log::error('Error updating delivery: ' . $e->getMessage());
+            LaravelLog::error('Error updating delivery: ' . $e->getMessage());
             return redirect()->back()
                 ->with('error', 'Failed to update delivery. Please try again.')
                 ->withInput();
@@ -234,7 +259,17 @@ class DeliveryController extends Controller
             'status' => 'required|in:scheduled,in_transit,delivered,cancelled'
         ]);
 
+        $oldStatus = $delivery->status;
         $delivery->update(['status' => $request->status]);
+
+        // Log the status change
+        $this->logStatusChanged(
+            Log::TYPE_DELIVERY,
+            $delivery->delivery_id,
+            $this->generateTransactionName(Log::TYPE_DELIVERY, $delivery->delivery_id),
+            $oldStatus,
+            $request->status
+        );
 
         // If delivered, update order status to completed
         if ($request->status === 'delivered') {

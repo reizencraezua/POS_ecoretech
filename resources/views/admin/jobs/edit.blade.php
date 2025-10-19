@@ -47,7 +47,7 @@
 
             <!-- Current Employee Count Info -->
             @if($job->employees->count() > 0)
-                <div class="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-md">
+                <div class="mt-6 p-4 text-blue-800 border border-blue-200 rounded-md">
                     <div class="flex items-center">
                         <i class="fas fa-info-circle text-blue-500 mr-2"></i>
                         <span class="text-sm text-blue-700">

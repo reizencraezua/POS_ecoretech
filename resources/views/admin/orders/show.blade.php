@@ -41,28 +41,28 @@
                     <span id="statusBadge" class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium
                         @switch($order->order_status)
                             @case('On-Process')
-                                bg-blue-100 text-blue-800
+                                text-blue-800
                                 @break
                             @case('Designing')
-                                bg-purple-100 text-purple-800
+                                text-purple-800
                                 @break
                             @case('Production')
-                                bg-yellow-100 text-yellow-800
+                                text-yellow-800
                                 @break
                             @case('For Releasing')
-                                bg-orange-100 text-orange-800
+                                text-orange-800
                                 @break
                             @case('Completed')
-                                bg-green-100 text-green-800
+                                text-green-800
                                 @break
                             @case('Cancelled')
-                                bg-red-100 text-red-800
+                                text-red-800
                                 @break
                             @case('Voided')
-                                bg-gray-100 text-gray-800
+                                text-gray-800
                                 @break
                             @default
-                                bg-gray-100 text-gray-800
+                                text-gray-800
                         @endswitch">
                         {{ $order->order_status }}
                     </span>
@@ -186,7 +186,7 @@
                             <tr>
                                 <td class="px-4 py-3 whitespace-nowrap">
                                     <span class="px-2 py-1 text-xs font-medium rounded-full
-                                        {{ $detail->item_type === 'Product' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800' }}">
+                                        {{ $detail->item_type === 'Product' ? 'text-blue-800' : 'text-green-800' }}">
                                         {{ $detail->item_type }}
                                     </span>
                                 </td>
@@ -205,11 +205,11 @@
                                 <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">₱{{ number_format($detail->price, 2) }}</td>
                                 <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
                                     @if($detail->layout)
-                                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium text-green-800">
                                             <i class="fas fa-check mr-1"></i>Yes
                                         </span>
                                     @else
-                                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium text-gray-800">
                                             <i class="fas fa-times mr-1"></i>No
                                         </span>
                                     @endif
@@ -310,9 +310,17 @@
                     <h3 class="text-sm font-semibold text-gray-900">Actions</h3>
                 </div>
                 <div class="p-4 space-y-3">
-                    <a href="{{ route('admin.orders.edit', $order) }}" class="w-full bg-gray-100 hover:bg-gray-200 text-gray-900 px-3 py-2 rounded text-sm transition-colors inline-flex items-center justify-center">
-                        Edit Order
-                    </a>
+                    @if($order->payments()->count() > 0)
+                        <button type="button" disabled class="w-full bg-gray-100 text-gray-400 px-3 py-2 rounded text-sm cursor-not-allowed inline-flex items-center justify-center" title="Cannot edit order with existing payments">
+                            <i class="fas fa-lock mr-2"></i>
+                            Edit Order (Disabled)
+                        </button>
+                    @else
+                        <a href="{{ route('admin.orders.edit', $order) }}" class="w-full bg-gray-100 hover:bg-gray-200 text-gray-900 px-3 py-2 rounded text-sm transition-colors inline-flex items-center justify-center">
+                            <i class="fas fa-edit mr-2"></i>
+                            Edit Order
+                        </a>
+                    @endif
                     <button type="button" onclick="openPaymentModal()" class="w-full bg-gray-100 hover:bg-gray-200 text-gray-900 px-3 py-2 rounded text-sm transition-colors inline-flex items-center justify-center">
                         Add Payment
                     </button>
@@ -367,7 +375,7 @@
                                     </div>
                                 </div>
                                 <div class="text-right">
-                                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium text-blue-800">
                                         {{ $payment->payment_term }}
                                     </span>
                                     <p class="text-xs text-gray-500 mt-1">{{ $payment->payment_method }}</p>
@@ -432,10 +440,10 @@
                                     </div>
                                 </div>
                                 <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium 
-                                    @if($delivery->delivery_status === 'Delivered') bg-green-100 text-green-800
-                                    @elseif($delivery->delivery_status === 'In Transit') bg-yellow-100 text-yellow-800
-                                    @elseif($delivery->delivery_status === 'Pending') bg-gray-100 text-gray-800
-                                    @else bg-red-100 text-red-800 @endif">
+                                    @if($delivery->delivery_status === 'Delivered') text-green-800
+                                    @elseif($delivery->delivery_status === 'In Transit') text-yellow-800
+                                    @elseif($delivery->delivery_status === 'Pending') text-gray-800
+                                    @else text-red-800 @endif">
                                     {{ $delivery->delivery_status }}
                                 </span>
                             </div>
@@ -836,28 +844,28 @@ document.addEventListener('DOMContentLoaded', function() {
         // Add appropriate classes based on status
         switch(status) {
             case 'On-Process':
-                statusBadge.classList.add('bg-blue-100', 'text-blue-800');
+                statusBadge.classList.add('text-blue-800');
                 break;
             case 'Designing':
-                statusBadge.classList.add('bg-purple-100', 'text-purple-800');
+                statusBadge.classList.add('text-purple-800');
                 break;
             case 'Production':
-                statusBadge.classList.add('bg-yellow-100', 'text-yellow-800');
+                statusBadge.classList.add('text-yellow-800');
                 break;
             case 'For Releasing':
-                statusBadge.classList.add('bg-orange-100', 'text-orange-800');
+                statusBadge.classList.add('text-orange-800');
                 break;
             case 'Completed':
-                statusBadge.classList.add('bg-green-100', 'text-green-800');
+                statusBadge.classList.add('text-green-800');
                 break;
             case 'Cancelled':
-                statusBadge.classList.add('bg-red-100', 'text-red-800');
+                statusBadge.classList.add('text-red-800');
                 break;
             case 'Voided':
-                statusBadge.classList.add('bg-gray-100', 'text-gray-800');
+                statusBadge.classList.add('text-gray-800');
                 break;
             default:
-                statusBadge.classList.add('bg-gray-100', 'text-gray-800');
+                statusBadge.classList.add('text-gray-800');
         }
         
         // Update the text content

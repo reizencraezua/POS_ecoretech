@@ -5,10 +5,11 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Models\TracksHistory;
 
 class Quotation extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes, TracksHistory;
 
     protected $primaryKey = 'quotation_id';
 
@@ -46,6 +47,11 @@ class Quotation extends Model
     public function creator()
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function histories()
+    {
+        return $this->hasMany(QuotationHistory::class, 'quotation_id', 'quotation_id');
     }
 
     // Calculation methods following the same formula as orders
@@ -136,6 +142,35 @@ class Quotation extends Model
             }
         }
         return null;
+    }
+
+    /**
+     * Check if this quotation has been converted to an order with payments
+     * Since there's no direct relationship, we check for orders with the same customer
+     * and similar total amount that have payments
+     */
+    public function hasPayments()
+    {
+        // If quotation is not closed, it can't have payments
+        if ($this->status !== 'Closed') {
+            return false;
+        }
+
+        // Look for orders with the same customer and similar total amount
+        $orders = \App\Models\Order::where('customer_id', $this->customer_id)
+            ->where('total_amount', '>=', $this->final_total_amount * 0.95) // Allow 5% variance
+            ->where('total_amount', '<=', $this->final_total_amount * 1.05) // Allow 5% variance
+            ->where('order_date', '>=', $this->quotation_date) // Order created after quotation
+            ->get();
+
+        // Check if any of these orders have payments
+        foreach ($orders as $order) {
+            if ($order->payments()->exists()) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

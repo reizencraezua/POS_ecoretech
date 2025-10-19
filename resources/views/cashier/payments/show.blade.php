@@ -165,29 +165,6 @@
 
         <!-- Sidebar -->
         <div class="space-y-6">
-            <!-- Actions -->
-            <div class="bg-white rounded-lg shadow-sm border border-gray-200">
-                <div class="px-4 py-3 border-b border-gray-200">
-                    <h3 class="text-sm font-semibold text-gray-900">Actions</h3>
-                </div>
-                <div class="p-4 space-y-3">
-                    <a href="{{ route('cashier.payments.edit', $payment) }}" class="w-full bg-gray-100 hover:bg-gray-200 text-gray-900 px-3 py-2 rounded text-sm inline-flex items-center justify-center">
-                        Edit Payment
-                    </a>
-                    <button onclick="printReceipt({{ $payment->payment_id }})" class="w-full bg-gray-100 hover:bg-gray-200 text-gray-900 px-3 py-2 rounded text-sm inline-flex items-center justify-center">
-                        Print Receipt
-                    </button>
-                    <form action="{{ route('cashier.payments.archive', $payment) }}" method="POST" class="w-full">
-                        @csrf
-                        <button type="submit" 
-                                class="w-full bg-gray-100 hover:bg-gray-200 text-gray-900 px-3 py-2 rounded text-sm inline-flex items-center justify-center"
-                                onclick="return confirm('Are you sure you want to archive this payment?')">
-                            Archive Payment
-                        </button>
-                    </form>
-                </div>
-            </div>
-
             <!-- Record Information -->
             <div class="bg-white rounded-lg shadow-sm border border-gray-200">
                 <div class="px-4 py-3 border-b border-gray-200">
@@ -247,6 +224,56 @@
                 </div>
             </div>
         </div>
+    </div>
+</div>
+
+<!-- Update History -->
+<div class="bg-white rounded-lg shadow-sm border border-gray-200 mt-6">
+    <div class="px-6 py-4 border-b border-gray-200">
+        <h3 class="text-lg font-semibold text-gray-900">Update History</h3>
+    </div>
+    <div class="p-6">
+        @if($payment->history && $payment->history->count() > 0)
+            <div class="flow-root">
+                <ul class="-mb-8">
+                    @foreach($payment->history->sortByDesc('created_at') as $index => $history)
+                        <li>
+                            <div class="relative pb-8">
+                                @if(!$loop->last)
+                                    <span class="absolute top-4 left-4 -ml-px h-full w-0.5 bg-gray-200" aria-hidden="true"></span>
+                                @endif
+                                <div class="relative flex space-x-3">
+                                    <div>
+                                        <span class="h-8 w-8 rounded-full bg-maroon flex items-center justify-center ring-8 ring-white">
+                                            <i class="fas fa-edit text-white text-xs"></i>
+                                        </span>
+                                    </div>
+                                    <div class="min-w-0 flex-1 pt-1.5 flex justify-between space-x-4">
+                                        <div>
+                                            <p class="text-sm text-gray-900">{{ $history->description }}</p>
+                                            @if($history->action)
+                                                <p class="text-xs text-gray-600 font-medium">Action: {{ ucfirst(str_replace('_', ' ', $history->action)) }}</p>
+                                            @endif
+                                            <p class="text-xs text-gray-500">
+                                                Updated by <span class="font-medium">{{ $history->updatedBy->name ?? 'System' }}</span>
+                                            </p>
+                                        </div>
+                                        <div class="text-right text-sm whitespace-nowrap text-gray-500">
+                                            {{ $history->created_at->format('M d, Y') }} at {{ $history->created_at->format('g:i A') }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </li>
+                    @endforeach
+                </ul>
+            </div>
+        @else
+            <div class="text-center py-8">
+                <i class="fas fa-history text-gray-300 text-4xl mb-4"></i>
+                <p class="text-gray-500 text-sm">No update history available</p>
+            </div>
+        @endif
     </div>
 </div>
 

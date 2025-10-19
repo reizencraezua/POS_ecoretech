@@ -475,28 +475,6 @@
         </div>
     </div>
 
-    <!-- Payment Status Breakdown Section -->
-    <div class="payment-status">
-        <h3>Payment Status Breakdown</h3>
-        <div class="status-grid">
-            <div class="status-card complete">
-                <div class="status-header">
-                    <span class="status-name">Complete Payments</span>
-                    <span class="status-count">{{ $payments->where('balance', 0)->count() }} payments</span>
-                </div>
-                <div class="status-amount">₱{{ number_format($payments->where('balance', 0)->sum('amount_paid'), 2) }}</div>
-                <div class="status-percentage">{{ $paymentCount > 0 ? round(($payments->where('balance', 0)->count() / $paymentCount) * 100, 1) : 0 }}% of total</div>
-            </div>
-            <div class="status-card partial">
-                <div class="status-header">
-                    <span class="status-name">Partial Payments</span>
-                    <span class="status-count">{{ $payments->where('balance', '>', 0)->count() }} payments</span>
-                </div>
-                <div class="status-amount">₱{{ number_format($payments->where('balance', '>', 0)->sum('amount_paid'), 2) }}</div>
-                <div class="status-percentage">{{ $paymentCount > 0 ? round(($payments->where('balance', '>', 0)->count() / $paymentCount) * 100, 1) : 0 }}% of total</div>
-            </div>
-        </div>
-    </div>
 
     <!-- Payment Methods Breakdown Section -->
     @if($paymentMethods->count() > 0)

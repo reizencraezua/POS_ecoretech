@@ -7,27 +7,58 @@
 @section('header-actions')
 <div class="flex items-center gap-6">
     <!-- Date Filter Form -->
-    <form method="GET" action="{{ route('cashier.dashboard') }}" class="flex items-end gap-3">
+    <form method="GET" action="{{ route('cashier.dashboard') }}" id="dateFilterForm" class="flex items-end gap-3">
         <div>
             <label for="start_date" class="block text-xs font-medium text-gray-600 mb-1">Start date</label>
             <input type="date" id="start_date" name="start_date" value="{{ request('start_date') }}"
-                   class="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon">
+                   class="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon"
+                   onchange="autoFilter()">
         </div>
         <div>
             <label for="end_date" class="block text-xs font-medium text-gray-600 mb-1">End date</label>
             <input type="date" id="end_date" name="end_date" value="{{ request('end_date') }}"
-                   class="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon">
+                   class="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon"
+                   onchange="autoFilter()">
         </div>
         <div class="flex items-center gap-2">
-            <button type="submit" class="bg-maroon hover:bg-maroon-dark text-white px-4 py-2 rounded-md">Filter</button>
             <a href="{{ route('cashier.dashboard') }}" class="px-3 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">Reset</a>
         </div>
     </form>
 </div>
+
+<script>
+function autoFilter() {
+    document.getElementById('dateFilterForm').submit();
+}
+</script>
 @endsection
 
 @section('content')
 <div class="space-y-6">
+    <!-- Filter Status -->
+    @if(request('start_date') || request('end_date'))
+    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center">
+                <i class="fas fa-filter text-blue-600 mr-2"></i>
+                <span class="text-sm font-medium text-blue-800">Filtered Results</span>
+                <span class="text-sm text-blue-600 ml-2">
+                    @if(request('start_date') && request('end_date'))
+                        {{ \Carbon\Carbon::parse(request('start_date'))->format('M d, Y') }} - {{ \Carbon\Carbon::parse(request('end_date'))->format('M d, Y') }}
+                    @elseif(request('start_date'))
+                        From {{ \Carbon\Carbon::parse(request('start_date'))->format('M d, Y') }}
+                    @elseif(request('end_date'))
+                        Until {{ \Carbon\Carbon::parse(request('end_date'))->format('M d, Y') }}
+                    @endif
+                </span>
+            </div>
+            <a href="{{ route('cashier.dashboard') }}" class="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                <i class="fas fa-times mr-1"></i>Clear Filters
+            </a>
+        </div>
+    </div>
+    @endif
+
     <!-- Stats Cards -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <a href="{{ route('cashier.orders.index') }}" class="bg-white rounded-lg shadow p-6 border-l-4 border-green-500 hover:shadow-lg">

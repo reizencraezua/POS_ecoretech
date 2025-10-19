@@ -31,35 +31,20 @@
             </a>
             
             <!-- Search -->
-            <div class="flex items-center space-x-2">
-                <div class="relative">
-                    <input type="text" 
-                           id="instantSearchInput" 
-                           data-instant-search="true"
-                           data-container="paymentsTableContainer"
-                           data-loading="searchLoading"
-                           placeholder="Search payments..." 
-                           class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-maroon focus:border-maroon"
-                           value="{{ request('search') }}">
-                    <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-                    <div id="searchLoading" class="absolute right-3 top-1/2 transform -translate-y-1/2 hidden">
-                        <i class="fas fa-spinner fa-spin text-gray-400"></i>
-                    </div>
-                </div>
-                @if(request('search') || request('method') || request('date_range') || request('start_date') || request('end_date'))
-                    <a href="{{ route('admin.payments.index') }}" class="bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-lg transition-colors">
-                        <i class="fas fa-times"></i>
-                    </a>
-                @endif
+            <div class="relative">
+                <input type="text" id="searchInput" placeholder="Search payments..." 
+                       class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-maroon focus:border-maroon w-80">
+                <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+            </div>
             </div>
         </div>
     </div>
 
     <!-- Payments Table -->
-    <div class="bg-white rounded-lg shadow overflow-hidden">
+    <div id="paymentsTableContainer" class="bg-white rounded-lg shadow overflow-hidden">
         <div id="paymentsTableContainer">
             <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-gray-200">
+                <table id="paymentsTable" class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">
                     <tr>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Receipt</th>
@@ -123,22 +108,22 @@
                                 <span class="px-2 py-1 text-xs font-medium rounded-full
                                     @switch($payment->payment_method)
                                         @case('Cash')
-                                            bg-green-100 text-green-800
+                                            text-green-800
                                             @break
                                         @case('GCash')
-                                            bg-blue-100 text-blue-800
+                                            text-blue-800
                                             @break
                                         @case('Bank Transfer')
-                                            bg-purple-100 text-purple-800
+                                            text-purple-800
                                             @break
                                         @case('Check')
-                                            bg-yellow-100 text-yellow-800
+                                            text-yellow-800
                                             @break
                                         @case('Credit Card')
-                                            bg-gray-100 text-gray-800
+                                            text-gray-800
                                             @break
                                         @default
-                                            bg-gray-100 text-gray-800
+                                            text-gray-800
                                     @endswitch
                                 ">
                                     {{ $payment->payment_method }}
@@ -171,9 +156,9 @@
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 @if($payment->balance > 0)
-                                    <span class="px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800">Partial</span>
+                                    <span class="px-2 py-1 text-xs font-medium rounded-full text-red-800">Partial</span>
                                 @else
-                                    <span class="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">Complete</span>
+                                    <span class="px-2 py-1 text-xs font-medium rounded-full text-green-800">Complete</span>
                                 @endif
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium" onclick="event.stopPropagation()">
@@ -732,5 +717,26 @@ function handleDateRangeChange() {
 
 </script>
 
-<script src="{{ asset('js/instant-search.js') }}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('searchInput');
+    const paymentsTable = document.getElementById('paymentsTable');
+    
+    if (searchInput && paymentsTable) {
+        searchInput.addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase().trim();
+            const rows = paymentsTable.querySelectorAll('tbody tr');
+            
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                if (text.includes(searchTerm)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        });
+    }
+});
+</script>
 @endsection

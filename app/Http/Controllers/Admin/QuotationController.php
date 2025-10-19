@@ -11,12 +11,15 @@ use App\Models\DiscountRule;
 use App\Models\Order;
 use App\Models\Payment;
 use App\Models\Employee;
+use App\Models\Log;
+use App\Traits\LogsActivity;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Log as LaravelLog;
 use Illuminate\Support\Facades\DB;
 
 class QuotationController extends Controller
 {
+    use LogsActivity;
     public function index(Request $request)
     {
         $showArchived = $request->boolean('archived');
@@ -58,7 +61,7 @@ class QuotationController extends Controller
             });
         }
 
-        $quotations = $query->latest('quotation_date')->paginate(15)->appends($request->query());
+        $quotations = $query->orderBy('quotation_id', 'desc')->paginate(15)->appends($request->query());
 
         // If it's an AJAX request, return only the table content
         if ($request->ajax()) {
@@ -82,30 +85,50 @@ class QuotationController extends Controller
     public function store(Request $request)
     {
         try {
-            // Debug: Log the incoming request data
-            \Log::info('Quotation creation request data:', $request->all());
-            \Log::info('Quotation creation attempt started');
-
             $validated = $request->validate([
                 'customer_id' => 'required|exists:customers,customer_id',
                 'quotation_date' => 'required|date',
                 'valid_until' => 'required|date|after:quotation_date',
-                'notes' => 'nullable|string',
-                'terms_and_conditions' => 'nullable|string',
+                'notes' => 'nullable|string|max:1000',
+                'terms_and_conditions' => 'nullable|string|max:2000',
                 'items' => 'required|array|min:1',
                 'items.*.type' => 'required|in:product,service',
                 'items.*.id' => 'required|integer',
-                'items.*.quantity' => 'required|integer|min:1',
+                'items.*.quantity' => 'required|integer|min:1|max:9999',
                 'items.*.unit_id' => 'required|exists:units,unit_id',
-                'items.*.size' => 'nullable|string',
-                'items.*.price' => 'required|numeric|min:0',
+                'items.*.size' => 'nullable|string|max:255',
+                'items.*.price' => 'required|numeric|min:0|max:999999.99',
                 'items.*.layout' => 'nullable|in:on,1,true,false,0',
-                'items.*.layoutPrice' => 'nullable|numeric|min:0',
-                'items.*.discountAmount' => 'nullable|numeric|min:0',
-                'items.*.discountRule' => 'nullable|string',
+                'items.*.layoutPrice' => 'nullable|numeric|min:0|max:999999.99',
+                'items.*.discountAmount' => 'nullable|numeric|min:0|max:999999.99',
+                'items.*.discountRule' => 'nullable|string|max:255',
+            ], [
+                'customer_id.required' => 'Please select a customer.',
+                'customer_id.exists' => 'Selected customer does not exist.',
+                'quotation_date.required' => 'Quotation date is required.',
+                'quotation_date.date' => 'Please enter a valid quotation date.',
+                'valid_until.required' => 'Valid until date is required.',
+                'valid_until.date' => 'Please enter a valid date.',
+                'valid_until.after' => 'Valid until date must be after quotation date.',
+                'items.required' => 'At least one item is required.',
+                'items.min' => 'At least one item is required.',
+                'items.*.type.required' => 'Item type is required.',
+                'items.*.type.in' => 'Invalid item type selected.',
+                'items.*.id.required' => 'Item ID is required.',
+                'items.*.id.integer' => 'Invalid item ID.',
+                'items.*.quantity.required' => 'Quantity is required.',
+                'items.*.quantity.integer' => 'Quantity must be a whole number.',
+                'items.*.quantity.min' => 'Quantity must be at least 1.',
+                'items.*.quantity.max' => 'Quantity cannot exceed 9999.',
+                'items.*.unit_id.required' => 'Unit is required.',
+                'items.*.unit_id.exists' => 'Selected unit does not exist.',
+                'items.*.price.required' => 'Price is required.',
+                'items.*.price.numeric' => 'Price must be a number.',
+                'items.*.price.min' => 'Price cannot be negative.',
+                'items.*.price.max' => 'Price cannot exceed ₱999,999.99.',
             ]);
 
-            $totalAmount = 0;
+            DB::beginTransaction();
 
             $quotation = Quotation::create([
                 'customer_id' => $validated['customer_id'],
@@ -115,63 +138,56 @@ class QuotationController extends Controller
                 'terms_and_conditions' => $validated['terms_and_conditions'],
                 'status' => 'Pending',
                 'total_amount' => 0, // Will be calculated after details
+                'created_by' => auth('web')->id(),
             ]);
 
-            // Process quotation details following the same formula as orders
+            // Process quotation details
             foreach ($validated['items'] as $item) {
-                // Store the base amount (Quantity × Price) for each item
                 $baseAmount = $item['quantity'] * $item['price'];
+                $layoutPrice = in_array($item['layout'] ?? false, ['on', '1', 'true', 1, true]) ? ($item['layoutPrice'] ?? 0) : 0;
+                $subtotal = $baseAmount + $layoutPrice;
 
                 $quotation->details()->create([
                     'quantity' => $item['quantity'],
                     'unit_id' => $item['unit_id'],
                     'size' => $item['size'],
                     'price' => $item['price'],
-                    'subtotal' => $baseAmount, // Store base amount (Quantity × Price)
+                    'subtotal' => $subtotal,
                     'layout' => in_array($item['layout'] ?? false, ['on', '1', 'true', 1, true]),
-                    'layout_price' => $item['layoutPrice'] ?? 0,
+                    'layout_price' => $layoutPrice,
                     'product_id' => $item['type'] === 'product' ? $item['id'] : null,
                     'service_id' => $item['type'] === 'service' ? $item['id'] : null,
                 ]);
             }
 
-            // Calculate using the same formula as orders
-            // Formula 1: Total Amount = (Quantity × Unit Price)
-            $totalAmount = $quotation->details->sum(function ($detail) {
-                return $detail->quantity * $detail->price;
-            });
+            // Calculate final total amount using the model's calculation methods
+            $finalTotalAmount = $quotation->fresh()->final_total_amount;
             
-            // Formula 2: Sub Total = Total Amount ÷ 1.12
-            $subTotal = $totalAmount / 1.12;
-            
-            // Formula 3: VAT Tax = Total Amount × 0.12
-            $vatAmount = $totalAmount * 0.12;
-            
-            // Formula 4: Discount Amount = Total Amount × Discount Rate
-            $totalQuantity = array_sum(array_column($validated['items'], 'quantity'));
-            $discountAmount = $this->calculateOrderDiscount($totalAmount, $totalQuantity);
-            
-            // Formula 5: Final Total Amount = (Total Amount - Discount Amount) + layout fee
-            $layoutFees = $quotation->details->sum(function ($detail) {
-                return $detail->layout ? $detail->layout_price : 0;
-            });
-            $finalTotalAmount = ($totalAmount - $discountAmount) + $layoutFees;
-            
-            // Update quotation with final total amount
+            // Update total amount
             $quotation->update(['total_amount' => $finalTotalAmount]);
+
+            DB::commit();
+
+            // Log the creation
+            $this->logCreated(
+                Log::TYPE_QUOTATION,
+                $quotation->quotation_id,
+                $this->generateTransactionName(Log::TYPE_QUOTATION, $quotation->quotation_id),
+                $quotation->toArray()
+            );
 
             return redirect()->route('admin.quotations.index')
                 ->with('success', 'Quotation created successfully.');
         } catch (\Illuminate\Validation\ValidationException $e) {
-            \Log::error('Validation error in quotation creation:', $e->errors());
+            DB::rollBack();
+            LaravelLog::error('Quotation validation error: ' . json_encode($e->errors()));
             return redirect()->back()
                 ->withErrors($e->errors())
                 ->withInput();
         } catch (\Exception $e) {
-            \Log::error('Error creating quotation:', [
-                'message' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
+            DB::rollBack();
+            LaravelLog::error('Error creating quotation: ' . $e->getMessage());
+            LaravelLog::error('Stack trace: ' . $e->getTraceAsString());
             return redirect()->back()
                 ->with('error', 'Failed to create quotation: ' . $e->getMessage())
                 ->withInput();
@@ -180,7 +196,7 @@ class QuotationController extends Controller
 
     public function show(Quotation $quotation)
     {
-        $quotation->load(['customer', 'details.product', 'details.service', 'details.unit']);
+        $quotation->load(['customer', 'details.product', 'details.service', 'details.unit', 'histories.updatedBy']);
         return view('admin.quotations.show', compact('quotation'));
     }
 
@@ -198,83 +214,117 @@ class QuotationController extends Controller
 
     public function update(Request $request, Quotation $quotation)
     {
-        $validated = $request->validate([
-            'customer_id' => 'required|exists:customers,customer_id',
-            'quotation_date' => 'required|date',
-            'valid_until' => 'required|date|after:quotation_date',
-            'notes' => 'nullable|string',
-            'terms_and_conditions' => 'nullable|string',
-            'items' => 'required|array|min:1',
-            'items.*.type' => 'required|in:product,service',
-            'items.*.id' => 'required|integer',
-            'items.*.quantity' => 'required|integer|min:1',
-            'items.*.unit_id' => 'required|exists:units,unit_id',
-            'items.*.size' => 'nullable|string',
-            'items.*.price' => 'required|numeric|min:0',
-            'items.*.layout' => 'nullable|in:on,1,true,false,0',
-            'items.*.layoutPrice' => 'nullable|numeric|min:0',
-            'items.*.discountAmount' => 'nullable|numeric|min:0',
-            'items.*.discountRule' => 'nullable|string',
-        ]);
-
-        $totalAmount = 0;
-
-        $quotation->update([
-            'customer_id' => $validated['customer_id'],
-            'quotation_date' => $validated['quotation_date'],
-            'valid_until' => $validated['valid_until'],
-            'notes' => $validated['notes'],
-            'terms_and_conditions' => $validated['terms_and_conditions'],
-        ]);
-
-        // Delete existing quotation details
-        $quotation->details()->delete();
-
-        // Create new quotation details following the same formula as orders
-        foreach ($validated['items'] as $item) {
-            // Store the base amount (Quantity × Price) for each item
-            $baseAmount = $item['quantity'] * $item['price'];
-
-            $quotation->details()->create([
-                'quantity' => $item['quantity'],
-                'unit_id' => $item['unit_id'],
-                'size' => $item['size'],
-                'price' => $item['price'],
-                'subtotal' => $baseAmount, // Store base amount (Quantity × Price)
-                'layout' => in_array($item['layout'] ?? false, ['on', '1', 'true', 1, true]),
-                'layout_price' => $item['layoutPrice'] ?? 0,
-                'product_id' => $item['type'] === 'product' ? $item['id'] : null,
-                'service_id' => $item['type'] === 'service' ? $item['id'] : null,
+        try {
+            // Store original data for logging
+            $originalData = $quotation->toArray();
+            $validated = $request->validate([
+                'customer_id' => 'required|exists:customers,customer_id',
+                'quotation_date' => 'required|date',
+                'valid_until' => 'required|date|after:quotation_date',
+                'notes' => 'nullable|string|max:1000',
+                'terms_and_conditions' => 'nullable|string|max:2000',
+                'items' => 'required|array|min:1',
+                'items.*.type' => 'required|in:product,service',
+                'items.*.id' => 'required|integer',
+                'items.*.quantity' => 'required|integer|min:1|max:9999',
+                'items.*.unit_id' => 'required|exists:units,unit_id',
+                'items.*.size' => 'nullable|string|max:255',
+                'items.*.price' => 'required|numeric|min:0|max:999999.99',
+                'items.*.layout' => 'nullable|in:on,1,true,false,0',
+                'items.*.layoutPrice' => 'nullable|numeric|min:0|max:999999.99',
+                'items.*.discountAmount' => 'nullable|numeric|min:0|max:999999.99',
+                'items.*.discountRule' => 'nullable|string|max:255',
+            ], [
+                'customer_id.required' => 'Please select a customer.',
+                'customer_id.exists' => 'Selected customer does not exist.',
+                'quotation_date.required' => 'Quotation date is required.',
+                'quotation_date.date' => 'Please enter a valid quotation date.',
+                'valid_until.required' => 'Valid until date is required.',
+                'valid_until.date' => 'Please enter a valid date.',
+                'valid_until.after' => 'Valid until date must be after quotation date.',
+                'items.required' => 'At least one item is required.',
+                'items.min' => 'At least one item is required.',
+                'items.*.type.required' => 'Item type is required.',
+                'items.*.type.in' => 'Invalid item type selected.',
+                'items.*.id.required' => 'Item ID is required.',
+                'items.*.id.integer' => 'Invalid item ID.',
+                'items.*.quantity.required' => 'Quantity is required.',
+                'items.*.quantity.integer' => 'Quantity must be a whole number.',
+                'items.*.quantity.min' => 'Quantity must be at least 1.',
+                'items.*.quantity.max' => 'Quantity cannot exceed 9999.',
+                'items.*.unit_id.required' => 'Unit is required.',
+                'items.*.unit_id.exists' => 'Selected unit does not exist.',
+                'items.*.price.required' => 'Price is required.',
+                'items.*.price.numeric' => 'Price must be a number.',
+                'items.*.price.min' => 'Price cannot be negative.',
+                'items.*.price.max' => 'Price cannot exceed ₱999,999.99.',
             ]);
+
+            DB::beginTransaction();
+
+            $quotation->update([
+                'customer_id' => $validated['customer_id'],
+                'quotation_date' => $validated['quotation_date'],
+                'valid_until' => $validated['valid_until'],
+                'notes' => $validated['notes'],
+                'terms_and_conditions' => $validated['terms_and_conditions'],
+            ]);
+
+            // Delete existing quotation details
+            $quotation->details()->delete();
+
+            // Process new quotation details
+            foreach ($validated['items'] as $item) {
+                $baseAmount = $item['quantity'] * $item['price'];
+                $layoutPrice = in_array($item['layout'] ?? false, ['on', '1', 'true', 1, true]) ? ($item['layoutPrice'] ?? 0) : 0;
+                $subtotal = $baseAmount + $layoutPrice;
+
+                $quotation->details()->create([
+                    'quantity' => $item['quantity'],
+                    'unit_id' => $item['unit_id'],
+                    'size' => $item['size'],
+                    'price' => $item['price'],
+                    'subtotal' => $subtotal,
+                    'layout' => in_array($item['layout'] ?? false, ['on', '1', 'true', 1, true]),
+                    'layout_price' => $layoutPrice,
+                    'product_id' => $item['type'] === 'product' ? $item['id'] : null,
+                    'service_id' => $item['type'] === 'service' ? $item['id'] : null,
+                ]);
+            }
+
+            // Calculate final total amount using the model's calculation methods
+            $finalTotalAmount = $quotation->fresh()->final_total_amount;
+            
+            // Update total amount
+            $quotation->update(['total_amount' => $finalTotalAmount]);
+
+            DB::commit();
+
+            // Log the update
+            $this->logUpdated(
+                Log::TYPE_QUOTATION,
+                $quotation->quotation_id,
+                $originalData,
+                $quotation->fresh()->toArray(),
+                $this->generateTransactionName(Log::TYPE_QUOTATION, $quotation->quotation_id)
+            );
+
+            return redirect()->route('admin.quotations.index')
+                ->with('success', 'Quotation updated successfully.');
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            DB::rollBack();
+            LaravelLog::error('Quotation validation error: ' . json_encode($e->errors()));
+            return redirect()->back()
+                ->withErrors($e->errors())
+                ->withInput();
+        } catch (\Exception $e) {
+            DB::rollBack();
+            LaravelLog::error('Error updating quotation: ' . $e->getMessage());
+            LaravelLog::error('Stack trace: ' . $e->getTraceAsString());
+            return redirect()->back()
+                ->with('error', 'Failed to update quotation: ' . $e->getMessage())
+                ->withInput();
         }
-
-        // Calculate using the same formula as orders
-        // Formula 1: Total Amount = (Quantity × Unit Price)
-        $totalAmount = $quotation->details->sum(function ($detail) {
-            return $detail->quantity * $detail->price;
-        });
-        
-        // Formula 2: Sub Total = Total Amount ÷ 1.12
-        $subTotal = $totalAmount / 1.12;
-        
-        // Formula 3: VAT Tax = Total Amount × 0.12
-        $vatAmount = $totalAmount * 0.12;
-        
-        // Formula 4: Discount Amount = Total Amount × Discount Rate
-        $totalQuantity = array_sum(array_column($validated['items'], 'quantity'));
-        $discountAmount = $this->calculateOrderDiscount($totalAmount, $totalQuantity);
-        
-        // Formula 5: Final Total Amount = (Total Amount - Discount Amount) + layout fee
-        $layoutFees = $quotation->details->sum(function ($detail) {
-            return $detail->layout ? $detail->layout_price : 0;
-        });
-        $finalTotalAmount = ($totalAmount - $discountAmount) + $layoutFees;
-        
-        // Update quotation with final total amount
-        $quotation->update(['total_amount' => $finalTotalAmount]);
-
-        return redirect()->route('admin.quotations.index')
-            ->with('success', 'Quotation updated successfully.');
     }
 
     public function updateStatus(Request $request, Quotation $quotation)
@@ -283,13 +333,31 @@ class QuotationController extends Controller
             'status' => 'required|in:Pending,Closed',
         ]);
 
+        $oldStatus = $quotation->status;
         $quotation->update(['status' => $validated['status']]);
+
+        // Log the status change
+        $this->logStatusChanged(
+            Log::TYPE_QUOTATION,
+            $quotation->quotation_id,
+            $oldStatus,
+            $validated['status'],
+            $this->generateTransactionName(Log::TYPE_QUOTATION, $quotation->quotation_id)
+        );
 
         return back()->with('success', 'Quotation status updated successfully.');
     }
 
     public function destroy(Quotation $quotation)
     {
+        // Log the deletion
+        $this->logDeleted(
+            Log::TYPE_QUOTATION,
+            $quotation->quotation_id,
+            $this->generateTransactionName(Log::TYPE_QUOTATION, $quotation->quotation_id),
+            $quotation->toArray()
+        );
+
         $quotation->delete();
 
         return redirect()->route('admin.quotations.index')
@@ -298,6 +366,14 @@ class QuotationController extends Controller
 
     public function archive(Quotation $quotation)
     {
+        // Log the deletion
+        $this->logDeleted(
+            Log::TYPE_QUOTATION,
+            $quotation->quotation_id,
+            $this->generateTransactionName(Log::TYPE_QUOTATION, $quotation->quotation_id),
+            $quotation->toArray()
+        );
+
         $quotation->delete();
 
         return redirect()->route('admin.quotations.index')
@@ -424,6 +500,7 @@ class QuotationController extends Controller
             // Create order from quotation
             $order = Order::create([
                 'order_id' => Order::generateOrderId(),
+                'display_order_id' => Order::generateDisplayOrderId(),
                 'customer_id' => $quotation->customer_id,
                 'employee_id' => $validated['employee_id'],
                 'layout_employee_id' => $validated['layout_employee_id'] ?? null,
@@ -464,7 +541,8 @@ class QuotationController extends Controller
                 $remaining = max(0, $totalAmount - $amountPaid);
                 $change = $amountPaid > $totalAmount ? ($amountPaid - $totalAmount) : 0;
 
-                Payment::create([
+                $paymentRecord = Payment::create([
+                    'payment_id' => Payment::generatePaymentId(),
                     'receipt_number' => 'RCPT-' . now()->format('YmdHis') . '-' . $order->order_id,
                     'payment_date' => now()->format('Y-m-d'),
                     'payment_method' => $validated['payment_method'] ?? 'Cash',
@@ -475,12 +553,48 @@ class QuotationController extends Controller
                     'reference_number' => $validated['reference_number'] ?? null,
                     'remarks' => $validated['payment_remarks'] ?? null,
                     'order_id' => $order->order_id,
+                    'created_by' => auth('web')->id() ?? \App\Models\User::first()->id,
+                    'received_by' => auth('web')->id() ?? \App\Models\User::first()->id,
                 ]);
+
+                // Log the payment creation
+                $this->logCreated(
+                    Log::TYPE_PAYMENT,
+                    $paymentRecord->payment_id,
+                    $this->generateTransactionName(Log::TYPE_PAYMENT, $paymentRecord->payment_id),
+                    $paymentRecord->toArray()
+                );
             }
 
             // Update quotation status to closed and archive it
             $quotation->update(['status' => 'closed']);
             $quotation->delete(); // Soft delete to archive the quotation
+
+            // Log the quotation conversion to job order
+            $this->logActivity(
+                Log::TYPE_QUOTATION,
+                (string)$quotation->quotation_id,
+                Log::ACTION_CONVERTED_TO_ORDER,
+                'Quotation #' . $quotation->quotation_id,
+                [
+                    'converted_to' => [
+                        'order_id' => $order->order_id,
+                        'order_date' => $order->order_date,
+                        'deadline_date' => $order->deadline_date,
+                        'employee_id' => $order->employee_id,
+                        'layout_employee_id' => $order->layout_employee_id,
+                        'total_amount' => $order->total_amount
+                    ]
+                ]
+            );
+
+            // Log the job order creation
+            $this->logCreated(
+                Log::TYPE_ORDER,
+                $order->order_id,
+                'Job Order #' . $order->order_id,
+                $order->toArray()
+            );
 
             DB::commit();
 
@@ -489,7 +603,7 @@ class QuotationController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('Error converting quotation to job order: ' . $e->getMessage());
+            LaravelLog::error('Error converting quotation to job order: ' . $e->getMessage());
             return redirect()->back()
                 ->with('error', 'Failed to convert quotation to job order: ' . $e->getMessage())
                 ->withInput();
@@ -517,6 +631,42 @@ class QuotationController extends Controller
             ]);
         } catch (\Exception $e) {
             return response()->json(['error' => 'Failed to fetch quotation data'], 500);
+        }
+    }
+
+    /**
+     * Get quotation items for AJAX requests
+     */
+    public function getItems(Quotation $quotation)
+    {
+        try {
+            $quotation->load(['details.product', 'details.service', 'details.unit']);
+            
+            $items = $quotation->details->map(function ($detail) {
+                return [
+                    'item_type' => $detail->item_type,
+                    'item_name' => $detail->product ? $detail->product->product_name : $detail->service->service_name,
+                    'quantity' => $detail->quantity,
+                    'unit_name' => $detail->unit ? $detail->unit->unit_name : null,
+                    'size' => $detail->size,
+                    'price' => $detail->price,
+                    'layout' => $detail->layout,
+                    'layout_price' => $detail->layout_price,
+                    'subtotal' => $detail->subtotal
+                ];
+            });
+
+            // Calculate total layout fees
+            $layoutFees = $quotation->details->where('layout', true)->sum('layout_price');
+
+            return response()->json([
+                'items' => $items,
+                'layout_fees' => $layoutFees,
+                'total_amount' => $quotation->final_total_amount,
+                'total_items' => $items->count()
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Failed to fetch quotation items'], 500);
         }
     }
 }

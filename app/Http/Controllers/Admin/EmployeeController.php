@@ -17,21 +17,8 @@ class EmployeeController extends Controller
             ? Employee::onlyTrashed()->with(['job', 'orders'])
             : Employee::with(['job', 'orders']);
 
-        // Handle search functionality
-        if ($request->has('search')) {
-            $search = $request->search;
-            $query->where(function ($q) use ($search) {
-                $q->where('employee_firstname', 'LIKE', "%{$search}%")
-                    ->orWhere('employee_lastname', 'LIKE', "%{$search}%")
-                    ->orWhere('employee_email', 'LIKE', "%{$search}%")
-                    ->orWhere('employee_contact', 'LIKE', "%{$search}%")
-                    ->orWhereHas('job', function ($jobQuery) use ($search) {
-                        $jobQuery->where('job_title', 'LIKE', "%{$search}%");
-                    });
-            });
-        }
 
-        $employees = $query->latest()->paginate(15)->appends($request->query());
+        $employees = $query->latest()->paginate(15);
         
         // Add order counts to each employee
         $employees->getCollection()->transform(function ($employee) {
@@ -117,13 +104,16 @@ class EmployeeController extends Controller
                 'job_id' => $request->job_id,
             ]);
 
-            // Check if employee is a cashier and create user account
+            // Check if employee is a cashier or admin and create user account
             $job = Job::find($request->job_id);
             $message = 'Employee added successfully!';
             
             if ($job && strtolower($job->job_title) === 'cashier') {
                 $this->createCashierAccount($employee);
                 $message = 'Employee added successfully! Cashier account has been automatically created.';
+            } elseif ($job && strtolower($job->job_title) === 'admin') {
+                $this->createAdminAccount($employee);
+                $message = 'Employee added successfully! Admin account has been automatically created.';
             }
 
             return redirect()->route('admin.employees.index')
@@ -140,7 +130,7 @@ class EmployeeController extends Controller
      */
     public function show(Employee $employee)
     {
-        $employee->load(['job']);
+        $employee->load(['job', 'user']);
         
         // Get all orders where employee is either main employee or layout employee
         $orders = \App\Models\Order::where('employee_id', $employee->employee_id)
@@ -226,6 +216,14 @@ class EmployeeController extends Controller
                 if (!$employee->user) {
                     $this->createCashierAccount($employee);
                     $message = 'Employee updated successfully! Cashier account has been automatically created.';
+                }
+            } elseif ($newJob && strtolower($newJob->job_title) === 'admin' && 
+                (!$oldJob || strtolower($oldJob->job_title) !== 'admin')) {
+                
+                // Check if user account already exists
+                if (!$employee->user) {
+                    $this->createAdminAccount($employee);
+                    $message = 'Employee updated successfully! Admin account has been automatically created.';
                 }
             }
 
@@ -372,6 +370,44 @@ class EmployeeController extends Controller
 
         } catch (\Exception $e) {
             \Log::error("Failed to create cashier account for employee {$employee->full_name} (#{$employee->employee_id})", [
+                'error' => $e->getMessage(),
+                'employee_id' => $employee->employee_id
+            ]);
+        }
+    }
+
+    /**
+     * Create admin account for employee
+     */
+    private function createAdminAccount(Employee $employee)
+    {
+        try {
+            // Generate email: (firstname)(zero-padded employeeID)@ecoretech.com
+            // Remove spaces and special characters from firstname
+            $firstname = preg_replace('/[^a-zA-Z]/', '', $employee->employee_firstname);
+            $email = strtolower($firstname) . str_pad($employee->employee_id, 4, '0', STR_PAD_LEFT) . '@ecoretech.com';
+            
+            // Generate password: (surname)(employeeID)
+            $password = strtolower($employee->employee_lastname) . $employee->employee_id;
+
+            \App\Models\User::create([
+                'name' => $employee->full_name,
+                'email' => $email,
+                'password' => bcrypt($password),
+                'role' => 'admin',
+                'is_active' => true,
+                'employee_id' => $employee->employee_id,
+            ]);
+
+            // Log the account creation for reference
+            \Log::info("Admin account created for employee {$employee->full_name} (#{$employee->employee_id})", [
+                'email' => $email,
+                'password' => $password,
+                'employee_id' => $employee->employee_id
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error("Failed to create admin account for employee {$employee->full_name} (#{$employee->employee_id})", [
                 'error' => $e->getMessage(),
                 'employee_id' => $employee->employee_id
             ]);

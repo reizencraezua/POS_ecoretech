@@ -5,10 +5,11 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Models\TracksHistory;
 
 class Job extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes, TracksHistory;
 
     protected $table = 'job_positions';
     protected $primaryKey = 'job_id';
@@ -21,5 +22,10 @@ class Job extends Model
     public function employees()
     {
         return $this->hasMany(Employee::class, 'job_id');
+    }
+
+    public function histories()
+    {
+        return $this->hasMany(JobHistory::class, 'job_id', 'job_id');
     }
 }

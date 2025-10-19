@@ -1,167 +1,331 @@
 @extends('layouts.cashier')
 
 @section('title', 'Quotation Details')
-@section('page-title', 'Quotation Details')
-@section('page-description', 'View quotation information and details')
-
-@section('header-actions')
-<div class="flex items-center space-x-4">
-    <a href="{{ route('cashier.quotations.index') }}" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-medium inline-flex items-center">
-        <i class="fas fa-arrow-left mr-2"></i>
-        Back to Quotations
-    </a>
-    
-    @if($quotation->status === 'pending')
-        <form method="POST" action="{{ route('cashier.quotations.update-status', $quotation) }}" class="inline">
-            @csrf
-            @method('PATCH')
-            <input type="hidden" name="status" value="approved">
-            <button type="submit" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium inline-flex items-center"
-                    onclick="return confirm('Approve this quotation?')">
-                <i class="fas fa-check mr-2"></i>
-                Approve
-            </button>
-        </form>
-        
-        <form method="POST" action="{{ route('cashier.quotations.update-status', $quotation) }}" class="inline">
-            @csrf
-            @method('PATCH')
-            <input type="hidden" name="status" value="rejected">
-            <button type="submit" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium inline-flex items-center"
-                    onclick="return confirm('Reject this quotation?')">
-                <i class="fas fa-times mr-2"></i>
-                Reject
-            </button>
-        </form>
-    @endif
-</div>
-@endsection
+@section('page-title', 'Quotation #' . $quotation->quotation_id)
+@section('page-description', 'View detailed information about this quotation')
 
 @section('content')
-<div class="space-y-6">
-    <!-- Quotation Header -->
-    <div class="bg-white rounded-lg shadow p-6">
-        <div class="flex justify-between items-start">
-            <div>
-                <h2 class="text-2xl font-bold text-gray-900">Quotation #{{ $quotation->quotation_id }}</h2>
-                <p class="text-gray-600">Created on {{ $quotation->quotation_date->format('F d, Y') }}</p>
-            </div>
-            <div class="text-right">
-                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium
-                    @if($quotation->status === 'pending') bg-yellow-100 text-yellow-800
-                    @elseif($quotation->status === 'approved') bg-green-100 text-green-800
-                    @elseif($quotation->status === 'rejected') bg-red-100 text-red-800
-                    @else bg-gray-100 text-gray-800 @endif">
-                    {{ ucfirst($quotation->status) }}
-                </span>
-                <p class="text-sm text-gray-500 mt-1">Valid until {{ $quotation->valid_until->format('F d, Y') }}</p>
-            </div>
-        </div>
-    </div>
-
-    <!-- Customer Information -->
-    <div class="bg-white rounded-lg shadow p-6">
-        <h3 class="text-lg font-semibold text-gray-900 mb-4">Customer Information</h3>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-                <p class="text-sm font-medium text-gray-500">Name</p>
-                <p class="text-sm text-gray-900">{{ $quotation->customer->customer_firstname }} {{ $quotation->customer->customer_lastname }}</p>
-            </div>
-            @if($quotation->customer->business_name)
-            <div>
-                <p class="text-sm font-medium text-gray-500">Business Name</p>
-                <p class="text-sm text-gray-900">{{ $quotation->customer->business_name }}</p>
-            </div>
-            @endif
-            <div>
-                <p class="text-sm font-medium text-gray-500">Email</p>
-                <p class="text-sm text-gray-900">{{ $quotation->customer->customer_email }}</p>
-            </div>
-            <div>
-                <p class="text-sm font-medium text-gray-500">Phone</p>
-                <p class="text-sm text-gray-900">{{ $quotation->customer->customer_phone }}</p>
-            </div>
-            @if($quotation->customer->customer_address)
-            <div class="md:col-span-2">
-                <p class="text-sm font-medium text-gray-500">Address</p>
-                <p class="text-sm text-gray-900">{{ $quotation->customer->customer_address }}</p>
-            </div>
-            @endif
-        </div>
-    </div>
-
-    <!-- Quotation Items -->
-    <div class="bg-white rounded-lg shadow overflow-hidden">
+<div class="max-w-7xl mx-auto">
+    <!-- Header -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
         <div class="px-6 py-4 border-b border-gray-200">
-            <h3 class="text-lg font-semibold text-gray-900">Quotation Items</h3>
-        </div>
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
-                    <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Item</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unit</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Size</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Layout</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Subtotal</th>
-                    </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
-                    @foreach($quotation->details as $detail)
-                    <tr>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="text-sm font-medium text-gray-900">
-                                {{ $detail->product ? $detail->product->product_name : $detail->service->service_name }}
-                            </div>
-                            <div class="text-sm text-gray-500">
-                                {{ $detail->product ? 'Product' : 'Service' }}
-                            </div>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {{ $detail->quantity }}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {{ $detail->unit ?? '-' }}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {{ $detail->size ?? '-' }}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            ₱{{ number_format($detail->price, 2) }}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            @if($detail->layout)
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                    Yes
-                                </span>
-                                @if($detail->layout_price > 0)
-                                    <div class="text-xs text-gray-500 mt-1">₱{{ number_format($detail->layout_price, 2) }}</div>
-                                @endif
-                            @else
-                                <span class="text-gray-400">No</span>
-                            @endif
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                            ₱{{ number_format($detail->subtotal, 2) }}
-                        </td>
-                    </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        </div>
-    </div>
-
-    <!-- Total Amount -->
-    <div class="bg-white rounded-lg shadow p-6">
-        <div class="flex justify-end">
-            <div class="w-64">
-                <div class="flex justify-between items-center py-2">
-                    <span class="text-lg font-medium text-gray-900">Total Amount:</span>
-                    <span class="text-2xl font-bold text-gray-900">₱{{ number_format($quotation->total_amount, 2) }}</span>
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <a href="{{ route('cashier.quotations.index') }}" class="text-gray-500 hover:text-gray-700 transition-colors">
+                        <i class="fas fa-arrow-left text-lg"></i>
+                    </a>
+                    <div>
+                        <h2 class="text-2xl font-semibold text-gray-900">Quotation #{{ $quotation->quotation_id }}</h2>
+                        <div class="flex items-center space-x-6 text-sm text-gray-600 mt-1">
+                            <span><i class="fas fa-calendar mr-1"></i>{{ $quotation->quotation_date->format('M d, Y') }}</span>
+                            <span><i class="fas fa-user mr-1"></i>{{ $quotation->customer->display_name }}</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-8">
+                    <div class="text-right">
+                        <div class="text-2xl font-bold text-gray-900">₱{{ number_format($quotation->final_total_amount, 2) }}</div>
+                        <div class="text-sm text-gray-600">Total Amount</div>
+                    </div>
+                    <span class="px-3 py-1 rounded-md text-sm font-medium {{ $quotation->status == 'Pending' ? 'text-maroon' : 'text-gray-800' }}">
+                        {{ $quotation->status }}
+                    </span>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 xl:grid-cols-4 gap-6">
+        <!-- Main Content -->
+        <div class="xl:col-span-3 space-y-4">
+            <!-- Quotation Information -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h3 class="text-lg font-semibold text-gray-900">Quotation Information</h3>
+                </div>
+                <div class="p-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                        <div class="space-y-6">
+                            <div>
+                                <h4 class="text-sm font-medium text-gray-500 uppercase tracking-wide mb-3">Customer Details</h4>
+                                <div class="space-y-2">
+                                    <p class="text-gray-900 font-medium">{{ $quotation->customer->display_name }}</p>
+                                    <div class="space-y-2">
+                                    <div class="flex items-center text-sm text-gray-600">
+                                        <i class="fas fa-envelope w-4 mr-2"></i>
+                                        {{ $quotation->customer->customer_email }}
+                                    </div>
+                                    <div class="flex items-center text-sm text-gray-600">
+                                        <i class="fas fa-phone w-4 mr-2"></i>
+                                        {{ $quotation->customer->contact_number1 }}
+                                    </div>
+                                </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="space-y-6">
+                            <div>
+                                <h4 class="text-sm font-medium text-gray-500 uppercase tracking-wide mb-3">Timeline</h4>
+                                <div class="space-y-3">
+                                    <div class="flex justify-between">
+                                        <span class="text-sm text-gray-600">Quotation Date</span>
+                                        <span class="text-sm font-medium text-gray-900">{{ $quotation->quotation_date->format('M d, Y') }}</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-sm text-gray-600">Status</span>
+                                        <span class="text-sm font-medium text-gray-900">{{ $quotation->status }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quotation Items -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-lg font-semibold text-gray-900">Quotation Items</h3>
+                        <div class="flex items-center space-x-6 text-sm text-gray-600">
+                            <span>{{ $quotation->details->count() }} items</span>
+                            @if($quotation->layout_fees > 0)
+                            <span>₱{{ number_format($quotation->layout_fees, 2) }} layout fee</span>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Item</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unit</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Size</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unit Price</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Layout</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Layout Price</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            @forelse($quotation->details as $detail)
+                            <tr>
+                                <td class="px-4 py-3 whitespace-nowrap">
+                                    <span class="px-2 py-1 text-xs font-medium rounded-full
+                                        {{ $detail->item_type === 'Product' ? 'text-blue-800' : 'text-green-800' }}">
+                                        {{ $detail->item_type }}
+                                    </span>
+                                </td>
+                                <td class="px-4 py-3 whitespace-nowrap">
+                                    <div class="text-sm font-medium text-gray-900">
+                                        {{ $detail->item_name }}
+                                    </div>
+                                </td>
+                                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ $detail->quantity }}</td>
+                                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ $detail->unit ? $detail->unit->unit_name : '-' }}</td>
+                                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ $detail->size }}</td>
+                                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">₱{{ number_format($detail->price, 2) }}</td>
+                                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                                    @if($detail->layout)
+                                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium text-green-800">
+                                            <i class="fas fa-check mr-1"></i>Yes
+                                        </span>
+                                    @else
+                                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium text-gray-800">
+                                            <i class="fas fa-times mr-1"></i>No
+                                        </span>
+                                    @endif
+                                </td>
+                                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                                    @if($detail->layout && $detail->layout_price > 0)
+                                        ₱{{ number_format($detail->layout_price, 2) }}
+                                    @else
+                                        <span class="text-gray-400">-</span>
+                                    @endif
+                                </td>
+                            </tr>
+                            @empty
+                            <tr>
+                                <td colspan="8" class="px-4 py-8 text-center text-gray-500">
+                                    <i class="fas fa-box text-4xl mb-2"></i>
+                                    <p>No items found for this quotation.</p>
+                                </td>
+                            </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Quotation Summary -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h3 class="text-lg font-semibold text-gray-900">Quotation Summary</h3>
+                </div>
+                <div class="p-6">
+                    <div class="space-y-3">
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">No. of items: </span>
+                            <span class="font-medium">{{ $quotation->details->sum('quantity') }}</span>
+                        </div>
+                        
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Base Amount:</span>
+                            <span class="font-medium">₱{{ number_format($quotation->base_amount, 2) }}</span>
+                        </div>
+                        
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">VAT (12%):</span>
+                            <span class="font-medium">₱{{ number_format($quotation->vat_amount, 2) }}</span>
+                        </div>
+                        
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Sub Total:</span>
+                            <span class="font-medium">₱{{ number_format($quotation->sub_total, 2) }}</span>
+                        </div>
+                       
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Order Discount:</span>
+                            <div class="text-right">
+                                <div class="font-medium text-green-600">-₱{{ number_format($quotation->quotation_discount_amount, 2) }}</div>
+                                @if($quotation->quotation_discount_info)
+                                    <div class="text-xs text-gray-500">
+                                        @if($quotation->quotation_discount_info['type'] === 'percentage')
+                                            {{ $quotation->quotation_discount_info['percentage'] }}% off
+                                        @else
+                                            ₱{{ number_format($quotation->quotation_discount_info['amount'], 2) }} off
+                                        @endif
+                                        @if($quotation->quotation_discount_info['rule_name'])
+                                            ({{ $quotation->quotation_discount_info['rule_name'] }})
+                                        @endif
+                                    </div>
+                                @endif
+                            </div>
+                        </div>
+
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Layout Fees: </span>
+                            <span class="font-medium">₱{{ number_format($quotation->layout_fees, 2) }}</span>
+                        </div>
+                        
+                        <hr class="border-gray-200">
+                        <div class="flex justify-between text-lg font-bold">
+                            <span>TOTAL AMOUNT: </span>
+                            <span>₱{{ number_format($quotation->final_total_amount, 2) }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Notes -->
+            @if($quotation->notes)
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h3 class="text-lg font-semibold text-gray-900">Notes</h3>
+                </div>
+                <div class="p-6">
+                    <p class="text-gray-700">{{ $quotation->notes }}</p>
+                </div>
+            </div>
+            @endif
+
+            <!-- Terms and Conditions -->
+            @if($quotation->terms_and_conditions)
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h3 class="text-lg font-semibold text-gray-900">Terms and Conditions</h3>
+                </div>
+                <div class="p-6">
+                    <p class="text-gray-700">{{ $quotation->terms_and_conditions }}</p>
+                </div>
+            </div>
+            @endif
+
+        </div>
+
+        <!-- Sidebar -->
+        <div class="space-y-6">
+
+            <!-- Actions -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+                <div class="px-4 py-3 border-b border-gray-200">
+                    <h3 class="text-sm font-semibold text-gray-900">Actions</h3>
+                </div>
+                <div class="p-4 space-y-3">
+                    <a href="{{ route('cashier.quotations.edit', $quotation) }}" class="w-full bg-gray-100 hover:bg-gray-200 text-gray-900 px-3 py-2 rounded text-sm transition-colors inline-flex items-center justify-center">
+                        Edit Quotation
+                    </a>
+                    @if($quotation->status === 'Pending')
+                    <form action="{{ route('cashier.quotations.status', $quotation) }}" method="POST" class="w-full">
+                        @csrf
+                        @method('PATCH')
+                        <input type="hidden" name="status" value="Closed">
+                        <button type="submit" class="w-full bg-gray-100 hover:bg-gray-200 text-gray-900 px-3 py-2 rounded text-sm transition-colors inline-flex items-center justify-center">
+                            Close Quotation
+                        </button>
+                    </form>
+                    @else
+                    <form action="{{ route('cashier.quotations.status', $quotation) }}" method="POST" class="w-full">
+                        @csrf
+                        @method('PATCH')
+                        <input type="hidden" name="status" value="Pending">
+                        <button type="submit" class="w-full bg-gray-100 hover:bg-gray-200 text-gray-900 px-3 py-2 rounded text-sm transition-colors inline-flex items-center justify-center">
+                            Reopen Quotation
+                        </button>
+                    </form>
+                    @endif
+                    <form method="POST" action="{{ route('cashier.quotations.archive', $quotation) }}" 
+                          onsubmit="return confirm('Are you sure you want to archive this quotation?')" class="w-full">
+                        @csrf
+                        <button type="submit" class="w-full bg-gray-100 hover:bg-gray-200 text-gray-900 px-3 py-2 rounded text-sm transition-colors inline-flex items-center justify-center">
+                            Archive Quotation
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Update History -->
+            @if($quotation->histories->count() > 0)
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+                <div class="px-4 py-3 border-b border-gray-200">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-sm font-semibold text-gray-900 flex items-center">
+                            <i class="fas fa-history mr-2 text-maroon"></i>
+                            Update History
+                        </h3>
+                        <span class="text-xs text-gray-500">{{ $quotation->histories->count() }} update(s)</span>
+                    </div>
+                </div>
+                <div class="p-4">
+                    <div class="space-y-4 max-h-80 overflow-y-auto">
+                        @foreach($quotation->histories->sortByDesc('created_at') as $history)
+                        <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                            <div class="flex justify-between items-start mb-2">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                                        <i class="fas fa-edit text-blue-600 text-sm"></i>
+                                    </div>
+                                    <div>
+                                        <p class="text-sm font-medium text-gray-900">{{ $history->description }}</p>
+                                        <p class="text-xs text-gray-500">{{ $history->created_at->format('M d, Y g:i A') }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="flex justify-between items-center mt-2 pt-2 border-t border-gray-200">
+                                <span class="text-xs text-gray-500">
+                                    Updated by: {{ $history->updatedBy ? $history->updatedBy->name : 'System' }}
+                                </span>
+                            </div>
+                        </div>
+                        @endforeach
+                    </div>
+                </div>
+            </div>
+            @endif
         </div>
     </div>
 </div>

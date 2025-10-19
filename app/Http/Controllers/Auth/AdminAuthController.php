@@ -12,6 +12,17 @@ class AdminAuthController extends Controller
 {
     public function showLoginForm()
     {
+        // If user is already authenticated, redirect to appropriate dashboard
+        if (Auth::guard('web')->check()) {
+            $user = Auth::guard('web')->user();
+            
+            if ($user->isCashier()) {
+                return redirect()->route('cashier.dashboard');
+            } else {
+                return redirect()->route('admin.dashboard');
+            }
+        }
+        
         return view('auth.login');
     }
 

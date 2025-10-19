@@ -1,4 +1,4 @@
-    @extends('layouts.admin')
+@extends('layouts.admin')
 
 @section('title', 'Edit Quotation')
 @section('page-title', 'Edit Quotation')
@@ -60,7 +60,7 @@
                     
                     <div>
                         <label for="valid_until" class="block text-sm font-medium text-gray-700 mb-2">Valid Until</label>
-                        <input type="date" name="valid_until" id="valid_until" value="{{ old('valid_until', now()->addDays(30)->format('Y-m-d')) }}"
+                        <input type="date" name="valid_until" id="valid_until" value="{{ old('valid_until', $quotation->valid_until->format('Y-m-d')) }}"
                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon @error('valid_until') border-red-500 @enderror">
                         @error('valid_until')
                             <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
@@ -143,9 +143,9 @@
                                                 class="w-24 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon"
                                                 :key="`size-${index}-${item.id}`">
                                             <option value="">Select Size</option>
-                                            <template x-if="item.type === 'product' && item.id">
-                                                <template x-for="size in getAvailableSizes(item.id)" :key="size.size_id">
-                                                    <option :value="size.size_name" x-text="size.size_name"></option>
+                                            <template x-if="(item.type === 'product' || item.type === 'service') && item.id">
+                                                <template x-for="size in getAvailableSizes(item.id, item.type)" :key="size.size_id">
+                                                    <option :value="size.size_name" :selected="item.size === size.size_name" x-text="size.size_name"></option>
                                                 </template>
                                             </template>
                                         </select>
@@ -330,15 +330,24 @@ function quotationForm() {
             this.calculateSubtotal(index);
         },
 
-        getAvailableSizes(productId) {
-            const product = this.products.find(p => p.product_id == productId);
-            if (!product || !product.category) return [];
-            
-            return product.category.sizes || [];
+        getAvailableSizes(itemId, itemType) {
+            if (itemType === 'product') {
+                const product = this.products.find(p => p.product_id == itemId);
+                if (!product || !product.category) return [];
+                return product.category.sizes || [];
+            } else if (itemType === 'service') {
+                const service = this.services.find(s => s.service_id == itemId);
+                if (!service || !service.category) return [];
+                return service.category.sizes || [];
+            }
+            return [];
         },
         
         updatePrice(index) {
             const item = this.items[index];
+            // Reset size when item changes
+            item.size = '';
+            
             if (item.type === 'product' && item.id) {
                 const product = this.products.find(p => p.product_id == item.id);
                 if (product) {

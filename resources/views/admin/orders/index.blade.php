@@ -4,27 +4,6 @@
 @section('page-title', 'Job Order Management')
 @section('page-description', 'Track and manage all job orders')
 
-@section('header-actions')
-<form method="GET" action="{{ route('admin.orders.index') }}" class="flex items-end gap-3" id="dateFilterForm">
-    <div>
-        <label for="start_date" class="block text-xs font-medium text-gray-600 mb-1">Start date</label>
-        <input type="date" id="start_date" name="start_date" value="{{ request('start_date') }}"
-               class="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon"
-               onchange="document.getElementById('dateFilterForm').submit();">
-    </div>
-    <div>
-        <label for="end_date" class="block text-xs font-medium text-gray-600 mb-1">End date</label>
-        <input type="date" id="end_date" name="end_date" value="{{ request('end_date') }}"
-               class="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon"
-               onchange="document.getElementById('dateFilterForm').submit();">
-    </div>
-    <div class="flex items-center gap-2">
-        <input type="hidden" name="archived" value="{{ (isset($showArchived) && $showArchived) ? 1 : 0 }}">
-        <a href="{{ route('admin.orders.index', ['archived' => (isset($showArchived) && $showArchived) ? 1 : 0]) }}" class="px-3 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">Reset</a>
-    </div>
-</form>
-@endsection
-
 @section('content')
 <div class="space-y-6">
 
@@ -129,36 +108,19 @@
                     </optgroup>
                 </select>
                 <div class="relative">
-                    <input type="text" 
-                           id="instantSearchInput" 
-                           data-instant-search="true"
-                           data-container="ordersTableContainer"
-                           data-loading="searchLoading"
-                           value="{{ request('search') }}" 
-                           placeholder="Search orders..." 
-                           class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-maroon focus:border-maroon">
+                    <input type="text" id="searchInput" placeholder="Search orders..." 
+                           class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-maroon focus:border-maroon w-80">
                     <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-                    <div id="searchLoading" class="absolute right-3 top-1/2 transform -translate-y-1/2 hidden">
-                        <i class="fas fa-spinner fa-spin text-gray-400"></i>
-                    </div>
                 </div>
                 <input type="hidden" name="archived" value="{{ (isset($showArchived) && $showArchived) ? 1 : 0 }}">
                 <input type="hidden" name="start_date" value="{{ request('start_date') }}">
                 <input type="hidden" name="end_date" value="{{ request('end_date') }}">
-                @if(request('search') || request('status') || request('start_date') || request('end_date') || request('archived'))
-                    <a href="{{ route('admin.orders.index', ['archived' => (isset($showArchived) && $showArchived) ? 1 : 0]) }}" class="bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-lg transition-colors">
-                        <i class="fas fa-times"></i>
-                    </a>
-                @endif
             </form>
         </div>
     </div>
 
-   
-
-
     <!-- Orders Table -->
-    <div class="bg-white rounded-lg shadow overflow-hidden">
+    <div id="ordersTableContainer" class="bg-white rounded-lg shadow overflow-hidden">
         @include('admin.orders.partials.orders-table')
     </div>
 </div>
@@ -166,5 +128,30 @@
 <!-- Alpine.js for dropdown functionality -->
 <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
 
-<script src="{{ asset('js/instant-search.js') }}"></script>
+<script>
+function showPaymentError() {
+    alert('Cannot edit due to payment exist');
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('searchInput');
+    const ordersTable = document.getElementById('ordersTable');
+    
+    if (searchInput && ordersTable) {
+        searchInput.addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase().trim();
+            const rows = ordersTable.querySelectorAll('tbody tr');
+            
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                if (text.includes(searchTerm)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        });
+    }
+});
+</script>
 @endsection

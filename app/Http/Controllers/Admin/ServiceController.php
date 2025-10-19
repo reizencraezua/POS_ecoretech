@@ -20,18 +20,8 @@ class ServiceController extends Controller
             ? Service::with(['category', 'size', 'unit'])->onlyTrashed()
             : Service::with(['category', 'size', 'unit']);
 
-        // Handle search functionality
-        if ($request->has('search') && $request->search) {
-            $search = $request->search;
-            $query->where('service_name', 'LIKE', "%{$search}%")
-                ->orWhere('description', 'LIKE', "%{$search}%");
-        }
-
         // Order by ID and paginate
         $services = $query->orderBy('service_id', 'asc')->paginate(9);
-
-        // Preserve search parameters in pagination
-        $services->appends($request->query());
 
         return view('admin.services.index', compact('services', 'showArchived'));
     }

@@ -52,32 +52,16 @@
 				{{ (isset($showArchived) && $showArchived) ? 'Show Active' : 'View Archives' }}
 			</a>
 			
-			<form method="GET" class="flex items-center space-x-2" id="searchForm">
-				<div class="relative">
-					<input type="text" 
-                           id="instantSearchInput" 
-                           data-instant-search="true"
-                           data-container="productsTableContainer"
-                           data-loading="searchLoading"
-                           value="{{ request('search') }}" 
-                           placeholder="Search products..." 
-                           class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-maroon focus:border-maroon">
-					<i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-                    <div id="searchLoading" class="absolute right-3 top-1/2 transform -translate-y-1/2 hidden">
-                        <i class="fas fa-spinner fa-spin text-gray-400"></i>
-                    </div>
-				</div>
-				@if(request('search'))
-					<a href="{{ route('admin.products.index') }}" class="bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-lg transition-colors">
-						<i class="fas fa-times"></i>
-					</a>
-				@endif
-			</form>
+			<div class="relative">
+				<input type="text" id="searchInput" placeholder="Search products..." 
+					   class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-maroon focus:border-maroon w-80">
+				<i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+			</div>
 		</div>
 	</div>
 
 	<!-- Products Grid -->
-	<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+	<div id="productsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
 		@forelse($products as $product)
 			<div class="bg-white rounded-lg shadow hover:shadow-lg transition-all duration-200 border border-gray-200 group cursor-pointer relative">
 				<!-- Clickable overlay for the entire card -->
@@ -89,8 +73,8 @@
 						<div class="flex items-center justify-between mb-2">
 							<span class="text-sm text-gray-500">#{{ str_pad($product->product_id, 3, '0', STR_PAD_LEFT) }}</span>
 							@if($product->category)
-								<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium" 
-									  style="background-color: {{ $product->category->category_color }}20; color: {{ $product->category->category_color }};">
+								<span class="inline-flex items-center text-xs font-medium" 
+									  style="color: {{ $product->category->category_color }};">
 									{{ $product->category->category_name }}
 								</span>
 							@endif
@@ -463,5 +447,26 @@ document.getElementById('archiveModal').addEventListener('click', function(e) {
 }
 </style>
 
-<script src="{{ asset('js/instant-search.js') }}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('searchInput');
+    const productsGrid = document.getElementById('productsGrid');
+    
+    if (searchInput && productsGrid) {
+        searchInput.addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase().trim();
+            const cards = productsGrid.querySelectorAll('.bg-white.rounded-lg.shadow');
+            
+            cards.forEach(card => {
+                const text = card.textContent.toLowerCase();
+                if (text.includes(searchTerm)) {
+                    card.style.display = '';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        });
+    }
+});
+</script>
 @endsection

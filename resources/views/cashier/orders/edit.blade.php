@@ -7,23 +7,9 @@
 @section('content')
 <div class="max-w-full mx-auto px-4">
     <div class="bg-white rounded-lg shadow-md">
-        <div class="px-6 py-4 border-b border-gray-200">
-            <div class="flex items-center justify-between">
-                <div class="flex items-center space-x-3">
-                    <a href="{{ route('cashier.orders.show', $order) }}" class="text-gray-500 hover:text-gray-700">
-                        <i class="fas fa-arrow-left"></i>
-                    </a>
-                    <h2 class="text-xl font-semibold text-gray-900">Edit Job Order #{{ $order->order_id }}</h2>
-                </div>
-                <div class="text-sm text-gray-500">
-                    <i class="fas fa-info-circle mr-1"></i>
-                    Update the details below to modify this job order
-                </div>
-            </div>
-        </div>
         
 
-        <form method="POST" action="{{ route('cashier.orders.update', $order) }}" class="p-6" x-data="orderForm()" x-init="init()" @submit="if (!validateDownpayment()) { $event.preventDefault(); } else { console.log('Form submitted', $data); }">
+        <form method="POST" action="{{ route('cashier.orders.update', $order) }}" class="p-6" x-data="orderForm()" x-init="init()" @submit="if (!validateForm()) { $event.preventDefault(); } else { syncFormData(); console.log('Form submitted', $data); }">
             @csrf
             @method('PUT')
             
@@ -483,40 +469,31 @@
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Payment Method</label>
                         <select name="payment[payment_method]" id="payment_method"
-                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon @error('payment.payment_method') border-red-500 @enderror">
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon">
                             <option value="">Select Method</option>
-                            <option value="Cash" {{ old('payment.payment_method') == 'Cash' ? 'selected' : '' }}>Cash</option>
-                            <option value="GCash" {{ old('payment.payment_method') == 'GCash' ? 'selected' : '' }}>GCash</option>
-                            <option value="Bank Transfer" {{ old('payment.payment_method') == 'Bank Transfer' ? 'selected' : '' }}>Bank Transfer</option>
-                            <option value="Check" {{ old('payment.payment_method') == 'Check' ? 'selected' : '' }}>Check</option>
-                            <option value="Credit Card" {{ old('payment.payment_method') == 'Credit Card' ? 'selected' : '' }}>Credit Card</option>
+                            <option value="Cash">Cash</option>
+                            <option value="GCash">GCash</option>
+                            <option value="Bank Transfer">Bank Transfer</option>
+                            <option value="Check">Check</option>
+                            <option value="Credit Card">Credit Card</option>
                         </select>
-                        @error('payment.payment_method')
-                            <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
-                        @enderror
                     </div>
                     
                     <div id="reference_number_field" style="display: none;">
                         <label class="block text-sm font-medium text-gray-700 mb-1">Reference Number</label>
                         <input type="text" name="payment[reference_number]" id="reference_number"
-                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon @error('payment.reference_number') border-red-500 @enderror"
-                               placeholder="Enter reference number" value="{{ old('payment.reference_number') }}">
-                        @error('payment.reference_number')
-                            <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
-                        @enderror
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon"
+                               placeholder="Enter reference number">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Payment Term</label>
                         <select name="payment[payment_term]" id="payment_term" @change="toggleDownpaymentInfo()"
-                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon @error('payment.payment_term') border-red-500 @enderror">
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon">
                             <option value="">Select Term</option>
-                            <option value="Downpayment" {{ old('payment.payment_term') == 'Downpayment' ? 'selected' : '' }}>Downpayment</option>
-                            <option value="Initial" {{ old('payment.payment_term') == 'Initial' ? 'selected' : '' }}>Initial</option>
-                            <option value="Full" {{ old('payment.payment_term') == 'Full' ? 'selected' : '' }}>Full</option>
+                            <option value="Downpayment">Downpayment</option>
+                            <option value="Initial">Initial</option>
+                            <option value="Full">Full</option>
                         </select>
-                        @error('payment.payment_term')
-                            <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
-                        @enderror
                     </div>
                     
                     <!-- Downpayment Information -->
@@ -542,20 +519,14 @@
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Amount</label>
                         <input type="number" step="0.01" min="0" name="payment[amount_paid]"
-                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon @error('payment.amount_paid') border-red-500 @enderror"
-                               placeholder="0.00" value="{{ old('payment.amount_paid') }}">
-                        @error('payment.amount_paid')
-                            <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
-                        @enderror
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon"
+                               placeholder="0.00">
                     </div>
                             <div class="md:col-span-2">
                                 <label class="block text-sm font-medium text-gray-700 mb-1">Remarks</label>
                                 <textarea name="payment[remarks]" rows="2"
-                                          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon @error('payment.remarks') border-red-500 @enderror"
-                                          placeholder="Optional notes for this payment...">{{ old('payment.remarks') }}</textarea>
-                                @error('payment.remarks')
-                                    <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
-                                @enderror
+                                          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon"
+                                          placeholder="Optional notes for this payment..."></textarea>
                             </div>
                         </div>
                     </div>
@@ -882,8 +853,9 @@ function orderForm() {
                     const finalTotalAmount = this.getFinalTotalAmount();
                     const existingPayments = {{ $order->payments->sum('amount_paid') }};
                     const remainingBalance = finalTotalAmount - existingPayments;
-                    const expectedDownpayment = finalTotalAmount * 0.5;
-                    const remainingDownpayment = Math.max(0, expectedDownpayment - existingPayments);
+                    
+                    // Calculate downpayment based on remaining balance (50% of remaining balance)
+                    const remainingDownpayment = Math.max(0, remainingBalance * 0.5);
                     
                     // Update display elements
                     document.getElementById('final_total_amount').textContent = `₱${finalTotalAmount.toFixed(2)}`;
@@ -901,6 +873,10 @@ function orderForm() {
                                 <span>Remaining Balance:</span>
                                 <span>₱${remainingBalance.toFixed(2)}</span>
                             </div>
+                            <div class="flex justify-between items-center text-xs text-blue-600 mt-1 pt-1 border-t border-blue-300">
+                                <span>Required Downpayment (50% of remaining):</span>
+                                <span class="font-semibold">₱${remainingDownpayment.toFixed(2)}</span>
+                            </div>
                         `;
                     }
                     
@@ -915,15 +891,73 @@ function orderForm() {
             this.updateDownpaymentInfo();
         },
 
-        validateDownpayment() {
-            const paymentTermSelect = document.getElementById('payment_term');
-            const amountPaidInput = document.querySelector('input[name="payment[amount_paid]"]');
+        syncFormData() {
+            // Sync Alpine.js items data with form inputs
+            this.items.forEach((item, index) => {
+                // Update all form inputs for this item
+                const typeInput = document.querySelector(`input[name="items[${index}][type]"]`);
+                const idInput = document.querySelector(`input[name="items[${index}][id]"]`);
+                const quantityInput = document.querySelector(`input[name="items[${index}][quantity]"]`);
+                const unitInput = document.querySelector(`input[name="items[${index}][unit_id]"]`);
+                const sizeInput = document.querySelector(`input[name="items[${index}][size]"]`);
+                const priceInput = document.querySelector(`input[name="items[${index}][price]"]`);
+                const layoutInput = document.querySelector(`input[name="items[${index}][layout]"]`);
+                const layoutPriceInput = document.querySelector(`input[name="items[${index}][layoutPrice]"]`);
+                
+                if (typeInput) typeInput.value = item.type;
+                if (idInput) idInput.value = item.id;
+                if (quantityInput) quantityInput.value = item.quantity;
+                if (unitInput) unitInput.value = item.unit_id;
+                if (sizeInput) sizeInput.value = item.size || '';
+                if (priceInput) priceInput.value = item.price;
+                if (layoutInput) layoutInput.checked = item.layout;
+                if (layoutPriceInput) layoutPriceInput.value = item.layoutPrice;
+            });
+        },
+
+        validateForm() {
+            // Check if customer is selected
+            const customerId = document.getElementById('customer_id').value;
+            if (!customerId) {
+                alert('Please select a customer.');
+                return false;
+            }
             
-            if (amountPaidInput) {
+            // Check if employee is selected
+            const employeeId = document.getElementById('employee_id').value;
+            if (!employeeId) {
+                alert('Please select a production employee.');
+                return false;
+            }
+            
+            // Check if order date is filled
+            const orderDate = document.getElementById('order_date').value;
+            if (!orderDate) {
+                alert('Please select an order date.');
+                return false;
+            }
+            
+            // Check if deadline date is filled
+            const deadlineDate = document.getElementById('deadline_date').value;
+            if (!deadlineDate) {
+                alert('Please select a deadline date.');
+                return false;
+            }
+            
+            // Validate payment if provided
+            return this.validateDownpayment();
+        },
+
+        validateDownpayment() {
+            const amountPaidInput = document.querySelector('input[name="payment[amount_paid]"]');
+            const paymentTermSelect = document.getElementById('payment_term');
+            
+            if (amountPaidInput && paymentTermSelect) {
                 const finalTotalAmount = this.getFinalTotalAmount();
                 const existingPayments = {{ $order->payments->sum('amount_paid') }};
                 const remainingBalance = finalTotalAmount - existingPayments;
                 const amountPaid = parseFloat(amountPaidInput.value) || 0;
+                const selectedTerm = paymentTermSelect.value;
                 
                 // Check if payment amount exceeds remaining balance
                 if (amountPaid > remainingBalance) {
@@ -931,15 +965,16 @@ function orderForm() {
                     return false;
                 }
                 
-                // Check downpayment validation
-                if (paymentTermSelect && paymentTermSelect.value === 'Downpayment') {
-                    const expectedDownpayment = finalTotalAmount * 0.5;
-                    const remainingDownpayment = Math.max(0, expectedDownpayment - existingPayments);
-                    const totalAfterPayment = existingPayments + amountPaid;
+                // Validate downpayment amount if payment term is "Downpayment"
+                if (selectedTerm === 'Downpayment' && amountPaid > 0) {
+                    const requiredDownpayment = remainingBalance * 0.5;
                     
-                    if (totalAfterPayment < expectedDownpayment) {
-                        alert(`Downpayment must be at least 50% of the total amount (₱${expectedDownpayment.toFixed(2)}). You need to pay at least ₱${remainingDownpayment.toFixed(2)} more. Current amount: ₱${amountPaid.toFixed(2)}`);
-                        return false;
+                    // Allow partial downpayment but warn if it's less than required
+                    if (amountPaid < requiredDownpayment) {
+                        const confirmMessage = `The required downpayment is ₱${requiredDownpayment.toFixed(2)} (50% of remaining balance). You are paying ₱${amountPaid.toFixed(2)}. Do you want to proceed with this partial downpayment?`;
+                        if (!confirm(confirmMessage)) {
+                            return false;
+                        }
                     }
                 }
             }

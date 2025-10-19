@@ -9,11 +9,8 @@
     <!-- Header -->
     <div class="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
         <div class="px-6 py-4 border-b border-gray-200">
-            <div class="flex items-center justify-between">
-                <div>
-                    <h2 class="text-xl font-semibold text-gray-900">Discount Rules</h2>
-                    <p class="text-sm text-gray-600 mt-1">Manage quantity-based discounts for orders</p>
-                </div>
+            <div class="flex items-center justify-end">
+               
                 <div class="flex items-center space-x-4">
                     @if(!$showArchived)
                         <a href="{{ route('admin.discount-rules.create') }}" class="bg-maroon hover:bg-maroon-dark text-white px-4 py-2 rounded-lg transition-colors inline-flex items-center">
@@ -58,7 +55,7 @@
                             @endif
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {{ $rule->min_quantity }}+
+                            {{ $rule->min_quantity }}
                             @if($rule->max_quantity)
                                 - {{ $rule->max_quantity }}
                             @else

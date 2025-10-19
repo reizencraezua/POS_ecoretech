@@ -15,40 +15,25 @@
                     Record Payment
                 </a>
             @endif
-            <button onclick="openFilterModal()" class="bg-maroon hover:bg-maroon-dark text-white px-4 py-2 rounded-lg inline-flex items-center">
-                <i class="fas fa-filter mr-2"></i>
-                Advanced Filters
-            </button>
+          
         </div>
         
         <!-- Search and Archive Toggle -->
         <div class="flex items-center space-x-4">
-            <!-- Archive Toggle -->
-            <a href="{{ route('cashier.payments.index', array_merge(request()->query(), ['archived' => isset($showArchived) && $showArchived ? 0 : 1])) }}"
-               class="px-4 py-2 rounded-lg font-medium inline-flex items-center border {{ (isset($showArchived) && $showArchived) ? 'border-green-600 text-green-700 hover:bg-green-50' : 'border-gray-300 text-gray-700 hover:bg-gray-50' }}">
-                <i class="fas fa-box-archive mr-2"></i>
-                {{ (isset($showArchived) && $showArchived) ? 'Show Active' : 'View Archives' }}
-            </a>
+          
             
             <!-- Search -->
-            <form method="GET" id="searchForm" class="flex items-center space-x-2">
-                <div class="relative">
-                    <input type="text" name="search" id="searchInput" value="{{ request('search') }}" placeholder="Search payments..." 
-                           class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-maroon focus:border-maroon">
-                    <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-                </div>
-                @if(request('search') || request('method') || request('date_range') || request('start_date') || request('end_date'))
-                    <a href="{{ route('cashier.payments.index') }}" class="bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-lg">
-                        <i class="fas fa-times"></i>
-                    </a>
-                @endif
-            </form>
+            <div class="relative">
+                <input type="text" id="searchInput" placeholder="Search payments..." 
+                       class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-maroon focus:border-maroon w-80">
+                <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+            </div>
         </div>
     </div>
 
     <!-- Payments Table -->
     <div class="bg-white rounded-lg shadow overflow-hidden">
-        <div class="overflow-x-auto">
+        <div class="overflow-x-auto" id="paymentsTable">
             <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">
                     <tr>
@@ -58,7 +43,6 @@
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Method</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created By</th>
                         <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                     </tr>
                 </thead>
@@ -161,24 +145,7 @@
                                     <span class="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">Complete</span>
                                 @endif
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm font-medium text-gray-900">
-                                    @if($payment->creator)
-                                        @if($payment->creator->employee)
-                                            EMP{{ $payment->creator->employee->employee_id }} : {{ $payment->creator->employee->employee_firstname }}
-                                        @else
-                                            {{ $payment->creator->name }}
-                                        @endif
-                                    @else
-                                        System
-                                    @endif
-                                </div>
-                                <div class="text-sm text-gray-500">
-                                    @if($payment->creator)
-                                        {{ $payment->created_at->diffForHumans() }}
-                                    @endif
-                                </div>
-                            </td>
+                           
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium" onclick="event.stopPropagation()">
                                 <div class="flex items-center justify-center space-x-3">
                                     <!-- Print Button -->
@@ -187,25 +154,6 @@
                                         title="Print Receipt">
                                     <i class="fas fa-print"></i>
                                 </button>
-                                
-                                    <!-- Edit Button -->
-                                   
-                                    
-                                    @if($showArchived)
-                                        <x-archive-actions 
-                                            :item="$payment" 
-                                            :archiveRoute="'cashier.payments.archive'" 
-                                            :restoreRoute="'cashier.payments.restore'" 
-                                            :editRoute="'cashier.payments.edit'"
-                                            :showRestore="true" />
-                                    @else
-                                        <x-archive-actions 
-                                            :item="$payment" 
-                                            :archiveRoute="'cashier.payments.archive'" 
-                                            :restoreRoute="'cashier.payments.restore'" 
-                                            :editRoute="'cashier.payments.edit'"
-                                            :showRestore="false" />
-                                    @endif
                                 </div>
                             </td>
                         </tr>
@@ -233,185 +181,7 @@
     </div>
 </div>
 
-<!-- Filter Modal -->
-<div id="filterModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
-    <div class="relative top-10 mx-auto p-5 border w-11/12 md:w-4/5 lg:w-3/4 xl:w-2/3 shadow-lg rounded-md bg-white">
-        <div class="mt-3">
-            <div class="flex items-center justify-between mb-4">
-                <h3 class="text-lg font-medium text-gray-900">Advanced Payment Filters & Summary</h3>
-                <button onclick="closeFilterModal()" class="text-gray-400 hover:text-gray-600">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <!-- Filters Section -->
-                <div>
-                    <h4 class="text-md font-medium text-gray-900 mb-4">Filters</h4>
-            <form id="filterForm" method="GET" action="{{ route('cashier.payments.index') }}">
-                <div class="space-y-4">
-                    <!-- Date Range Filter -->
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Date Range</label>
-                                <select name="date_range" id="date_range" 
-                                        class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-maroon focus:border-maroon">
-                                    <option value="">All Time</option>
-                                    <option value="today" {{ request('date_range') == 'today' ? 'selected' : '' }}>Today</option>
-                                    <option value="yesterday" {{ request('date_range') == 'yesterday' ? 'selected' : '' }}>Yesterday</option>
-                                    <option value="last_7_days" {{ request('date_range') == 'last_7_days' ? 'selected' : '' }}>Last 7 Days</option>
-                                    <option value="last_30_days" {{ request('date_range') == 'last_30_days' ? 'selected' : '' }}>Last 30 Days</option>
-                                    <option value="last_3_months" {{ request('date_range') == 'last_3_months' ? 'selected' : '' }}>Last 3 Months</option>
-                                    <option value="this_year" {{ request('date_range') == 'this_year' ? 'selected' : '' }}>This Year</option>
-                                    <option value="custom" {{ request('date_range') == 'custom' ? 'selected' : '' }}>Custom Range</option>
-                                </select>
-                    </div>
 
-                            <!-- Custom Date Range (shown when "Custom Range" is selected) -->
-                            <div id="custom_date_range_div" class="hidden">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Custom Date Range</label>
-                        <div class="grid grid-cols-2 gap-4">
-                            <div>
-                                <label for="start_date" class="block text-xs text-gray-500 mb-1">Start Date</label>
-                                <input type="date" name="start_date" id="start_date" value="{{ request('start_date') }}" 
-                                       class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-maroon focus:border-maroon">
-                            </div>
-                            <div>
-                                <label for="end_date" class="block text-xs text-gray-500 mb-1">End Date</label>
-                                <input type="date" name="end_date" id="end_date" value="{{ request('end_date') }}" 
-                                       class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-maroon focus:border-maroon">
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Payment Method Filter -->
-                    <div>
-                        <label for="payment_method" class="block text-sm font-medium text-gray-700 mb-2">Payment Method</label>
-                        <select name="payment_method" id="payment_method" 
-                                class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-maroon focus:border-maroon">
-                            <option value="">All Payment Methods</option>
-                            <option value="Cash" {{ request('payment_method') == 'Cash' ? 'selected' : '' }}>Cash</option>
-                            <option value="GCash" {{ request('payment_method') == 'GCash' ? 'selected' : '' }}>GCash</option>
-                            <option value="Bank Transfer" {{ request('payment_method') == 'Bank Transfer' ? 'selected' : '' }}>Bank Transfer</option>
-                            <option value="Check" {{ request('payment_method') == 'Check' ? 'selected' : '' }}>Check</option>
-                            <option value="Credit Card" {{ request('payment_method') == 'Credit Card' ? 'selected' : '' }}>Credit Card</option>
-                        </select>
-                    </div>
-
-                    <!-- Payment Status Filter -->
-                    <div>
-                        <label for="payment_status" class="block text-sm font-medium text-gray-700 mb-2">Payment Status</label>
-                        <select name="payment_status" id="payment_status" 
-                                class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-maroon focus:border-maroon">
-                            <option value="">All Status</option>
-                            <option value="complete" {{ request('payment_status') == 'complete' ? 'selected' : '' }}>Complete</option>
-                            <option value="partial" {{ request('payment_status') == 'partial' ? 'selected' : '' }}>Partial</option>
-                        </select>
-                    </div>
-
-                    <!-- Summary Cards -->
-                    <div class="mb-4">
-                        <div class="bg-blue-50 p-3 rounded-lg mb-3">
-                            <div class="text-sm text-blue-600 font-medium">Total Amount</div>
-                            <div id="totalAmount" class="text-lg font-bold text-blue-800">₱0.00</div>
-                        </div>
-                        <div class="bg-green-50 p-3 rounded-lg">
-                            <div class="text-sm text-green-600 font-medium mb-2">Payment Methods</div>
-                            <div id="paymentMethodsSummary" class="space-y-1">
-                                <div class="text-xs text-gray-500">No payments found</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="flex justify-between items-center mt-6">
-                    <button type="button" onclick="printPaymentSummary()" 
-                            class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 inline-flex items-center">
-                        <i class="fas fa-print mr-2"></i>
-                        Print Summary
-                    </button>
-                    <div class="flex space-x-3">
-                        <button type="button" onclick="closeFilterModal()" 
-                                class="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400">
-                            Cancel
-                        </button>
-                        <button type="submit" 
-                                class="px-4 py-2 bg-maroon text-white rounded-lg hover:bg-maroon-dark">
-                            Apply Filters
-                        </button>
-                    </div>
-                </div>
-            </form>
-                </div>
-
-                <!-- Payments List Section -->
-                <div>
-                    <h4 class="text-md font-medium text-gray-900 mb-4">Filtered Payments</h4>
-                    
-                    <div id="filteredPaymentsList" class="bg-gray-50 rounded-lg p-4 max-h-100 overflow-y-auto">
-                        @if($payments->count() > 0)
-                            <div class="space-y-3">
-                                @foreach($payments->take(10) as $payment)
-                                    <div class="bg-white rounded-lg p-3 border border-gray-200">
-                                        <div class="flex items-center justify-between">
-                                            <div class="flex items-center space-x-3">
-                                                <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-                                                    <i class="fas fa-receipt text-green-600 text-sm"></i>
-                                                </div>
-                                                <div>
-                                                    <div class="text-sm font-medium text-gray-900">{{ $payment->receipt_number }}</div>
-                                                    <div class="text-xs text-gray-500">{{ $payment->payment_date->format('M d, Y') }}</div>
-                                                </div>
-                                            </div>
-                                            <div class="text-right">
-                                                <div class="text-sm font-bold text-maroon">₱{{ number_format($payment->amount_paid, 2) }}</div>
-                                                <div class="text-xs text-gray-500">{{ $payment->payment_method }}</div>
-                                            </div>
-                                        </div>
-                                        @if($payment->balance > 0)
-                                            <div class="mt-2 text-xs text-red-600">
-                                                Balance: -₱{{ number_format($payment->balance, 2) }}
-                                            </div>
-                                        @else
-                                            <div class="mt-2 text-xs text-green-600">
-                                                Fully Paid
-                                            </div>
-                                        @endif
-                                    </div>
-                                @endforeach
-            </div>
-                        @else
-                <div class="text-center py-8">
-                                <i class="fas fa-credit-card text-2xl text-gray-400 mb-4"></i>
-                                <p class="text-gray-500">No payments found</p>
-                            </div>
-                        @endif
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Summary Modal -->
-<div id="summaryModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
-    <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-2/3 shadow-lg rounded-md bg-white">
-        <div class="mt-3">
-            <div class="flex items-center justify-between mb-4">
-                <h3 class="text-lg font-medium text-gray-900">Payment Summary</h3>
-                <button onclick="closeSummaryModal()" class="text-gray-400 hover:text-gray-600">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            
-            <div id="summaryContent">
-                <div class="text-center py-8">
-                    <i class="fas fa-circle text-2xl text-gray-400 mb-4"></i>
-                    <p class="text-gray-500">Loading payment summary...</p>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
 
 <script>
 function printReceipt(paymentId) {
@@ -747,5 +517,29 @@ function handleDateRangeChange() {
     // Update filtered payments
     updateFilteredPayments();
 }
+</script>
+
+<!-- Simple Search Script -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('searchInput');
+    const paymentsTable = document.getElementById('paymentsTable');
+    
+    if (searchInput && paymentsTable) {
+        searchInput.addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase().trim();
+            const rows = paymentsTable.querySelectorAll('tbody tr');
+            
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                if (text.includes(searchTerm)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        });
+    }
+});
 </script>
 @endsection

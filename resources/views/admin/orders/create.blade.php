@@ -22,7 +22,7 @@
             </div>
         </div>
         
-        <form method="POST" action="{{ route('admin.orders.store') }}" class="p-6" x-data="orderForm()" x-init="init()" @submit="if (!validateDownpayment()) { $event.preventDefault(); } else { console.log('Form submitted', $data); }">
+        <form method="POST" action="{{ route('admin.orders.store') }}" class="p-6" x-data="orderForm()" x-init="init()" @submit="if (!validateForm()) { $event.preventDefault(); } else { syncFormData(); console.log('Form submitted', $data); }">
             @csrf
             
             <!-- Order Information Section -->
@@ -686,30 +686,125 @@ function orderForm() {
             }
         },
 
+        syncFormData() {
+            // Sync Alpine.js items data with form inputs
+            this.items.forEach((item, index) => {
+                // Update all form inputs for this item
+                const typeInput = document.querySelector(`input[name="items[${index}][type]"]`);
+                const idInput = document.querySelector(`input[name="items[${index}][id]"]`);
+                const quantityInput = document.querySelector(`input[name="items[${index}][quantity]"]`);
+                const unitInput = document.querySelector(`input[name="items[${index}][unit_id]"]`);
+                const sizeInput = document.querySelector(`input[name="items[${index}][size]"]`);
+                const priceInput = document.querySelector(`input[name="items[${index}][price]"]`);
+                const layoutInput = document.querySelector(`input[name="items[${index}][layout]"]`);
+                const layoutPriceInput = document.querySelector(`input[name="items[${index}][layoutPrice]"]`);
+                
+                if (typeInput) typeInput.value = item.type;
+                if (idInput) idInput.value = item.id;
+                if (quantityInput) quantityInput.value = item.quantity;
+                if (unitInput) unitInput.value = item.unit_id;
+                if (sizeInput) sizeInput.value = item.size || '';
+                if (priceInput) priceInput.value = item.price;
+                if (layoutInput) layoutInput.checked = item.layout;
+                if (layoutPriceInput) layoutPriceInput.value = item.layoutPrice;
+            });
+        },
+
+        validateForm() {
+            // Check if customer is selected
+            const customerId = document.getElementById('customer_id').value;
+            if (!customerId) {
+                alert('Please select a customer.');
+                return false;
+            }
+            
+            // Check if employee is selected
+            const employeeId = document.getElementById('employee_id').value;
+            if (!employeeId) {
+                alert('Please select a production employee.');
+                return false;
+            }
+            
+            // Check if order date is filled
+            const orderDate = document.getElementById('order_date').value;
+            if (!orderDate) {
+                alert('Please select an order date.');
+                return false;
+            }
+            
+            // Check if there are items
+            if (this.items.length === 0) {
+                alert('Please add at least one item to the order.');
+                return false;
+            }
+            
+            // Check if all items are properly filled
+            for (let i = 0; i < this.items.length; i++) {
+                const item = this.items[i];
+                
+                if (!item.type) {
+                    alert(`Please select a type for item ${i + 1}.`);
+                    return false;
+                }
+                
+                if (!item.id) {
+                    alert(`Please select an item for item ${i + 1}.`);
+                    return false;
+                }
+                
+                if (!item.quantity || item.quantity <= 0) {
+                    alert(`Please enter a valid quantity for item ${i + 1}.`);
+                    return false;
+                }
+                
+                if (!item.unit_id) {
+                    alert(`Please select a unit for item ${i + 1}.`);
+                    return false;
+                }
+                
+                if (!item.price || item.price <= 0) {
+                    alert(`Please enter a valid price for item ${i + 1}.`);
+                    return false;
+                }
+            }
+            
+            // Validate payment if provided
+            return this.validateDownpayment();
+        },
+
         validateDownpayment() {
             const paymentTermSelect = document.getElementById('payment_term');
             const amountPaidInput = document.querySelector('input[name="payment[amount_paid]"]');
             
-            if (amountPaidInput) {
-                const finalTotalAmount = this.getFinalTotalAmount();
-                const amountPaid = parseFloat(amountPaidInput.value) || 0;
+            // If no payment input exists or no amount is entered, allow submission
+            if (!amountPaidInput || !amountPaidInput.value || amountPaidInput.value.trim() === '') {
+                return true;
+            }
+            
+            const finalTotalAmount = this.getFinalTotalAmount();
+            const amountPaid = parseFloat(amountPaidInput.value) || 0;
+            
+            // If amount is 0 or empty, allow submission (no payment)
+            if (amountPaid <= 0) {
+                return true;
+            }
+            
+            // Check if payment amount exceeds total amount
+            if (amountPaid > finalTotalAmount) {
+                alert(`Payment amount cannot exceed the total amount of ₱${finalTotalAmount.toFixed(2)}. Current amount: ₱${amountPaid.toFixed(2)}`);
+                return false;
+            }
+            
+            // Check downpayment validation
+            if (paymentTermSelect && paymentTermSelect.value === 'Downpayment') {
+                const requiredDownpayment = finalTotalAmount * 0.5;
                 
-                // Check if payment amount exceeds total amount
-                if (amountPaid > finalTotalAmount) {
-                    alert(`Payment amount cannot exceed the total amount of ₱${finalTotalAmount.toFixed(2)}. Current amount: ₱${amountPaid.toFixed(2)}`);
+                if (amountPaid < requiredDownpayment) {
+                    alert(`Downpayment must be at least 50% of the total amount (₱${requiredDownpayment.toFixed(2)}). Current amount: ₱${amountPaid.toFixed(2)}`);
                     return false;
                 }
-                
-                // Check downpayment validation
-                if (paymentTermSelect && paymentTermSelect.value === 'Downpayment') {
-                    const requiredDownpayment = finalTotalAmount * 0.5;
-                    
-                    if (amountPaid < requiredDownpayment) {
-                        alert(`Downpayment must be at least 50% of the total amount (₱${requiredDownpayment.toFixed(2)}). Current amount: ₱${amountPaid.toFixed(2)}`);
-                        return false;
-                    }
-                }
             }
+            
             return true;
         },
         

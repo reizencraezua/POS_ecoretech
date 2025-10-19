@@ -21,21 +21,7 @@ class InventoryController extends Controller
             ? Inventory::withTrashed()->whereNotNull('deleted_at')->with('supplier')
             : Inventory::with('supplier');
 
-        // Search functionality
-        if ($request->filled('search')) {
-            $searchTerm = $request->search;
-            $query->where(function($q) use ($searchTerm) {
-                $q->where('name', 'like', "%{$searchTerm}%")
-                  ->orWhere('description', 'like', "%{$searchTerm}%")
-                  ->orWhere('inventory_id', 'like', "%{$searchTerm}%")
-                  ->orWhereHas('supplier', function($supplierQuery) use ($searchTerm) {
-                      $supplierQuery->where('supplier_name', 'like', "%{$searchTerm}%");
-                  });
-            });
-        }
-
         $inventories = $query->orderBy('created_at', 'desc')->paginate(15);
-        $inventories->appends($request->query());
 
         $criticalInventories = Inventory::where('is_active', true)
             ->whereRaw('stocks <= critical_level')

@@ -72,7 +72,7 @@
                     
                     <div>
                         <label for="valid_until" class="block text-sm font-medium text-gray-700 mb-2">Valid Until</label>
-                        <input type="date" name="valid_until" id="valid_until" value="{{ old('valid_until') }}"
+                        <input type="date" name="valid_until" id="valid_until" value="{{ old('valid_until', now()->addDays(30)->format('Y-m-d')) }}"
                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-maroon focus:border-maroon @error('valid_until') border-red-500 @enderror">
                         @error('valid_until')
                             <p class="text-red-500 text-xs mt-1">{{ $message }}</p>

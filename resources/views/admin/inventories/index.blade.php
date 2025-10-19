@@ -69,35 +69,25 @@
                 {{ (isset($showArchived) && $showArchived) ? 'Show Active' : 'View Archives' }}
             </a>
 
-            <!-- Search Form -->
-            <form method="GET" class="flex items-center space-x-2">
-                <div class="relative">
-                    <input type="text" name="search" value="{{ request('search') }}" placeholder="Search inventory items..." 
-                           class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-maroon focus:border-maroon">
-                    <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-                </div>
-                <button type="submit" class="bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-lg transition-colors">
-                    <i class="fas fa-search"></i>
-                </button>
-                @if(request('search'))
-                    <a href="{{ route('admin.inventories.index') }}" class="bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-lg transition-colors">
-                        <i class="fas fa-times"></i>
-                    </a>
-                @endif
-            </form>
+            <!-- Search -->
+            <div class="relative">
+                <input type="text" id="searchInput" placeholder="Search inventory items..." 
+                       class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-maroon focus:border-maroon w-80">
+                <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+            </div>
         </div>
     </div>
 
 
     <!-- Inventory Table -->
-    <div class="bg-white rounded-lg shadow">
+    <div id="inventoriesTableContainer" class="bg-white rounded-lg shadow">
         <div class="px-6 py-4 border-b border-gray-200">
             <h3 class="text-lg font-semibold text-gray-900">Inventory Items</h3>
             <p class="text-sm text-gray-600">Manage your inventory items and stock levels</p>
         </div>
         
         <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
+            <table id="inventoriesTable" class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">
                     <tr>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Inventory ID</th>
@@ -144,9 +134,9 @@
                         <td class="px-6 py-4 whitespace-nowrap">
                             @php
                                 $statusColors = [
-                                    'Normal' => 'bg-green-100 text-green-800',
-                                    'Critical' => 'bg-red-100 text-red-800',
-                                    'Inactive' => 'bg-gray-100 text-gray-800'
+                                    'Normal' => 'text-green-800',
+                                    'Critical' => 'text-red-800',
+                                    'Inactive' => 'text-gray-800'
                                 ];
                             @endphp
                             <span class="px-2 py-1 text-xs font-medium rounded-full {{ $statusColors[$inventory->status] }}">
@@ -287,6 +277,28 @@ function closeCreateModal() {
 document.addEventListener('click', function(event) {
     if (event.target.classList.contains('bg-gray-600')) {
         closeCreateModal();
+    }
+});
+
+// Search functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('searchInput');
+    const inventoriesTable = document.getElementById('inventoriesTable');
+    
+    if (searchInput && inventoriesTable) {
+        searchInput.addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase().trim();
+            const rows = inventoriesTable.querySelectorAll('tbody tr');
+            
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                if (text.includes(searchTerm)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        });
     }
 });
 </script>

@@ -52,11 +52,11 @@
                             <dt class="text-sm font-medium text-gray-500">Status</dt>
                             <dd>
                                 @if($category->is_active)
-                                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                    <span class="inline-flex items-center text-xs font-medium text-green-800">
                                         Active
                                     </span>
                                 @else
-                                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                    <span class="inline-flex items-center text-xs font-medium text-red-800">
                                         Inactive
                                     </span>
                                 @endif
@@ -111,7 +111,7 @@
                                 </h4>
                                 <div class="flex flex-wrap gap-2">
                                     @foreach($unitSizes as $size)
-                                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+                                        <span class="inline-flex items-center text-sm font-medium text-blue-800">
                                             {{ $size->size_name }}
                                             <span class="ml-1 text-xs text-blue-600">({{ $size->size_value }})</span>
                                         </span>
@@ -144,7 +144,6 @@
                                         <tr>
                                             <td class="px-6 py-4 whitespace-nowrap">
                                                 <div class="text-sm font-medium text-gray-900">{{ $product->product_name }}</div>
-                                                <div class="text-sm text-gray-500">{{ $product->product_description }}</div>
                                             </td>
                                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                                 ₱{{ number_format($product->base_price, 2) }}
@@ -191,7 +190,6 @@
                                         <tr>
                                             <td class="px-6 py-4 whitespace-nowrap">
                                                 <div class="text-sm font-medium text-gray-900">{{ $service->service_name }}</div>
-                                                <div class="text-sm text-gray-500">{{ $service->description }}</div>
                                             </td>
                                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                                 ₱{{ number_format($service->base_fee, 2) }}

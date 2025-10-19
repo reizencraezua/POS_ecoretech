@@ -63,6 +63,50 @@
                                 </div>
                             </div>
                         </div>
+
+                        <!-- Update History Section -->
+                        @if($job->histories->count() > 0)
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-900 mb-3">Update History</h3>
+                            <div class="space-y-4">
+                                @foreach($job->histories->sortByDesc('created_at') as $history)
+                                <div class="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg">
+                                    <div class="flex-shrink-0">
+                                        <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                                            <i class="fas fa-history text-blue-600 text-sm"></i>
+                                        </div>
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <div class="flex items-center justify-between">
+                                            <p class="text-sm font-medium text-gray-900">
+                                                @if($history->action === 'created')
+                                                    {{ $history->description }}
+                                                @elseif($history->action === 'updated' && $history->old_values && $history->new_values)
+                                                    @php
+                                                        $changes = [];
+                                                        foreach($history->new_values as $field => $newValue) {
+                                                            $oldValue = $history->old_values[$field] ?? null;
+                                                            if($oldValue !== $newValue) {
+                                                                $changes[] = ucfirst(str_replace('_', ' ', $field)) . ": '" . $oldValue . "' -------- '" . $newValue . "'";
+                                                            }
+                                                        }
+                                                    @endphp
+                                                    Job was updated:<br><br>{{ implode('<br>', $changes) }}
+                                                @else
+                                                    {{ $history->description }}
+                                                @endif
+                                            </p>
+                                            <p class="text-xs text-gray-500">{{ $history->created_at->format('M d, Y g:i A') }}</p>
+                                        </div>
+                                        <p class="text-xs text-gray-600 mt-1">
+                                            Edited By: {{ $history->updatedBy ? $history->updatedBy->name : 'System' }}
+                                        </p>
+                                    </div>
+                                </div>
+                                @endforeach
+                            </div>
+                        </div>
+                        @endif
                     </div>
                 </div>
             </div>
@@ -118,31 +162,7 @@
                 </div>
             </div>
 
-            <!-- Quick Stats -->
-            <div class="bg-white rounded-lg shadow-md mt-6">
-                <div class="px-6 py-4 border-b border-gray-200">
-                    <h3 class="text-lg font-semibold text-gray-900">Quick Stats</h3>
-                </div>
-                
-                <div class="p-6">
-                    <div class="space-y-4">
-                        <div class="flex items-center justify-between">
-                            <div class="flex items-center space-x-2">
-                                <i class="fas fa-users text-blue-500"></i>
-                                <span class="text-sm text-gray-700">Total Employees</span>
-                            </div>
-                            <span class="text-sm font-medium text-gray-900">{{ $job->employees->count() }}</span>
-                        </div>
-                        <div class="flex items-center justify-between">
-                            <div class="flex items-center space-x-2">
-                                <i class="fas fa-clock text-green-500"></i>
-                                <span class="text-sm text-gray-700">Days Active</span>
-                            </div>
-                            <span class="text-sm font-medium text-gray-900">{{ $job->created_at->diffInDays(now()) }}</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            
         </div>
     </div>
 </div>

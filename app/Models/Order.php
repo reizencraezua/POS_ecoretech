@@ -5,14 +5,19 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Models\TracksHistory;
 
 class Order extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes, TracksHistory;
 
     protected $primaryKey = 'order_id';
+    public $incrementing = false;
+    protected $keyType = 'string';
 
     protected $fillable = [
+        'order_id',
+        'display_order_id',
         'order_date',
         'deadline_date',
         'order_status',
@@ -81,6 +86,11 @@ class Order extends Model
     public function deliveries()
     {
         return $this->hasMany(Delivery::class, 'order_id');
+    }
+
+    public function histories()
+    {
+        return $this->hasMany(OrderHistory::class, 'order_id');
     }
 
     public function getTotalPaidAttribute()
@@ -215,5 +225,21 @@ class Order extends Model
         }
         
         return $prefix . $year . $month . str_pad($newNumber, 4, '0', STR_PAD_LEFT);
+    }
+
+    public static function generateDisplayOrderId()
+    {
+        // Get the last order's display_order_id
+        $lastOrder = self::orderBy('display_order_id', 'desc')->first();
+        
+        if ($lastOrder && $lastOrder->display_order_id) {
+            // Extract the number part and increment
+            $lastNumber = (int) $lastOrder->display_order_id;
+            $newNumber = $lastNumber + 1;
+        } else {
+            $newNumber = 1;
+        }
+        
+        return $newNumber;
     }
 }
